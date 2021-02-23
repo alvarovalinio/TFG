@@ -1,1 +1,2 @@
-# TFG
+En el siguiente repositorio se encuentra el codigo utilizado para realizar el Trabajo Final de Grado. 
+Este tiene como principal objetivo facilitar la comununación entre ambas partes y generar un espacio común para modificaciones.
