@@ -1,0 +1,18 @@
+MLU1459 = Categoría Inmuebles
+
+Filtros disponibles:
+242062 = Apartamentos
+242060 = Casas
+
+Children categories
+MLU1472 = Apartamentos
+MLU1466 = Casas
+
+Subcategoria de MLU1472 (aptos)
+MLU1473 = aptos en alquiler
+MLU 1474 = aptos en venta
+
+Subcategoria de MLU1466 (casas)
+
+Atributos
+seleccionamos desde los disponibles en la categoria inmuebles (MLU1459)
