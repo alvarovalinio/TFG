@@ -75,7 +75,7 @@ atributos_v <- tolower(atributos_v)
 
 total_apt <- fromJSON('https://api.mercadolibre.com/sites/MLU/search?category=MLU1472')$paging$total
 
-sequence_apt<-seq(from=0, to=150, by=50) #el max sale del link
+sequence_apt<-seq(from=0, to=total_apt, by=50) #el max sale del link
 
 # to = "maximo valor" que deja
 
