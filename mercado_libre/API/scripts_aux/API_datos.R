@@ -79,9 +79,7 @@ sequence_apt<-seq(from=0, to=total_apt, by=50) #el max sale del link
 
 # to = "maximo valor" que deja
 
-#x<-c("","","","","","","","","","","","","")
-
-#inicio <- Sys.time()
+inicio <- Sys.time()
 
 # Objeto para ir almacenado los datos
 
@@ -140,6 +138,10 @@ for (j in sequence_apt){
     
     attr$id <- tolower(attr$id)
     
+    # Diferenciamos por si "faltan o sobran" atributos (en funcion de los primeros 5000)
+    
+    if(nrow(atributos)>=length(attr$id)){
+    
     faltan <- data.frame(atributos %>% filter(!(V1%in%attr$id)) %>% select(V1))
     
     colnames(faltan) <- "id"
@@ -147,6 +149,14 @@ for (j in sequence_apt){
     faltan$value_name <- NA
     
     attr <- rbind(attr,faltan)
+    
+    } else {
+      
+      
+    attr <- data.frame(attr %>% filter(id%in%atributos$V1))
+      
+    }
+    
     
     attr <- attr %>% arrange(id)
     
@@ -181,5 +191,8 @@ for (j in sequence_apt){
 
 datos_apt <- datos_apt[-1,]
 
+fin <- Sys.time()
+
+tiempo <- fin - inicio
 
 # Falta house
