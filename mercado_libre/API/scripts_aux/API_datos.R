@@ -9,7 +9,7 @@ library(data.table)
 
 clientID <- Sys.getenv("Client_ID")
 secret <- Sys.getenv("Secret_ID")
-code <- 'TG-60846902bbf574000790d496-219703207' # Por cada token hay que generar uno
+code <- 'TG-6089d32f78d99f00079ca386-317926679' # Por cada token hay que generar uno
 # Pensar como automatizar el code
 redict_url <-  'https://www.mercadolibre.com.uy/' # Fijado al crear la "app"
 
@@ -75,7 +75,7 @@ atributos_v <- tolower(atributos_v)
 
 total_apt <- fromJSON('https://api.mercadolibre.com/sites/MLU/search?category=MLU1472')$paging$total
 
-sequence_apt<-seq(from=0, to=total_apt, by=50) #el max sale del link
+sequence_apt<-seq(from=0, to=150, by=50) #el max sale del link
 
 # to = "maximo valor" que deja
 
@@ -132,6 +132,7 @@ for (j in sequence_apt){
   
   atributos_col <- atributos %>% pivot_wider(names_from=V1,values_from = value_name)
   
+  
   for(i in 1:nrow(id)){
     
     attr <- result_pag$results$attributes[[i]] %>% select(id,value_name)
@@ -141,6 +142,7 @@ for (j in sequence_apt){
     # Diferenciamos por si "faltan o sobran" atributos (en funcion de los primeros 5000)
     
     if(nrow(atributos)>=length(attr$id)){
+          
     
     faltan <- data.frame(atributos %>% filter(!(V1%in%attr$id)) %>% select(V1))
     
@@ -149,6 +151,9 @@ for (j in sequence_apt){
     faltan$value_name <- NA
     
     attr <- rbind(attr,faltan)
+    
+    # Descarta los atributos que estan en attr pero no en atributos (caso raro, podria pasar)
+    attr <- attr %>% filter(id %in% atributos$V1)
     
     } else {
       
