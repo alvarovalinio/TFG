@@ -9,7 +9,7 @@ library(data.table)
 
 clientID <- Sys.getenv("Client_ID")
 secret <- Sys.getenv("Secret_ID")
-code <- 'TG-6089d32f78d99f00079ca386-317926679' # Por cada token hay que generar uno
+code <- 'TG-608dd6b7f19b2d0007c354d0-219703207' # Por cada token hay que generar uno
 # Pensar como automatizar el code
 redict_url <-  'https://www.mercadolibre.com.uy/' # Fijado al crear la "app"
 
@@ -83,12 +83,12 @@ inicio <- Sys.time()
 
 # Objeto para ir almacenado los datos
 
-datos_apt <- matrix(ncol = length(atributos_v)+12)
-colnames(datos_apt) <- c("id","title","price","currency_id","buying_mode",
+datos_apt <- matrix(ncol = length(atributos_v)+17)
+colnames(datos_apt) <- c("dia","id","title","price","currency_id","buying_mode",
                      "condition","accepts_mercadopago",
                      "state_name","city_name","category_id",
-                     "latitude","longitude",tolower(atributos_v))
-datos_apt <- as_tibble(datos_apt)
+                     "latitude","longitude","tags","seller_contact","id_city","id_state",sort(tolower(atributos_v)))
+datos_apt <- as.data.frame(datos_apt)
 
 
 
@@ -98,6 +98,31 @@ for (j in sequence_apt){
   
   # URL para moverse de a 50
   url<-paste0(url_apt,j)
+  
+  # Obtenemos refresh token cada 5000
+  if(j%%5000==0){
+    
+    refresh_token <- content(response)$refresh_token
+    
+    response  <-  POST(
+      'https://api.mercadolibre.com/oauth/token',
+      accept_json(),
+      authenticate(clientID, secret),
+      body = list(client_id=clientID,client_secret=secret,
+                  grant_type = 'refresh_token',refresh_token=refresh_token),
+      encode = 'form',
+      verbose()
+    )
+    
+    # Ahora guardamos el nuevo token y a su vez tenemos el refresh token para hacer un loop
+    
+    mytoken <- content(response)$access_token
+    
+    HeaderValue <-  paste0('Bearer ', mytoken)
+    
+    print("Entro al IF")
+    
+  }
   
   # Obtenemos los 50 de esa pagina
   request_pag<-GET(url=url,
@@ -121,12 +146,33 @@ for (j in sequence_apt){
   subcat <- as.data.frame(result_pag$results$category_id)
   latitude <- as.data.frame(result_pag$results$location$latitude)
   longitude <- as.data.frame(result_pag$results$location$longitude)
+  seller_contact <- as.data.frame(result_pag$results$seller_contact$contact)
+  id_city <- as.data.frame(result_pag$results$location$city$id)
+  id_state <- as.data.frame(result_pag$results$location$state$id)
+  
+  tags_aux <- lapply(result_pag$results$tags,FUN = function(datos){
+    
+    
+    datos <- datos[str_detect(datos,"quality_picture")]
+    
+    
+    
+    if(length(datos)==0){
+      
+      datos <- NA
+    }
+    
+    return(datos) 
+    
+  })
+  
+  tags <- unlist(tags_aux)
   
   # Atributos
   
   atributos <- matrix(nrow = length(atributos_v))
   atributos[,1] <- atributos_v
-  atributos <- as_tibble(atributos)
+  atributos <- as.data.frame(atributos)
   atributos <- atributos %>% arrange(V1)
   atributos$value_name <- NA
   
@@ -174,22 +220,24 @@ for (j in sequence_apt){
   
   atributos_col <- atributos_col[-1,]
   
-    
+  
   #Combina todas las variables y las une al dataframe principal de la categor?a
   variables<-cbind(id,title,price, currency, mode, cond, mpago, staten, cityn, 
-                   subcat,latitude,longitude)
+                   subcat,latitude,longitude,tags,seller_contact,id_city,id_state)
   
   colnames(variables) <- c("id","title","price","currency_id","buying_mode",
                            "condition","accepts_mercadopago",
                            "state_name","city_name","category_id",
-                           "latitude","longitude")
+                           "latitude","longitude","tags","seller_contact","id_city","id_state")
   
-  #Combinamos variables y atributos
-  apt<-cbind(variables,atributos_col)
+  #Combinamos variables y atributos (agregamos dia de paso)
+  
+  
+  apt<-cbind(dia=Sys.Date(),variables,atributos_col)
   
   datos_apt <- rbind(datos_apt,apt)
   
-  print("Hizo Algo")
+  print(paste0("Repuesta correcta, va en la iteracion ",j))
   
 }
 
@@ -200,4 +248,5 @@ fin <- Sys.time()
 
 tiempo <- fin - inicio
 
+datos_apt$dia <- Sys.Date()
 # Falta house
