@@ -1,14 +1,15 @@
 # Script para obtener los datos por barrior,
 # Parametros de entrada: 1) Client ID, 2) Secret ID , 3) Code, 4) redict_url
 # , 5) id del barrio (id_city) , 6) apt = T (si es F entonces queremos casas)
-# y 7) token =T (devuelve el token para no estar cargando el codigo de nuevo)
+# , 7) token =T (devuelve el token para no estar cargando el codigo de nuevo),
+#  y 8) atributos =T. 
 
 library(httr)
 library(jsonlite)
 library(tidyverse)
 library(data.table)
 
-datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt=T,token=T){
+datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt=T,token=T, atributos = T){
   
   
   # Proceso de obtencion de token
@@ -52,11 +53,11 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   if(apt==T){
   
   
-    url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1472&city=',id_barrio,'&limit=50&offset=')
+    url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1474&city=',id_barrio,'&limit=50&offset=')
   
     } else {
   
-    url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1466&city=',id_barrio,'&limit=50&offset=')
+    url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1468&city=',id_barrio,'&limit=50&offset=')
   
   }
   
@@ -69,8 +70,10 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   sequence <- seq(from=0, to=5000, by=50)
   
   # Atributos (más variables)
+ 
+  if (atributos[1] == T) {
   
-  atributos_v <- vector(mode = 'character', length = 0)
+ atributos_v <- vector(mode = 'character', length = 0)
   
   for (s in sequence) {
     request_pag <- GET(url = paste0(url_ini, s), add_headers(Authorization=HeaderValue))
@@ -88,7 +91,9 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   }
   
   atributos_v <- tolower(atributos_v)
-  
+  } else {
+        atributos_v <- atributos
+  }
   # Objeto para ir almacenado los datos
   
   datos<- matrix(ncol = length(atributos_v)+17)
@@ -269,7 +274,7 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   datos$dia <- Sys.Date()
   
   
-  return(list(datos=datos,response=response))
+  return(list(datos=datos,response=response, atributos = atributos_v))
   
   
 }
