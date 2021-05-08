@@ -91,16 +91,22 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   }
   
   atributos_v <- tolower(atributos_v)
+  
+  #atributos_2<- result_pag$available_filters$id %>% tolower()
+  
+  #atributos_v <- c(atributos_v,atributos_2[!(atributos_2%in%atributos_v)])
+  
   } else {
         atributos_v <- atributos
   }
   # Objeto para ir almacenado los datos
   
-  datos<- matrix(ncol = length(atributos_v)+17)
-  colnames(datos) <- c("dia","id","title","price","currency_id","buying_mode",
+  datos<- matrix(ncol = length(atributos_v)+19)
+  colnames(datos) <- c("dia","id","title","price","currency_id","buying_mode",     
                            "condition","accepts_mercadopago",
                            "state_name","city_name","category_id",
-                           "latitude","longitude","tags","seller_contact","id_city","id_state",sort(tolower(atributos_v)))
+                           "latitude","longitude","tags","seller_contact","id_city","id_state","date_created","last_updated"
+                       ,sort(tolower(atributos_v)))
   datos <- as.data.frame(datos)
   
   
@@ -202,7 +208,9 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
     atributos_col <- atributos %>% pivot_wider(names_from=V1,values_from = value_name)
     
     
-    for(i in 1:nrow(id)){
+    for(i in 1:nrow(id)){ # Nos vemos por cada item (id)
+      
+      # Obtenemos atributos
       
       attr <- result_pag$results$attributes[[i]] %>% select(id,value_name)
       
@@ -253,14 +261,52 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
                              "state_name","city_name","category_id",
                              "latitude","longitude","tags","seller_contact","id_city","id_state")
     
-    #Combinamos variables y atributos (agregamos dia de paso)
+    
+# Una vez obtenido las variables y atributos, obtenemos date created y last update
+    
+  create_last <-  sapply(id$`result_pag$results$id`,FUN=function(inmueble){
+      
+     
+      # URL descripcion
+       
+      url_desc <- paste0("https://api.mercadolibre.com/items/",inmueble)
+      
+      request_desc <- GET(url=url_desc,
+          add_headers(Authorization=HeaderValue))
+      
+      # valores de esa pagina
+      
+      result_desc <- content(request_desc,type="text",encoding = "UTF-8") %>% fromJSON()
+      
+      last <- result_desc$last_updated
+      
+      create <- result_desc$date_created
+      
+      #salida <- data.frame(date_created=create,last_updated=last)
+      
+      return(c(create,last))
+      
+      })
     
     
-    variables_atributos<-cbind(dia=Sys.Date(),variables,atributos_col)
-    
-    datos <- rbind(datos,variables_atributos)
-    
-    print(paste0("Repuesta correcta, va en la iteracion ",j))
+  create_last <- as.data.frame(t(create_last)) 
+  
+  colnames(create_last) <- c("date_created","last_updated")
+  
+ 
+  # Agregamos a variables
+  
+  variables <- cbind(variables,create_last)
+ 
+  
+  #Combinamos variables y atributos (agregamos dia de paso)
+  
+  
+  variables_atributos<-cbind(dia=Sys.Date(),variables,atributos_col)
+  
+  datos <- rbind(datos,variables_atributos)
+  
+  print(paste0("Repuesta correcta, va en la iteracion ",j))
     
     j <- j + 50
     
