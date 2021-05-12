@@ -52,18 +52,17 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   
   if(apt==T){
   
-  
     url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1474&city=',id_barrio,'&limit=50&offset=')
   
+    url_ini <- 'https://api.mercadolibre.com/sites/MLU/search?category=MLU1474&limit=50&offset='
+    
     } else {
   
     url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1468&city=',id_barrio,'&limit=50&offset=')
   
+    url_ini <- 'https://api.mercadolibre.com/sites/MLU/search?category=MLU1468&limit=50&offset='
   }
-  
-  #Ambos (para atributos)
-  url_ini <- 'https://api.mercadolibre.com/sites/MLU/search?category=MLU1459&limit=50&offset='
-  
+
   
   # Obtenemos lista de los atributos (5000 primeras observaciones)
   
@@ -101,8 +100,8 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   }
   # Objeto para ir almacenado los datos
   
-  datos<- matrix(ncol = length(atributos_v)+19)
-  colnames(datos) <- c("dia","id","title","price","currency_id","buying_mode",     
+  datos<- matrix(ncol = length(atributos_v)+18)
+  colnames(datos) <- c("id","title","price","currency_id","buying_mode",     
                            "condition","accepts_mercadopago",
                            "state_name","city_name","category_id",
                            "latitude","longitude","tags","seller_contact","id_city","id_state","date_created","last_updated"
@@ -207,12 +206,15 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
     
     atributos_col <- atributos %>% pivot_wider(names_from=V1,values_from = value_name)
     
+    # Una vez obtenido las variables y atributos, obtenemos date created y last update
     
-    for(i in 1:nrow(id)){ # Nos vemos por cada item (id)
+    atributos_aux <-  sapply(id$`result_pag$results$id`,FUN=function(inmueble){
+      
       
       # Obtenemos atributos
       
-      attr <- result_pag$results$attributes[[i]] %>% select(id,value_name)
+      attr <- result_pag$results$attributes[[which(id$`result_pag$results$id`==inmueble)]] %>% 
+        select(id,value_name)
       
       attr$id <- tolower(attr$id)
       
@@ -244,12 +246,33 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
       
       attr <- attr %>% pivot_wider(names_from=id,values_from = value_name)
       
-      atributos_col <- rbind(atributos_col,attr)
+      # URL descripcion
       
+      url_desc <- paste0("https://api.mercadolibre.com/items/",inmueble)
       
-    }
+      request_desc <- GET(url=url_desc,
+                          add_headers(Authorization=HeaderValue))
+      
+      # valores de esa pagina
+      
+      result_desc <- content(request_desc,type="text",encoding = "UTF-8") %>% fromJSON()
+      
+      last <- result_desc$last_updated
+      
+      create <- result_desc$date_created
+      
+      #salida <- data.frame(date_created=create,last_updated=last)
+      
+      return(c(create,last,attr))
+      
+    })
     
-    atributos_col <- atributos_col[-1,]
+    
+    atributos_aux <- as.data.frame(t(atributos_aux)) 
+    
+    atributos_aux <- atributos_aux %>% rename(date_created=V1,last_updated=V2)
+    
+    
     
     
     #Combina todas las variables y las une al dataframe principal de la categor?a
@@ -262,47 +285,26 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
                              "latitude","longitude","tags","seller_contact","id_city","id_state")
     
     
-# Una vez obtenido las variables y atributos, obtenemos date created y last update
-    
-  create_last <-  sapply(id$`result_pag$results$id`,FUN=function(inmueble){
-      
-     
-      # URL descripcion
-       
-      url_desc <- paste0("https://api.mercadolibre.com/items/",inmueble)
-      
-      request_desc <- GET(url=url_desc,
-          add_headers(Authorization=HeaderValue))
-      
-      # valores de esa pagina
-      
-      result_desc <- content(request_desc,type="text",encoding = "UTF-8") %>% fromJSON()
-      
-      last <- result_desc$last_updated
-      
-      create <- result_desc$date_created
-      
-      #salida <- data.frame(date_created=create,last_updated=last)
-      
-      return(c(create,last))
-      
-      })
-    
-    
-  create_last <- as.data.frame(t(create_last)) 
-  
-  colnames(create_last) <- c("date_created","last_updated")
+
   
  
-  # Agregamos a variables
+  # Hacemos join entre variables y atributos_aux por id
+    
+  atributos_aux$id<- row.names(atributos_aux)
   
-  variables <- cbind(variables,create_last)
- 
+  atributos_aux <- atributos_aux %>% data.table()
   
-  #Combinamos variables y atributos (agregamos dia de paso)
+  variables <- variables %>% data.table()
   
+  # Hacemos join
   
-  variables_atributos<-cbind(dia=Sys.Date(),variables,atributos_col)
+  setkey(atributos_aux,id)
+  
+  setkey(variables,id)
+  
+  variables_atributos <- merge(variables,atributos_aux,no.match=0)
+  
+  variables_atributos <- variables_atributos %>% relocate(c(names(datos)))
   
   datos <- rbind(datos,variables_atributos)
   
