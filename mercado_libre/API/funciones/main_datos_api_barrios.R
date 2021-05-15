@@ -4,20 +4,138 @@ library(here)
 
 # Cargamos id_barrios
 
-load(here("mercado_libre/funciones","id_barrios.Rdata"))
+load(here("mercado_libre/API/funciones","id_barrios.Rdata"))
 
 # Cargamos funcion
 
-source(here("mercado_libre/funciones","funcion_api_barrios.R"))
+source(here("mercado_libre/API/funciones","funcion_api_barrios.R"))
 
 
 # Credenciales
 
 clientID <- Sys.getenv("Client_ID")
 secret <- Sys.getenv("Secret_ID")
-code <- 'TG-609329b88517690008ae95df-317926679' # Por cada token hay que generar uno
+code <- 'TG-609f0fba672706000740803c-219703207' # Por cada token hay que generar uno
 redict_url <-  'https://www.mercadolibre.com.uy/' # Fijado al crear la "app"
 
+### Apartamentos
+
+ruta_apt <- paste0("mercado_libre/API/datos/apt")
+
+year_month <- paste0(substring(Sys.Date(),1,4),substring(Sys.Date(),6,7))
+
+dir.create(here(ruta_apt,year_month))
+
+ruta_apt_fecha <- paste0(ruta_apt,"/",year_month)
+
+for(i in 1:nrow(id_barrios)){
+
+  if(i==1){
+    
+  
+   resultados <-  datos_barrio(clientid = clientID,
+                 secret = secret,
+                 code = code,
+                 redict_url = redict_url,
+                 id_barrio = id_barrios$id_city[i],
+                 apt = T,
+                 token=T,
+                 atributos = T)
+    
+   nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+   
+   fwrite(resultados$datos,file=here(ruta_apt_fecha,paste0(nombre,".csv")))
+   
+   aux_response <- resultados$response
+    
+   aux_atributos <- resultados$atributos 
+   
+  } else {
+    
+    
+  resultados <-  datos_barrio(clientid = clientID,
+                                secret = secret,
+                                code = code,
+                                redict_url = redict_url,
+                                id_barrio = id_barrios$id_city[i],
+                                apt = T,
+                                token=aux_response,
+                                atributos = aux_atributos)
+  
+  nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+  
+  fwrite(resultados$datos,file=here(ruta_apt_fecha,paste0(nombre,".csv")))  
+    
+  aux_response <- resultados$response
+    
+  aux_atributos <- resultados$atributos 
+    
+    
+    
+  }
+  
+}
+
+
+### Casas
+
+ruta_casas <- paste0("mercado_libre/API/datos/casas")
+
+dir.create(here(ruta_casas,year_month))
+
+ruta_casas_fecha <- paste0(ruta_casas,"/",year_month)
+
+for(i in 1:nrow(id_barrios)){
+  
+  if(i==1){
+    
+    
+    resultados <-  datos_barrio(clientid = clientID,
+                                secret = secret,
+                                code = code,
+                                redict_url = redict_url,
+                                id_barrio = id_barrios$id_city[i],
+                                apt = F,
+                                token=T,
+                                atributos = T)
+    
+    nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+    
+    fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))
+    
+    aux_response <- resultados$response
+    
+    aux_atributos <- resultados$atributos 
+    
+  } else {
+    
+    
+    resultados <-  datos_barrio(clientid = clientID,
+                                secret = secret,
+                                code = code,
+                                redict_url = redict_url,
+                                id_barrio = id_barrios$id_city[i],
+                                apt = F,
+                                token=aux_response,
+                                atributos = aux_atributos)
+    
+    nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+    
+    fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))  
+    
+    aux_response <- resultados$response
+    
+    aux_atributos <- resultados$atributos 
+    
+    
+    
+  }
+  
+}
+
+
+
+#######################################################################
 
 prueba_1 <- datos_barrio(clientid = clientID,
                        secret = secret,
