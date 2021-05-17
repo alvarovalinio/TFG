@@ -6,26 +6,55 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE)
-```
-
-```{r}
-load("datos_apt.Rdata")
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE, cache = TRUE)
+library(readr)
+library(here)
+library(data.table)
 library(tidyverse)
 library(knitr)
+library(lubridate)
+```
 
-datos_apt <- datos_apt %>%  
+
+
+```{r datos}
+barrios_aptos <- list.files(path = here("mercado_libre/API/datos/apt/202105"), pattern = "*.csv", full.names = T)
+barrios_casas <- list.files(path = here("mercado_libre/API/datos/casas/202105"), pattern = "*.csv", full.names = T)
+
+aptos <- sapply(barrios_aptos, FUN=function(id_barrio){
+      read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
+
+casas <- sapply(barrios_casas, FUN=function(id_barrio){
+      read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
+
+```
+
+
+```{r}
+aptos <- aptos %>%  
       separate(col = 'covered_area', into = c("covered_area", "covered_area_unidad"), sep = "\\s") %>% 
       separate(col = 'total_area', into = c('total_area', 'total_area_unidad'), sep = "\\s") %>%
       mutate(covered_area =  as.numeric(covered_area),
-             total_area = as.numeric(total_area))
+             total_area = as.numeric(total_area),
+             price = as.numeric(price),
+             latitude = as.numeric(latitude),
+             longitude = as.numeric(longitude),
+             dia = as_date(dia),
+             date_created = as_date(date_created),
+             last_updated = as_date(last_updated))
+```
 
-
+```{r NAs}
+aptos %>% select(-'mlu1472-mtrs',-'mlu1472-mtrstotal') %>% drop_na()
+aptos %>% select(-'mlu1472-mtrs',-'mlu1472-mtrstotal', -'seller_contact') %>% drop_na()
+aptos %>% select(-'mlu1472-mtrs',-'mlu1472-mtrstotal', -'seller_contact', -'has_air_conditioning',
+                 - 'has_telephone_line') %>% drop_na()
 ```
 
 
+
 ```{r state, fig.cap = 'Gráfico de barras del departamento dónde está ubicado el inmueble'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(state_name)), y = (..count..)/sum(..count..), fill = state_name)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -40,17 +69,9 @@ datos_apt %>% ggplot() +
 
 
 
-De ahora en más, trabajamos filtrando al depto de interés: Montevideo.
-
-
-```{r}
-datos_apt <- datos_apt %>% filter(state_name == 'Montevideo')
-```
-
-
 
 ```{r operacion, fig,cap = 'Gráfico de barras del tipo de operación de los apartamentos'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(operation)), y = (..count..)/sum(..count..), fill = operation)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -68,7 +89,7 @@ datos_apt %>% ggplot() +
 
 ```{r precio, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según el tipo de operación'}
 
-datos_apt %>% ggplot(aes(x=as.character(operation), y=log(price), fill=as.character(operation))) + 
+aptos %>% ggplot(aes(x=as.character(operation), y=log(price), fill=as.character(operation))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
@@ -87,7 +108,7 @@ datos_apt %>% ggplot(aes(x=as.character(operation), y=log(price), fill=as.charac
 
 
 ```{r itemcond, fig.cap='Gráfico de barras de la condición del apartamento'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(item_condition)), y = (..count..)/sum(..count..), fill = item_condition)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -104,7 +125,7 @@ datos_apt %>% ggplot() +
 
 ```{r itemcondv, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según la condición del item'}
 
-datos_apt %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
+aptos %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
@@ -124,7 +145,7 @@ datos_apt %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.c
 
 ```{r itemcondop, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según la condición del item y por tipo de operación'}
 
-datos_apt %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
+aptos %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
@@ -144,7 +165,7 @@ datos_apt %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.c
 
 
 ```{r fullbath, fig.cap = 'Gráfico de barras de la cantidad de baños completos'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -160,7 +181,7 @@ datos_apt %>% ggplot() +
 
 
 ```{r bedrooms, fig.cap = 'Gráfico de barras de la cantidad de habitaciones'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(bedrooms)), y = (..count..)/sum(..count..), fill = bedrooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -174,7 +195,7 @@ datos_apt %>% ggplot() +
 ```
 
 ```{r rooms, fig.cap = 'Gráfico de barras de la cantidad de habitaciones'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(rooms)), y = (..count..)/sum(..count..), fill = rooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -190,7 +211,7 @@ datos_apt %>% ggplot() +
 
 ```{r area, fig.cap='Histograma del área cubierta (en m2). Cómo es de esperar dado que estamos trabajando con información de apartamentos, el área total y área cubierta resulta similar'}
 
-datos_apt %>% select(covered_area, total_area) %>% 
+aptos %>% select(covered_area, total_area) %>% 
       pivot_longer(cols = c('covered_area','total_area'), names_to = c('Area')) %>% 
       ggplot() +
       geom_histogram(aes(x = value, fill = Area)) +
@@ -208,7 +229,7 @@ datos_apt %>% select(covered_area, total_area) %>%
 
 ```{r calidadpic, fig.cap='Gráfico de barras de la calidad de la imágen' }
 
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(tags)), y = (..count..)/sum(..count..), fill = tags)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -222,8 +243,31 @@ datos_apt %>% ggplot() +
 
 ```
 
+
+```{r precio, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según la calidad de la imagen'}
+
+aptos %>% ggplot(aes(x=as.character(tags), y=log(price), fill=as.character(tags))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none')  +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      scale_fill_manual(values = c('navyblue', 'darkgreen', 'firebrick', 'gray')) # no reconoce color
+
+```
+
+
+
+
+
 ```{r aircond, fig.cap = 'Tiene aire acondicionado'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(has_air_conditioning)), y = (..count..)/sum(..count..), fill = has_air_conditioning)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -243,7 +287,7 @@ datos_apt %>% ggplot() +
 
 
 ```{r line, fig.cap = 'Tiene línea telefónica'}
-datos_apt %>% ggplot() +
+aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(has_telephone_line)), y = (..count..)/sum(..count..), fill = has_telephone_line)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
@@ -259,20 +303,20 @@ datos_apt %>% ggplot() +
 
 
 ```{r, eval = FALSE}
-datos_apt %>% group_by(property_type) %>% summarise(conteo = n())
-datos_apt %>% group_by(farm_house_rooms) %>% summarise(conteo = n())
-datos_apt %>% group_by(buying_mode) %>% summarise(conteo = n())
-datos_apt %>% group_by(condition) %>% summarise(conteo = n())
-datos_apt %>% group_by(item_condition) %>% summarise(conteo = n())
+aptos %>% group_by(property_type) %>% summarise(conteo = n())
+aptos %>% group_by(farm_house_rooms) %>% summarise(conteo = n())
+aptos %>% group_by(buying_mode) %>% summarise(conteo = n())
+aptos %>% group_by(condition) %>% summarise(conteo = n())
+aptos %>% group_by(item_condition) %>% summarise(conteo = n())
 ```
 
-
+\newpage
 
 ```{r, results='asis'}
-kable(datos_apt %>% filter(state_name == 'Montevideo') %>%
+kable(aptos %>% filter(state_name == 'Montevideo') %>%
       group_by(city_name) %>% summarise(conteo = n()) %>%
       mutate(prop = conteo/sum(conteo)*100) %>%
-      arrange(desc(prop)) %>% filter(prop > 2))  
+      arrange(desc(prop))) 
 
 ```
 
