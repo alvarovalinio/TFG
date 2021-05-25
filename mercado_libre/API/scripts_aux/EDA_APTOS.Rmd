@@ -13,6 +13,7 @@ library(data.table)
 library(tidyverse)
 library(knitr)
 library(lubridate)
+library(magrittr)
 ```
 
 
@@ -21,17 +22,17 @@ library(lubridate)
 barrios_aptos <- list.files(path = here("mercado_libre/API/datos/apt/202105"), pattern = "*.csv", full.names = T)
 barrios_casas <- list.files(path = here("mercado_libre/API/datos/casas/202105"), pattern = "*.csv", full.names = T)
 
-aptos <- sapply(barrios_aptos, FUN=function(id_barrio){
+aptos_total <- sapply(barrios_aptos, FUN=function(id_barrio){
       read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
 
-casas <- sapply(barrios_casas, FUN=function(id_barrio){
+casas_total <- sapply(barrios_casas, FUN=function(id_barrio){
       read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
 
 ```
 
 
 ```{r}
-aptos <- aptos %>%  
+aptos_total <- aptos_total %>%  
       separate(col = 'covered_area', into = c("covered_area", "covered_area_unidad"), sep = "\\s") %>% 
       separate(col = 'total_area', into = c('total_area', 'total_area_unidad'), sep = "\\s") %>%
       mutate(covered_area =  as.numeric(covered_area),
@@ -45,6 +46,12 @@ aptos <- aptos %>%
 ```
 
 
+```{r limpiado}
+cuantil <- aptos_total %>% filter(price < 40000) %>% select(price) %$% quantile(.$price, 0.25)
+
+aptos <- aptos_total %>% filter(price != 11111111, price != 111111111, price > cuantil)
+```
+
 El total de observaciones sin `NA` es de:
 
 ```{r NAs}
@@ -52,7 +59,7 @@ dim(aptos %>% select(-'mlu1472-mtrs',-'mlu1472-mtrstotal', -'seller_contact', -'
                  - 'has_telephone_line') %>% drop_na())[1]
 ```
 
-Sobrre un total de `48319` observaciones, lo cual representa el  `43 %` de las observaciones. 
+Sobrre un total de `48247` observaciones, lo cual representa el  `43 %` de las observaciones. 
 
 
 ```{r precio,  fig.cap='Histograma del precio de oferta de los apartamentos a la venta en Montevideo (en logaritmos)'}
@@ -87,9 +94,31 @@ aptos %>% ggplot() +
 ```
 
 
-```{r itemcondviolin, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según la condición del item'}
+```{r itemcondviolin1, fig.cap='Gráfico de Violin del precio de publicación según la condición del item'}
 
-aptos %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
+aptos %>% filter(price < quantile(aptos$price, 0.9),
+                 price > quantile(aptos$price, 0.1)) %>%
+      ggplot(aes(x=as.character(item_condition), y=price, fill=as.character(item_condition))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+                  scale_x_discrete() +
+      ylab('Precio de publicación') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') 
+```
+
+
+
+```{r itemcondviolin, fig.cap='Gráfico de Violin del precio de publicación según la condición del item'}
+
+aptos %>% 
+      ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.character(item_condition))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
@@ -101,8 +130,8 @@ aptos %>% ggplot(aes(x=as.character(item_condition), y=log(price), fill=as.chara
             legend.position = 'none') +
                   scale_x_discrete() +
       ylab('Precio de publicación (en logaritmos)') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') 
-
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      ylim(9,14)
 ```
 
 
@@ -126,7 +155,8 @@ aptos %>% mutate(full_bathrooms = as.numeric(full_bathrooms),
                   scale_x_discrete() +
       ylab('Precio de publicación (en logaritmos)') +
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      facet_wrap(~banios, ncol = 3)
+      facet_wrap(~banios, ncol = 3) +
+      ylim(8,14)
 
 ```
 
@@ -198,16 +228,16 @@ aptos %>% mutate(full_bathrooms = as.numeric(full_bathrooms),
 
 ```{r rooms, fig.cap = 'Gráfico de barras de la cantidad de habitaciones'}
 aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(bedrooms)), y = (..count..)/sum(..count..), fill = bedrooms)) +
+      geom_bar(aes(x = fct_infreq(as.factor(rooms)), y = (..count..)/sum(..count..), fill = rooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
             axis.title.x = element_text(face = 'bold', size = 12),
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
-      geom_text(aes(x = as.factor(bedrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
+      geom_text(aes(x = as.factor(rooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
                     y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
-      labs(x = 'Cantidad de dormitorios')
+      labs(x = 'Cantidad de habitaciones')
 ```
 
 
@@ -237,23 +267,43 @@ aptos %>% mutate(rooms = as.numeric(rooms),
 
 
 
-
-
-
-
 ```{r bedrooms, fig.cap = 'Gráfico de barras de la cantidad de dormitorios'}
 aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(rooms)), y = (..count..)/sum(..count..), fill = rooms)) +
+      geom_bar(aes(x = fct_infreq(as.factor(bedrooms)), y = (..count..)/sum(..count..), fill = bedrooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
             axis.title.x = element_text(face = 'bold', size = 12),
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
-      geom_text(aes(x = as.factor(rooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
+      geom_text(aes(x = as.factor(bedrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
                     y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
       labs(x = 'Cantidad de dormitorios')
 ```
+
+```{r pricebedrooms, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según el apartamento tenga 0, 1, o más de 1 dormitorio'}
+
+aptos %>% mutate(bedrooms = as.numeric(bedrooms),
+                 bedrooms_discrete = ifelse(is.na(bedrooms), NA,
+                                 ifelse(bedrooms == 0, '0 dormitorio',
+                                        ifelse(bedrooms == 1, '1 dormitorio', 'Más de 1 dormitorio')))) %>%
+      ggplot(aes(x=as.character(bedrooms_discrete), y=log(price), fill=as.character(bedrooms_discrete))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+                  scale_x_discrete() +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      ylim(8,15)
+
+```
+
 
 
 ```{r area, fig.cap='Histograma del área cubierta (en m2). Cómo es de esperar dado que estamos trabajando con información de apartamentos, el área total y área cubierta resulta similar'}
@@ -310,9 +360,6 @@ aptos %>% ggplot(aes(x=as.character(tags), y=log(price), fill=as.character(tags)
 ```
 
 
-
-
-
 ```{r aircond, fig.cap = 'Tiene aire acondicionado'}
 aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(has_air_conditioning)), y = (..count..)/sum(..count..), fill = has_air_conditioning)) +
@@ -325,11 +372,26 @@ aptos %>% ggplot() +
       geom_text(aes(x = as.factor(has_air_conditioning),label = scales::percent(round((..count..)/sum(..count..), 2)), 
                     y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 4) + 
       labs(x = 'Tiene aire acondicionado')
-
-
-
 ```
 
+
+```{r preciopic, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según tiene aire acondicionado'}
+
+aptos %>% ggplot(aes(x=as.character(has_air_conditioning), y=log(price), fill=as.character(has_air_conditioning))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none')  +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      scale_fill_manual(values = c('navyblue', 'darkgreen', 'firebrick', 'gray')) # no reconoce color
+
+```
 
 
 
