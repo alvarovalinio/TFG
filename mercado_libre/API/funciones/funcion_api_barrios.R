@@ -8,6 +8,7 @@ library(httr)
 library(jsonlite)
 library(tidyverse)
 library(data.table)
+library(here)
 
 datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt=T,token=T, atributos = T){
   
@@ -56,17 +57,23 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   
     url_ini <- 'https://api.mercadolibre.com/sites/MLU/search?category=MLU1474&limit=50&offset='
     
+    att_item  <- read_delim(here('mercado_libre/API/datos','atributos_item_apt.csv'), delim = ';') %>% 
+          filter(Incluir == 'SI') %>% select(id_atributo) %>% mutate(id_atributo = tolower(id_atributo))
+    
     } else {
   
     url_aux <- paste0('https://api.mercadolibre.com/sites/MLU/search?category=MLU1468&city=',id_barrio,'&limit=50&offset=')
   
     url_ini <- 'https://api.mercadolibre.com/sites/MLU/search?category=MLU1468&limit=50&offset='
-  }
+  
+    att_item  <- read_delim(here('mercado_libre/API/datos', 'atributos_item_casas.csv'), delim = ';')%>% 
+          filter(Incluir == 'SI') %>% select(id_atributo) %>% mutate(id_atributo = tolower(id_atributo))
+    }
 
   
   # Obtenemos lista de los atributos (5000 primeras observaciones)
   
-  sequence <- seq(from=0, to=5000, by=50)
+  sequence <- seq(from=0, to=500, by=50)
   
   # Atributos (más variables)
  
@@ -79,16 +86,19 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
     result_pag <- content(request_pag,type="text",encoding = "UTF-8") %>% fromJSON()
     # este for loop devuelve los atributos dentro de las 50 ibs iniciales
     # hay que adaptarlo para chequeat en 50 mas
+    
     for (i in 1:50) {
-      for (j in 1:length( result_pag$results$attributes[i][[1]]$id))
-        if (!(result_pag$results$attributes[i][[1]]$id[j] %in% atributos_v) == 'TRUE') {
+      for (j in 1:length(result_pag$results$attributes[i][[1]]$id)) {
+      
+        if (length(result_pag$results$attributes[i][[1]]$id) != 0 && !(result_pag$results$attributes[i][[1]]$id[j] %in% atributos_v) == 'TRUE') {
           atributos_v <- c(atributos_v, result_pag$results$attributes[i][[1]]$id[j])
         }
       
       
     }
   }
-  
+ }
+ 
   atributos_v <- tolower(atributos_v)
   
   #atributos_2<- result_pag$available_filters$id %>% tolower()
@@ -100,12 +110,13 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   }
   # Objeto para ir almacenado los datos
   
-  datos<- matrix(ncol = length(atributos_v)+18)
+  datos<- matrix(ncol = length(atributos_v) + 18 + nrow(att_item))
   colnames(datos) <- c("id","title","price","currency_id","buying_mode",     
-                           "condition","accepts_mercadopago",
-                           "state_name","city_name","category_id",
-                           "latitude","longitude","tags","seller_contact","id_city","id_state","date_created","last_updated"
-                       ,sort(tolower(atributos_v)))
+                       "condition","accepts_mercadopago",
+                       "state_name","city_name","category_id",
+                       "latitude","longitude","tags","seller_contact","id_city","id_state","date_created","last_updated"
+                       ,sort(tolower(atributos_v)), sort(tolower(att_item$id_atributo)))
+  
   datos <- as.data.frame(datos)
   
   
@@ -220,7 +231,7 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
       
       # Diferenciamos por si "faltan o sobran" atributos (en funcion de los primeros 5000)
       
-      if(nrow(atributos)>=length(attr$id)){
+      if(nrow(atributos)>length(attr$id)){
         
         
         faltan <- data.frame(atributos %>% filter(!(V1%in%attr$id)) %>% select(V1))
@@ -262,8 +273,21 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
       create <- result_desc$date_created
       
       #salida <- data.frame(date_created=create,last_updated=last)
+      if(length(result_desc$attributes$id) > 0) {
+      att <- as.data.table(cbind(result_desc$attributes$id, 
+                                 result_desc$attributes$value_name)) %>%
+            rename( id_atributo = V1, value_name = V2) %>% 
+            mutate(id_atributo = tolower(id_atributo)) %>% 
+            filter(id_atributo %in% att_item$id_atributo)
       
-      return(c(create,last,attr))
+      att <- att_item %>% left_join(att, by = 'id_atributo') %>% arrange(id_atributo)
+      att <- att %>% pivot_wider(names_from=id_atributo,values_from = value_name)
+      } else {
+      att <- att_item %>% mutate(value_name = NA) %>% 
+            pivot_wider(names_from=id_atributo,values_from = value_name)
+      }
+      
+      return(c(create,last,attr,att))
       
     })
     
@@ -272,9 +296,7 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
     
     atributos_aux <- atributos_aux %>% rename(date_created=V1,last_updated=V2)
     
-    
-    
-    
+   
     #Combina todas las variables y las une al dataframe principal de la categor?a
     variables<-cbind(id,title,price, currency, mode, cond, mpago, staten, cityn, 
                      subcat,latitude,longitude,tags,seller_contact,id_city,id_state)
@@ -285,9 +307,6 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
                              "latitude","longitude","tags","seller_contact","id_city","id_state")
     
     
-
-  
- 
   # Hacemos join entre variables y atributos_aux por id
     
   atributos_aux$id<- row.names(atributos_aux)
