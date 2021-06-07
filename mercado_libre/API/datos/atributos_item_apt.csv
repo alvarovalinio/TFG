@@ -1,0 +1,112 @@
+id_atributo;Nombre;Incluir
+apartment_property_subtype;;
+apartments_per_floor;Apartamentos por piso;SI
+balcony_area;;
+bedrooms;;
+beds;;
+canonical_url;URL (cruzar con inmobiliaria);SI
+cmg_site;;
+contact_schedule;;
+covered_area;;
+disposition;Disposicion (Frente, interior, etc);SI
+facing;Orientacion (Sur,Norte,.);
+floors;Cantidad de pisos;SI
+full_bathrooms;;
+furnished;;
+guests;;
+has_air_conditioning;;
+has_alarm;;
+has_attic;;
+has_balcony;Tiene Balcon;SI
+has_basketball_court;;
+has_bedroom_suite;;
+has_boiler;;
+has_breakfast_bar;;
+has_business_center;;
+has_cable_tv;;
+has_cinema_hall;;
+has_cistern;;
+has_closet;;
+has_common_laundry;Area lavanderia;SI
+has_cutlery;;
+has_dinning_room;;
+has_dressing_room;;
+has_electric_gate_opener;;
+has_electric_light;;
+has_fitting_room;;
+has_front_desk;;
+has_garden;Tiene jardin;SI
+has_grill;;
+has_guest_parking;;
+has_gym;Tiene gimnasio;SI
+has_half_bath;;
+has_heating;Tiene calefacccion;SI
+has_indoor_fireplace;;
+has_internet_access;;
+has_jacuzzi;;
+has_kitchen;;
+has_laundry;;
+has_lift;Tiene ascensor;SI
+has_living_room;;
+has_maid_room;;
+has_meeting_room;;
+has_microwave;;
+has_multipurpose_room;;
+has_natural_gas;;
+has_paddle_court;;
+has_party_room;Tiene salon de fiestas;SI
+has_patio;Tiene patio;SI
+has_playground;;
+has_playroom;;
+has_refrigerator;;
+has_roof_garden;;
+has_security;Tiene seguridad;SI
+has_study;;
+has_swimming_pool;Tiene pscina;SI
+has_tap_water;;
+has_telephone_line;;
+has_tennis_court;;
+has_terrace;Tiene terraza;SI
+has_washing_machine;;
+item_condition;;
+land_access;;
+lot_depth;;
+maintenance_fee;Gastos comunes;SI
+mlu1472-bauleradcl;;
+mlu1472-bibliot;;
+mlu1472-depserv;;
+mlu1472-edific;;
+mlu1472-elevatser;;
+mlu1472-entrepiso;;
+mlu1472-escritorio;;
+mlu1472-estado;;
+mlu1472-estar;;
+mlu1472-estavisi;;
+mlu1472-guarderia;;
+mlu1472-internet;;
+mlu1472-kitchene;;
+mlu1472-laundry;;
+mlu1472-livcom;;
+mlu1472-losa;;
+mlu1472-lugar;;
+mlu1472-luminos;;
+mlu1472-mtrs;;
+mlu1472-mtrstotal;;
+mlu1472-salajun;;
+mlu1472-spa;;
+mlu1472-telef;;
+mlu1472-toil;;
+mlu1472-tvcable;;
+operation;;
+operation_subtype;;
+parking_lots;Cocheras;SI
+professional_use_allowed;;
+property_age;Antigüedad;SI
+property_code;;
+property_type;;
+rooms;;
+suitable_for_mortgage_loan;;
+total_area;;
+unit_floor;numero de piso de la unidad;SI
+warehouses;;
+with_virtual_tour;;
