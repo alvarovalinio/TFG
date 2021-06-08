@@ -73,7 +73,7 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
   
   # Obtenemos lista de los atributos (5000 primeras observaciones)
   
-  sequence <- seq(from=0, to=500, by=50)
+  sequence <- seq(from=0, to=5000, by=50)
   
   # Atributos (más variables)
  
@@ -247,10 +247,32 @@ datos_barrio <- function(clientid,secret,code='primero',redict_url,id_barrio,apt
         
       } else {
         
+        # Puede ser que tenga más pero no quiere decir que esten todos
+        # los atributos
         
-        attr <- data.frame(attr %>% filter(id%in%atributos$V1))
+        attr_aux <- data.frame(attr %>% filter(id%in%atributos$V1))
         
-      }
+        # Dos casos
+        
+          if(nrow(attr_aux)==nrow(atributos)){
+            
+            attr <- attr_aux
+            
+          } else {
+            
+            faltan <- data.frame(atributos %>% filter(!(V1%in%attr$id)) %>% select(V1))
+            
+            colnames(faltan) <- "id"
+            
+            faltan$value_name <- NA
+            
+            attr <- rbind(attr_aux,faltan)
+            
+            
+            
+          }
+      
+        }
       
       
       attr <- attr %>% arrange(id)
