@@ -11,21 +11,25 @@ library(sp)
 library(scales) 
 library(geosphere) #para medir distancias
 
+# Funciones auxiliares
+
+source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
+
 
 barrios_aptos <- list.files(path = here("mercado_libre/API/datos/apt/202106"), pattern = "*.csv", full.names = T)
 
-aptos <- sapply(barrios_aptos, FUN=function(id_barrio){
+datos <- sapply(barrios_aptos, FUN=function(id_barrio){
       read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
 
 
-#source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
-#sapply(aptos, FUN=transf_apt)
+aptos <- transf_apt(datos)[["aptos"]]
+
 
 #filtramos lat y long valores que tienen sentido
 #aptos <- aptos %>% filter(latitude < -30, longitude < -50, longitude > -60)
 
 #Leemos vctorial INE
-mapa_barrio <- st_read("vectoriales_INE/ine_barrios")
+mapa_barrio <- st_read("mercado_libre/API/script_aux/Mapas/vectorial_INE_barrios/ine_barrios")
 #Pasa geometría a formato longlat 
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 

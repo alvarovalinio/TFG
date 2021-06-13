@@ -2,6 +2,13 @@
 
 # Cargamos funcion para filtrar los numeros con secuencia repetida
 
+# Librerias
+
+library(data.table)
+library(tidyverse)
+library(magrittr)
+library(rvest)
+
 source(here("mercado_libre/API/funciones","funcion_secuencia_3.R"))
 
 
@@ -76,7 +83,7 @@ transf_apt <- function(datos){
   
   # Filtrar por palabras claves si son inmobiliaria y lo demás como que No
   
-  for(i in 1:nrow(h)){
+  for(i in 1:nrow(aptos)){
     
     aptos$seller_contact[i] <- ifelse(mean(str_detect(tolower(aptos$seller_contact[i]), 
                                                       c('propiedad', 
