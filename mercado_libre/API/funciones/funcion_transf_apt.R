@@ -8,8 +8,14 @@ library(data.table)
 library(tidyverse)
 library(magrittr)
 library(rvest)
+library(here)
+library(lubridate)
+
+# Funciones auxiliares
 
 source(here("mercado_libre/API/funciones","funcion_secuencia_3.R"))
+
+source(here("mercado_libre/API/funciones","funcion_zonas_apt.R"))
 
 
 transf_apt <- function(datos){
@@ -108,6 +114,22 @@ transf_apt <- function(datos){
                                         as.character(.)))
   
   
+  # Agregamos variable segun la informacion observada en mapas.R
+  
+  # Agregamos variable con nomeclatura datos ine (logica mapa)
+  
+  aptos <- zonas_barrios(aptos)
+  
+  zonas <- aptos %>% group_by(NOMBBARR) %>% 
+    summarise(mediana = median(price,na.rm = T)) %>% mutate(zona = case_when(
+      mediana <= 100000 ~ "Bajo",
+      mediana <= 240000 ~ "Medio",
+      TRUE ~ "Alto"
+    )) 
+  
+  
+  aptos <- full_join(aptos,zonas[,-c(2)],by="NOMBBARR")
+  
   # proporcion de NAs
   
   p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),2)) %>% data.frame() %>% 
@@ -120,6 +142,27 @@ transf_apt <- function(datos){
   
   
   aptos <- unique(aptos)
+ 
+  
+  # Sacamos variables auxiliares - basura
+
+ aptos <-  aptos %>% select(-NOMBBARR,
+                   -dif_updated,
+                   -currency_id,
+                   -maintenance_fee_unidad,
+                   -canonical_url,
+                   -secuencia,
+                   -dia,
+                   -total_area_unidad,
+                   -operation,
+                   -id_state,
+                   -id_city,
+                   -category_id,
+                   -state_name,
+                   -apartments_per_floor,
+                   -buying_mode
+                   )
+  
  
  return(list(aptos=aptos,id_rep=id_rep,p_na=p_na))
  
