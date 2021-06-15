@@ -185,6 +185,53 @@ ggplot(mapa_barrio)+
 
 
 
+## Veamos la distribución de los NA de algunas variables por barrio
+
+p_na <- transf_apt(datos)[["p_na"]]
+
+# Item_condition
+
+m3_na <- aptos %>% filter(is.na(item_condition)) %>%  
+  group_by(NOMBBARR) %>% 
+  summarise(cantidad_na=n()) %>%
+  arrange(desc(cantidad_na))
+
+
+m3 <-  aptos %>%   
+  group_by(NOMBBARR) %>% 
+  summarise(cantidad=n()) %>%
+  arrange(desc(cantidad)) %>% left_join (m3_na,by="NOMBBARR") %>% 
+  mutate(cantidad_na=replace_na(cantidad_na,0)) %>% 
+  mutate(percent_na=round(cantidad_na/cantidad,3)) %>% left_join(m2,by="NOMBBARR") 
+
+
+
+mapa_barrio <- mapa_barrio %>% select(-price) %>%
+  left_join(m3, by="NOMBBARR") %>% 
+  arrange(desc(price)) %>% 
+  mutate(precio_pormil = round(price/1000,0))
+
+#Plots
+
+library(plotly)
+
+a <- ggplotly(mapa_barrio %>%  ggplot(aes(fill=percent_na,label2=precio_pormil,label3=NOMBBARR))+
+  geom_sf(tooltip=c("label2","label3")) +
+  coord_sf(xlim=c(-56.3,-56.04), ylim = c(-34.94, -34.80)) +
+  xlab('Longitud') +
+  ylab('Latitud') +
+  theme(axis.text.x = element_text(angle = 45),
+        text = element_text(family = 'Avenir'),
+        panel.grid.major = element_line(
+          color = '#cccccc',linetype = 'dashed',size = .3),
+        panel.background = element_rect(fill = 'aliceblue'),
+        axis.title = element_blank(),
+        axis.text = element_text(size = 8),
+        legend.position = 'bottom',
+        legend.text = element_text(angle = 0, size = 7),
+        legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+  scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Percent Na \n Item condition",
+                      labels = comma))
 
 
 #Otro formato para etiquetas:
