@@ -29,6 +29,22 @@ mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrio
 #Pasa geometría a formato longlat 
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
+#Leemos puntos shoppings
+mall <- st_read("mercado_libre/API/scripts_aux/Mapas/puntos_googlemaps/shoppings")
+#Pasa geometría a formato longlat 
+mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+mall <- mall %>% select(Name, geometry)
+
+#Leemos linea avd_italia
+avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avd_italia")
+#Pasa geometría a formato longlat 
+avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+avd_italia <- avd_italia %>% select(Name, geometry)
+
+
+
+
+
 # Match city names base aptos - NOMBARR base mapa_barrio
 aptos_city <- levels(as.factor(aptos$city_name))
 aptos_city <- as.data.table(aptos_city) %>% 
