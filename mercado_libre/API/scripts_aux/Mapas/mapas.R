@@ -25,7 +25,6 @@ aptos <- transf_apt(datos)[["aptos"]]
 
 #Leemos vctorial INE
 mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrios/ine_barrios")
-
 #Pasa geometría a formato longlat 
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
@@ -35,8 +34,8 @@ mall <- st_read("mercado_libre/API/scripts_aux/Mapas/puntos_googlemaps/shoppings
 mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 mall <- mall %>% select(Name, geometry)
 
-#Leemos linea avd_italia
-avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avd_italia")
+#Leemos linea avditalia_18
+avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avditalia_18")
 #Pasa geometría a formato longlat 
 avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 avd_italia <- avd_italia %>% select(Name, geometry)
