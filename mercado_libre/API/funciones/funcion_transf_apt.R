@@ -10,6 +10,9 @@ library(magrittr)
 library(rvest)
 library(here)
 library(lubridate)
+library(geosphere)
+
+#library(naniar) # Para NAS
 
 # Funciones auxiliares
 
@@ -129,6 +132,61 @@ transf_apt <- function(datos){
   
   
   aptos <- full_join(aptos,zonas[,-c(2)],by="NOMBBARR")
+  
+  
+  # Agregamos distancia al shopping
+  
+  #Leemos puntos shoppings
+  mall <- st_read("mercado_libre/API/scripts_aux/Mapas/puntos_googlemaps/shoppings")
+  #Pasa geometría a formato longlat 
+  mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  mall <- mall %>% select(Name, geometry)
+  
+  
+  shops <- st_coordinates(mall) %>% data.frame()
+  
+  colnames(shops) <- c("lon","lat","id")
+  
+  
+  aptos$dist_shop <- NA
+  
+  for(i in 1:nrow(aptos)){
+    
+    if(!is.na(aptos$latitude[i])){
+      
+      aux_dist <- distm(c(aptos$longitude[i],aptos$latitude[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
+      ) 
+      
+      
+      
+      for(j in 2:nrow(shops)){
+        
+        
+        aux_dist_2  <- distm(c(aptos$longitude[i],aptos$latitude[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
+        ) 
+        
+        
+      }
+      
+      
+      if(aux_dist_2 < aux_dist){
+        
+        aux_dist <- aux_dist_2
+        
+        aptos$dist_shop <- aux_dist[1]
+        
+      } else {
+        
+        aptos$dist_shop[i] <- aux_dist[1]
+        
+        
+      }
+      
+    } 
+    
+  }
+  
+  
   
   # proporcion de NAs
   
