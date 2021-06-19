@@ -133,7 +133,10 @@ transf_apt <- function(datos,na=FALSE){
   
   aptos <- full_join(aptos,zonas[,-c(2)],by="NOMBBARR")
   
+  # HACER FUNCION LO QUE SIGE Y ACORDASE DEQUE SI SACO ZONAS EXPLOTA PQ FALTA
+  # NOMBBAR
   
+  #############################################################################
   # Agregamos distancia al shopping
   
   #Leemos puntos shoppings
@@ -142,19 +145,65 @@ transf_apt <- function(datos,na=FALSE){
   mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
   mall <- mall %>% select(Name, geometry)
   
-  
   shops <- st_coordinates(mall) %>% data.frame()
   
   colnames(shops) <- c("lon","lat","id")
+  
+  # Leemos la geometria de barrios para sacar los baricentros
+  
+  source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
+  
+  #Leemos vctorial INE
+  mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrios/ine_barrios")
+  
+  #Pasa geometría a formato longlat 
+  mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  
+ 
+  
+  # Obtenemos las coordenadas por barrio
+  
+  barrios_coord <- lapply(mapa_barrio$NOMBBARR[1], FUN = function(barrio){
+    aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
+    coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
+    coordenadas$NOMBBARR <- barrio
+    return(coordenadas)
+  })[[1]]
+  
+  for(i in 2:nrow(mapa_barrio)){
+    
+    
+    aux_barrio_coord <- lapply(mapa_barrio$NOMBBARR[i], FUN = function(barrio){
+      aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
+      coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
+      coordenadas$NOMBBARR <- barrio
+      return(coordenadas)
+    })[[1]]
+    
+    barrios_coord <- rbind(barrios_coord,aux_barrio_coord)
+    
+  }
+  
+  # Obtenemos baricentro por barrio
+  
+  baricentro_barrios <- barrios_coord %>%
+    group_by(NOMBBARR) %>% 
+    summarise(lon_barrio = mean(X, na.rm = TRUE),
+              lat_barrio = mean(Y, na.rm = TRUE))
+  
+  # Agregamos lat y long baricentro por barrios
+  
+  aptos <- full_join(aptos,baricentro_barrios,by="NOMBBARR")
+  
   
   
   aptos$dist_shop <- NA
   
   for(i in 1:nrow(aptos)){
     
-    if(!is.na(aptos$latitude[i])){
+    if(!is.na(aptos$lon_barrio[i])){
       
-      aux_dist <- distm(c(aptos$longitude[i],aptos$latitude[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
+      aux_dist <- distm(c(aptos$lon_barrio[i],aptos$lat_barrio[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
       ) 
       
       
@@ -162,31 +211,31 @@ transf_apt <- function(datos,na=FALSE){
       for(j in 2:nrow(shops)){
         
         
-        aux_dist_2  <- distm(c(aptos$longitude[i],aptos$latitude[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
+        aux_dist_2  <- distm(c(aptos$lon_barrio[i],aptos$lat_barrio[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
         ) 
         
         
-      if(aux_dist_2 < aux_dist){
-        
-        aux_dist <- aux_dist_2
-        
-        aptos$dist_shop[i] <- aux_dist[1]
-        
-      } else {
-        
-        aptos$dist_shop[i] <- aux_dist[1]
-        
-        
-      }
-    
-      }    
+        if(aux_dist_2 < aux_dist){
           
+          aux_dist <- aux_dist_2
+          
+          aptos$dist_shop[i] <- aux_dist[1]
+          
+        } else {
+          
+          aptos$dist_shop[i] <- aux_dist[1]
+          
+          
+        }
+        
+      }    
+      
     } 
     
   }
   
   
-  
+  #################################################################
 
   # Hay ids repetidos?
   

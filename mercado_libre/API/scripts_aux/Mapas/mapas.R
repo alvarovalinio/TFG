@@ -21,10 +21,11 @@ datos <- sapply(barrios_aptos, FUN=function(id_barrio){
       read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
 
 
-aptos <- transf_apt(datos)[["aptos"]]
+aptos <- transf_apt(datos,na=0.02)[["aptos"]]
 
 #Leemos vctorial INE
 mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrios/ine_barrios")
+
 #Pasa geometría a formato longlat 
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
@@ -34,13 +35,42 @@ mall <- st_read("mercado_libre/API/scripts_aux/Mapas/puntos_googlemaps/shoppings
 mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 mall <- mall %>% select(Name, geometry)
 
-#Leemos linea avditalia_18
-avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avditalia_18")
+#Leemos linea avd_italia
+avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avd_italia")
 #Pasa geometría a formato longlat 
 avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 avd_italia <- avd_italia %>% select(Name, geometry)
 
 
+# Obtenemos las coordenadas por barrio
+
+barrios_coord <- lapply(mapa_barrio$NOMBBARR[1], FUN = function(barrio){
+  aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
+  coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
+  coordenadas$NOMBBARR <- barrio
+  return(coordenadas)
+})[[1]]
+
+for(i in 2:nrow(mapa_barrio)){
+  
+  
+  aux_barrio_coord <- lapply(mapa_barrio$NOMBBARR[i], FUN = function(barrio){
+    aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
+    coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
+    coordenadas$NOMBBARR <- barrio
+    return(coordenadas)
+  })[[1]]
+  
+  barrios_coord <- rbind(barrios_coord,aux_barrio_coord)
+  
+}
+
+# Obtenemos baricentro por barrio
+
+baricentro_barrios <- barrios_coord %>%
+  group_by(NOMBBARR) %>% 
+  summarise(lat_barrio = mean(X, na.rm = TRUE),
+            lon_barrio = mean(Y, na.rm = TRUE))
 
 
 
@@ -139,6 +169,38 @@ ggplot(mapa_barrio)+
             legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
       scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Precio promedio \n por mil",
                           labels = comma)
+
+
+
+# Veamos puntos del baricentro en los barrios
+
+
+#mapa_barrio <- full_join(mapa_barrio, baricentro_barrios, by = 'NOMBBARR')
+
+baricentro_barrios_sf<- baricentro_barrios %>% 
+  st_as_sf(coords = c("lat_barrio","lon_barrio"), crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+baricentro_barrios_sf_t <- st_transform(baricentro_barrios_sf,crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+
+ggplot(mapa_barrio)+
+  geom_sf(aes(fill=NOMBBARR)) +
+  xlab('Longitud') +
+  ylab('Latitud') +
+  geom_sf_text(data = mapa_barrio, aes(label = NOMBBARR), 
+               color = 'white', fill = 'gray', size = 3) +
+  theme(axis.text.x = element_text(angle = 45),
+        text = element_text(family = 'Avenir'),
+        panel.grid.major = element_line(
+          color = '#cccccc',linetype = 'dashed',size = .3),
+        panel.background = element_rect(fill = 'aliceblue'),
+        axis.title = element_blank(),
+        axis.text = element_text(size = 8),
+        legend.position = 'None',
+        legend.text = element_text(angle = 0, size = 7),
+        legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+  geom_sf(data=baricentro_barrios_sf_t,aes(color=NOMBBARR))
+
 
 
 
