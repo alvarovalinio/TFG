@@ -21,7 +21,7 @@ source(here("mercado_libre/API/funciones","funcion_secuencia_3.R"))
 source(here("mercado_libre/API/funciones","funcion_zonas_apt.R"))
 
 
-transf_apt <- function(datos){
+transf_apt <- function(datos,na=FALSE){
 
   datos <- datos %>% select(-"mlu1472-mtrs",-"mlu1472-mtrstotal")  
   
@@ -166,14 +166,11 @@ transf_apt <- function(datos){
         ) 
         
         
-      }
-      
-      
       if(aux_dist_2 < aux_dist){
         
         aux_dist <- aux_dist_2
         
-        aptos$dist_shop <- aux_dist[1]
+        aptos$dist_shop[i] <- aux_dist[1]
         
       } else {
         
@@ -181,18 +178,16 @@ transf_apt <- function(datos){
         
         
       }
-      
+    
+      }    
+          
     } 
     
   }
   
   
   
-  # proporcion de NAs
-  
-  p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),2)) %>% data.frame() %>% 
-    rename(prop_na=".") %>% arrange(desc(prop_na))
-  
+
   # Hay ids repetidos?
   
   id_rep <- aptos %>% group_by(id) %>% summarise(cantidad=n()) %>% filter(cantidad>1)
@@ -222,6 +217,39 @@ transf_apt <- function(datos){
                    )
   
  
- return(list(aptos=aptos,id_rep=id_rep,p_na=p_na))
+ # proporcion de NAs
+ 
+ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
+   rename(prop_na=".") %>% arrange(desc(prop_na))
+ 
+ 
+ # Diferenciamos si incluimos aquellas variables que tienen Obs con NA 
+ 
+ # el parámetro na puede ser una tolerancia de la propoción
+ 
+ if(na==TRUE){
+   
+   return(list(aptos=aptos,id_rep=id_rep,p_na=p_na))
+   
+ } else if(na==FALSE){
+   
+   faltan <- c(row.names(p_na %>% filter(prop_na!=0)))
+   
+   aptos <- aptos %>% select(-c(faltan))
+   
+   return(list(aptos=aptos,id_rep=id_rep,p_na=p_na))
+   
+ } else{
+   
+   
+  faltan <- c(row.names(p_na %>% filter(prop_na>na)))
+   
+   aptos <- aptos %>% select(-c(faltan))
+   
+   return(list(aptos=aptos,id_rep=id_rep,p_na=p_na))
+   
+   }
+ 
+
  
  }
