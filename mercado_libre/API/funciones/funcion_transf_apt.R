@@ -150,52 +150,24 @@ transf_apt <- function(datos,na=FALSE){
   colnames(shops) <- c("lon","lat","id")
   
   # Leemos la geometria de barrios para sacar los baricentros
-  
-  source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
-  
-  #Leemos vctorial INE
   mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrios/ine_barrios")
   
   #Pasa geometría a formato longlat 
   mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
   
- 
-  
-  # Obtenemos las coordenadas por barrio
-  
-  barrios_coord <- lapply(mapa_barrio$NOMBBARR[1], FUN = function(barrio){
-    aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
-    coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
-    coordenadas$NOMBBARR <- barrio
-    return(coordenadas)
-  })[[1]]
-  
-  for(i in 2:nrow(mapa_barrio)){
-    
-    
-    aux_barrio_coord <- lapply(mapa_barrio$NOMBBARR[i], FUN = function(barrio){
-      aux <- mapa_barrio %>% filter(NOMBBARR == barrio)
-      coordenadas <- st_coordinates(aux$geometry) %>% data.frame()
-      coordenadas$NOMBBARR <- barrio
-      return(coordenadas)
-    })[[1]]
-    
-    barrios_coord <- rbind(barrios_coord,aux_barrio_coord)
-    
-  }
   
   # Obtenemos baricentro por barrio
   
-  baricentro_barrios <- barrios_coord %>%
-    group_by(NOMBBARR) %>% 
-    summarise(lon_barrio = mean(X, na.rm = TRUE),
-              lat_barrio = mean(Y, na.rm = TRUE))
+  centroide_barrios <- st_centroid(mapa_barrio)
+  centroide_barrios <- centroide_barrios %>%
+        mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
+               lat_barrio = st_coordinates(centroide_barrios$geometry)[,2]) %>%
+        select(NOMBBARR, lon_barrio, lat_barrio)
   
   # Agregamos lat y long baricentro por barrios
   
-  aptos <- full_join(aptos,baricentro_barrios,by="NOMBBARR")
-  
-  
+  aptos <- full_join(aptos,centroide_barrios,by="NOMBBARR")
+ 
   
   aptos$dist_shop <- NA
   
