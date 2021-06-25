@@ -115,6 +115,58 @@ transf_apt <- function(datos,na=FALSE){
                                ~if_else(is.na(.), 'No',
                                         as.character(.)))
   
+  
+  # todo los valores raros los ponemos con NA y despues vemos
+  
+  # Modificamos la variable bedrooms
+  
+  aptos <- aptos %>% mutate(bedrooms = ifelse(as.numeric(bedrooms)<=20,bedrooms,NA))
+  
+  # Recodificamos
+  
+  aptos <- aptos %>% mutate(bedrooms = factor(case_when(
+    as.numeric(bedrooms) == 0 ~ '0',
+    as.numeric(bedrooms) == 1 ~ '1',
+    as.numeric(bedrooms) == 2 ~ '2',
+    as.numeric(bedrooms) == 3 ~ '3',
+    TRUE ~ '4 o mas'
+  )))
+  
+  
+  # Modificamos la variable full_bathrooms
+  
+  aptos <- aptos %>% mutate(full_bathrooms = ifelse(as.numeric(full_bathrooms)<=10,
+                                                    full_bathrooms,NA))
+  
+  # Recodificamos
+  
+  aptos <- aptos %>% mutate(full_bathrooms = factor(case_when(
+    as.numeric(full_bathrooms) == 0 | as.numeric(full_bathrooms) == 1  ~ '1',
+    TRUE ~ '2 o mas'
+  )))
+  
+  
+  # Modificamos la variable covered_area, asignamos la secuencia de 3 como NA
+  
+  aptos$secuencia_area <- sapply(aptos$covered_area,FUN=secuencia_3)
+  
+  aptos <- aptos %>% mutate(covered_area=ifelse(secuencia_area=='No',
+                                                covered_area,NA)) %>% select(-secuencia_area)
+  
+  
+  # Modificamos la variable total_area, asignamos la secuencia de 3 como NA
+  
+  aptos$secuencia_area <- sapply(aptos$total_area,FUN=secuencia_3)
+  
+  aptos <- aptos %>% mutate(total_area=ifelse(secuencia_area=='No',
+                                                total_area,NA)) %>% select(-secuencia_area)
+  
+  # Creamos nueva variable, diferencia entre total - covered
+  
+  aptos <- aptos %>% mutate(no_covered_area =ifelse(total_area - covered_area<0,NA,
+                                                    total_area - covered_area))
+  
+  
   # Para hacer debuggin
   
   aux <- aptos
@@ -153,7 +205,8 @@ transf_apt <- function(datos,na=FALSE){
                    -category_id,
                    -state_name,
                    -apartments_per_floor,
-                   -buying_mode
+                   -buying_mode,
+                   -parking_lots # Valores muy raros
                    )
   
  
