@@ -18,7 +18,6 @@ library(geosphere)
 
 source(here("mercado_libre/API/funciones","funcion_secuencia_3.R"))
 
-source(here("mercado_libre/API/funciones","funcion_zonas_apt.R"))
 
 
 transf_apt <- function(datos,na=FALSE){
@@ -116,99 +115,19 @@ transf_apt <- function(datos,na=FALSE){
                                ~if_else(is.na(.), 'No',
                                         as.character(.)))
   
+  # Para hacer debuggin
   
-  # Agregamos variable segun la informacion observada en mapas.R
+  aux <- aptos
   
-  # Agregamos variable con nomeclatura datos ine (logica mapa)
+  # Agregamos distancia a los shops
   
-  aptos <- zonas_barrios(aptos)
+  #source(here("mercado_libre/API/funciones","funcion_shops_apt.R"))
   
-  zonas <- aptos %>% group_by(NOMBBARR) %>% 
-    summarise(mediana = median(price,na.rm = T)) %>% mutate(zona = case_when(
-      mediana <= 100000 ~ "Bajo",
-      mediana <= 240000 ~ "Medio",
-      TRUE ~ "Alto"
-    )) 
+  eval(parse(here("mercado_libre/API/funciones","funcion_shops_apt.R"), encoding="UTF-8"))
+  
+  aptos <- shops_barrios(aptos)
   
   
-  aptos <- full_join(aptos,zonas[,-c(2)],by="NOMBBARR")
-  
-  # HACER FUNCION LO QUE SIGE Y ACORDASE DEQUE SI SACO ZONAS EXPLOTA PQ FALTA
-  # NOMBBAR
-  
-  #############################################################################
-  # Agregamos distancia al shopping
-  
-  #Leemos puntos shoppings
-  mall <- st_read("mercado_libre/API/scripts_aux/Mapas/puntos_googlemaps/shoppings")
-  #Pasa geometría a formato longlat 
-  mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-  mall <- mall %>% select(Name, geometry)
-  
-  shops <- st_coordinates(mall) %>% data.frame()
-  
-  colnames(shops) <- c("lon","lat","id")
-  
-  # Leemos la geometria de barrios para sacar los baricentros
-  mapa_barrio <- st_read("mercado_libre/API/scripts_aux/Mapas/vectorial_INE_barrios/ine_barrios")
-  
-  #Pasa geometría a formato longlat 
-  mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-  
-  
-  # Obtenemos baricentro por barrio
-  
-  centroide_barrios <- st_centroid(mapa_barrio)
-  centroide_barrios <- centroide_barrios %>%
-        mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
-               lat_barrio = st_coordinates(centroide_barrios$geometry)[,2]) %>%
-        select(NOMBBARR, lon_barrio, lat_barrio)
-  
-  # Agregamos lat y long baricentro por barrios
-  
-  aptos <- full_join(aptos,centroide_barrios,by="NOMBBARR")
- 
-  
-  aptos$dist_shop <- NA
-  
-  for(i in 1:nrow(aptos)){
-    
-    if(!is.na(aptos$lon_barrio[i])){
-      
-      aux_dist <- distm(c(aptos$lon_barrio[i],aptos$lat_barrio[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
-      ) 
-      
-      
-      
-      for(j in 2:nrow(shops)){
-        
-        
-        aux_dist_2  <- distm(c(aptos$lon_barrio[i],aptos$lat_barrio[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
-        ) 
-        
-        
-        if(aux_dist_2 < aux_dist){
-          
-          aux_dist <- aux_dist_2
-          
-          aptos$dist_shop[i] <- aux_dist[1]
-          
-        } else {
-          
-          aptos$dist_shop[i] <- aux_dist[1]
-          
-          
-        }
-        
-      }    
-      
-    } 
-    
-  }
-  
-  
-  #################################################################
-
   # Hay ids repetidos?
   
   id_rep <- aptos %>% group_by(id) %>% summarise(cantidad=n()) %>% filter(cantidad>1)
