@@ -1,12 +1,14 @@
 # Script para obtener los datos de la api por barrios
 
+# Y luego realizar el proceso de limpieza
+
 library(here)
 
 # Cargamos id_barrios
 
 load(here("mercado_libre/API/funciones","id_barrios.Rdata"))
 
-# Cargamos funcion
+# Cargamos funcion para obtener los datos de la api
 
 source(here("mercado_libre/API/funciones","funcion_api_barrios.R"))
 
@@ -15,18 +17,18 @@ source(here("mercado_libre/API/funciones","funcion_api_barrios.R"))
 
 clientID <- Sys.getenv("Client_ID")
 secret <- Sys.getenv("Secret_ID")
-code <- 'TG-609f0fba672706000740803c-219703207' # Por cada token hay que generar uno
+code <- 'TG-60c03845cd8428000d855951-219703207' # Por cada token hay que generar uno
 redict_url <-  'https://www.mercadolibre.com.uy/' # Fijado al crear la "app"
 
 ### Apartamentos
 
-ruta_apt <- paste0("mercado_libre/API/datos/apt")
+ruta_apt_crudos <- paste0("mercado_libre/API/datos/apt/crudos")
 
 year_month <- paste0(substring(Sys.Date(),1,4),substring(Sys.Date(),6,7))
 
-dir.create(here(ruta_apt,year_month))
+dir.create(here(ruta_apt_crudos,year_month))
 
-ruta_apt_fecha <- paste0(ruta_apt,"/",year_month)
+ruta_apt_fecha_crudos <- paste0(ruta_apt_crudos,"/",year_month)
 
 for(i in 1:nrow(id_barrios)){
 
@@ -44,7 +46,7 @@ for(i in 1:nrow(id_barrios)){
     
    nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
    
-   fwrite(resultados$datos,file=here(ruta_apt_fecha,paste0(nombre,".csv")))
+   fwrite(resultados$datos,file=here(ruta_apt_fecha_crudos,paste0(nombre,".csv")))
    
    aux_response <- resultados$response
     
@@ -64,7 +66,7 @@ for(i in 1:nrow(id_barrios)){
   
   nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
   
-  fwrite(resultados$datos,file=here(ruta_apt_fecha,paste0(nombre,".csv")))  
+  fwrite(resultados$datos,file=here(ruta_apt_fecha_crudos,paste0(nombre,".csv")))  
     
   aux_response <- resultados$response
     
@@ -75,6 +77,34 @@ for(i in 1:nrow(id_barrios)){
   }
   
 }
+
+
+# Realizamos el proceso de limpieza para aptos
+
+# Cargamos funcion
+
+source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
+
+ruta_apt_limpios <- paste0("mercado_libre/API/datos/apt/limpios")
+
+year_month <- paste0(substring(Sys.Date(),1,4),substring(Sys.Date(),6,7))
+
+# Aplicamos limpieza la datos crudos del mes
+
+
+barrios_aptos <- list.files(path = here(ruta_apt_fecha_crudos), pattern = "*.csv", full.names = T)
+
+datos <- sapply(barrios_aptos, FUN=function(id_barrio){
+  read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
+
+
+aptos <- transf_apt(datos,na=TRUE)[["aptos"]]
+
+# Guardamos archivo
+
+nombre <- paste0("aptos_",year_month)
+
+fwrite(aptos,file=here(ruta_apt_limpios,paste0(nombre,".csv")))  
 
 
 ### Casas
