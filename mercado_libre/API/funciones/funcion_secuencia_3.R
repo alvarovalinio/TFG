@@ -3,9 +3,11 @@
 
 secuencia_3 <- function(numero){
   
-  if(numero<100){
+  if(numero<100 | is.na(numero)){
     
-    stop("El numero de menor que 100")
+    #stop("El numero de menor que 100")
+    
+    resultado <- "No"
     
   } else {
     
