@@ -55,6 +55,8 @@ transf_apt <- function(datos,na=FALSE){
                                          round(price/as.numeric(tipo_cambio[2]))
                                          ,price))
   
+  datos$tipo_cambio <- as.numeric(tipo_cambio[2])
+  
   datos <- datos %>% mutate(maintenance_fee=ifelse(maintenance_fee_unidad!="UYU",
                                                    round(as.numeric(maintenance_fee)*as.numeric(tipo_cambio[2]))
                                                    ,as.numeric(maintenance_fee)))
@@ -73,6 +75,15 @@ transf_apt <- function(datos,na=FALSE){
   
   
   aptos <- aptos %>% filter(secuencia=="No")
+  
+  # Filtramos los que son edificios (contiene la palabra edificios pero no apartamento)
+  
+  aptos <- aptos %>% mutate(title=tolower(title)) %>%  
+    mutate(edificio = ifelse(str_detect(title,'edificio') & !str_detect(title,'apartamento') & !str_detect(title,'apto'),
+                              'Si','No'))
+  
+  aptos <- aptos %>% filter(price<1000000 , edificio=='No') %>% select(-edificio)
+  
   
   # Aplicamos funcion secuencia y truncamos valor
   

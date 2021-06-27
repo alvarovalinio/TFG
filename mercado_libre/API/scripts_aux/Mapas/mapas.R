@@ -15,7 +15,7 @@ library(RecordLinkage) #funcion para march palabras
 # Funciones auxiliares
 source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
 
-barrios_aptos <- list.files(path = here("mercado_libre/API/datos/apt/202106"), pattern = "*.csv", full.names = T)
+barrios_aptos <- list.files(path = here("mercado_libre/API/datos/apt/crudos/202106"), pattern = "*.csv", full.names = T)
 
 datos <- sapply(barrios_aptos, FUN=function(id_barrio){
       read_csv(file=id_barrio,col_types = cols(.default = "c"))}, simplify=FALSE) %>% bind_rows()
