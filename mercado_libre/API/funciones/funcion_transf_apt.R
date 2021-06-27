@@ -74,6 +74,22 @@ transf_apt <- function(datos,na=FALSE){
   
   aptos <- aptos %>% filter(secuencia=="No")
   
+  # Aplicamos funcion secuencia y truncamos valor
+  
+  aptos$secuencia_m <- sapply(aptos$maintenance_fee,FUN=secuencia_3)
+  
+  aptos <- aptos %>% 
+        mutate(maintenance_fee = ifelse(secuencia_m =="No", maintenance_fee, NA)) %>%
+        select(-secuencia_m)
+  
+  aptos <- aptos %>% mutate(maintenance_fee = ifelse(maintenance_fee <= 50000, maintenance_fee, NA))
+  
+  # Reemplazamos por NA valores de long y lat que no tienen sentido
+  
+  aptos <- aptos %>%
+        mutate(longitude = ifelse(between(longitude, -56.5,-56), longitude, NA),
+               latitude = ifelse(between(latitude, -35, -34.7), latitude, NA))
+  
   # Veamos dias de diferencia entre la ultima actualizacion y la fecha de carga
   
   aptos <- aptos %>% mutate(dif_updated=as.numeric(last_updated-date_created)) 
