@@ -126,6 +126,57 @@ shops_barrios <- function(datos_entrada){
     
   }
   
+  # Recodificacion de la variable dist_shop en niveles
+  
+  
+  
+  datos_entrada <- datos_entrada %>% mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
+                                                dist_shop < 5000 ~ 'Entre 1 km y 5 km',
+                                                TRUE ~ 'Más de 5 km')))
+  
+  
+  
+  #### Norte - Sur de Av italia
+  
+  
+  #Leemos linea avd_italia
+  avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avditalia_18")
+  #Pasa geometría a formato longlat 
+  avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  avd_italia <- avd_italia %>% select(Name, geometry)
+  
+  # Extrae latitud y longitud de puntos en avd_italia (geometria)
+  puntos_avditalia <- st_coordinates(avd_italia)
+  puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
+    rename('lon_avditalia' = 'X',
+           'lat_avditalia' = 'Y')
+  
+  
+  
+  centroide_barrios <- centroide_barrios %>% 
+    mutate(aux_lon = NA,
+           zona_avditalia = NA)
+  
+  
+  for (i in 1:nrow(centroide_barrios)) {
+    centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
+                                                    puntos_avditalia$lon_avditalia))
+    centroide_barrios$zona_avditalia[i] <- ifelse(
+      puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
+        centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
+  }
+  
+  
+  
+  centroide_barrios <- centroide_barrios %>% 
+    data.frame() %>% 
+    select(NOMBBARR, zona_avditalia)
+  
+  
+  datos_entrada <- datos_entrada %>% left_join(centroide_barrios, by = 'NOMBBARR')
+  
+  
+  
   
   return(datos_entrada)
   

@@ -202,7 +202,7 @@ transf_apt <- function(datos,na=FALSE){
   
   #source(here("mercado_libre/API/funciones","funcion_shops_apt.R"))
   
-  eval(parse(here("mercado_libre/API/funciones","funcion_shops_apt.R"), encoding="UTF-8"))
+  eval(parse(here("mercado_libre/API/funciones","funcion_geo_dist_apt.R"), encoding="UTF-8"))
   
   aptos <- shops_barrios(aptos)
   
