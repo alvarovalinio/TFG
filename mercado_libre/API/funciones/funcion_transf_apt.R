@@ -204,7 +204,7 @@ transf_apt <- function(datos,na=FALSE){
   
   eval(parse(here("mercado_libre/API/funciones","funcion_geo_dist_apt.R"), encoding="UTF-8"))
   
-  aptos <- shops_barrios(aptos)
+  aptos <- dist_barrios(aptos)
   
   
   # Hay ids repetidos?

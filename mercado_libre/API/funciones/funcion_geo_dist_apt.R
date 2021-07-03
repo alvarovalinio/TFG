@@ -9,7 +9,7 @@ library(RecordLinkage) #funcion para match palabras
 
 
 
-shops_barrios <- function(datos_entrada){
+dist_barrios <- function(datos_entrada){
   
   
   #Leemos vctorial INE
@@ -176,6 +176,63 @@ shops_barrios <- function(datos_entrada){
   datos_entrada <- datos_entrada %>% left_join(centroide_barrios, by = 'NOMBBARR')
   
   
+  #### Calculamos distancia a la playa
+  
+  # Rambla Este - MVD
+  
+  # Cargamos datos
+  
+  rambla <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/ramblaeste_MVD")
+  rambla <- st_transform(rambla, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  rambla <- rambla %>% select(Name, geometry)
+  
+  
+  rambla_crs <- st_coordinates(rambla) %>% data.frame()
+  rambla_crs <- rambla_crs %>% select(-Z, - L1) %>%
+    rename('lon' = 'X',
+           'lat' = 'Y')
+  
+ 
+  datos_entrada$dist_rambla <- NA
+  
+  for(i in 1:nrow(datos_entrada)){
+    
+    if(!is.na(datos_entrada$longitude[i]) & !is.na(datos_entrada$latitude[i]) ){
+      
+      aux_dist <- distm(c(datos_entrada$longitude[i],datos_entrada$latitude[i]),
+                        c(rambla_crs$lon[1],rambla_crs$lat[1]),fun = distHaversine
+      ) 
+      
+      
+      
+      for(j in 2:nrow(rambla_crs)){
+        
+        
+        aux_dist_2  <- distm(c(datos_entrada$longitude[i],datos_entrada$latitude[i]),
+                             c(rambla_crs$lon[j],rambla_crs$lat[j]),fun = distHaversine
+        ) 
+        
+        
+        if(aux_dist_2 < aux_dist){
+          
+          aux_dist <- aux_dist_2
+          
+          datos_entrada$dist_rambla[i] <- aux_dist[1]
+          
+        } else {
+          
+          datos_entrada$dist_rambla[i] <- aux_dist[1]
+          
+          
+        }
+        
+      }    
+      
+    } 
+    
+  }
+  
+    
   
   
   return(datos_entrada)
