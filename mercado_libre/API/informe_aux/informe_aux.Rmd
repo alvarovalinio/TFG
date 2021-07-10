@@ -13,6 +13,7 @@ library(tidyverse)
 library(knitr)
 library(sf)
 library(scales)
+library(here)
 ```
 
 
@@ -91,16 +92,16 @@ A continuación s presentan el mapa de Montevideo con la georreferencia de los s
 
 ```{r, message=FALSE}
 # Vectoria INE
-mapa_barrio <- st_read("vectorial_INE_barrios/ine_barrios")
+mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"))
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
 #Puntos shoppings
-mall <- st_read("puntos_googlemaps/shoppings")
+mall <- st_read(here("mercado_libre/API/scripts_aux/Mapas","puntos_googlemaps/shoppings"))
 mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 mall <- mall %>% select(Name, geometry)
 
 # Líneas avd_italia
-avd_italia <- st_read("lineas_googlemaps/avditalia_18")
+avd_italia <- st_read(here("mercado_libre/API/scripts_aux/Mapas","lineas_googlemaps/avditalia_18"))
 avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 avd_italia <- avd_italia %>% select(Name, geometry)
 ```
