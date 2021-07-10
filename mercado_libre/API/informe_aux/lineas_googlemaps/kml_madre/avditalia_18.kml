@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>avenida italia y 18 de julio</name>
+    <Style id="line-000000-1200-nodesc-normal">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.2</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="line-000000-1200-nodesc-highlight">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.8</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="line-000000-1200-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-000000-1200-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-000000-1200-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Placemark>
+      <name>Avenida italia y 18 de Julio</name>
+      <styleUrl>#line-000000-1200-nodesc</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>
+          -56.0389687,-34.8755167,0
+          -56.0481311,-34.8763793,0
+          -56.0576798,-34.8772419,0
+          -56.0698892,-34.8783509,0
+          -56.0835577,-34.8831564,0
+          -56.0853172,-34.8834204,0
+          -56.0901238,-34.8833852,0
+          -56.0988141,-34.8857263,0
+          -56.1012603,-34.8859375,0
+          -56.1042644,-34.8859727,0
+          -56.1064316,-34.8861311,0
+          -56.1100579,-34.8869584,0
+          -56.1119677,-34.8872576,0
+          -56.1201001,-34.8871344,0
+          -56.1281038,-34.8868528,0
+          -56.1331679,-34.8867648,0
+          -56.1385966,-34.8866063,0
+          -56.1417938,-34.8868176,0
+          -56.1445404,-34.8876272,0
+          -56.1506988,-34.8901442,0
+          -56.1589171,-34.8921506,0
+          -56.1638094,-34.894509,0
+          -56.1648608,-34.8950898,0
+          -56.1646892,-34.8975889,0
+          -56.1849238,-34.9053849,0
+          -56.1854173,-34.9056313,0
+          -56.2008024,-34.9065463,0
+          -56.202047,-34.9065287,0
+          -56.2125612,-34.9099953,0
+          -56.2140847,-34.9105408,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

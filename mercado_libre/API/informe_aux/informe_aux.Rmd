@@ -1,0 +1,214 @@
+---
+title: "Descripcion de variables y limpieza de datos"
+author: ""
+date: "27 de junio de 2021"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, comment = FALSE)
+library(xtable)
+library(tidyverse)
+library(knitr)
+library(sf)
+library(scales)
+```
+
+
+
+# Base de datos
+
+## Obtención
+
+Los datos de precio de oferta de los apartamentos a la venta en Montevideo y todas las covariables utilizadas para modelizar fueron obtenidas a través de la Interfaz para acceder a la página web (API) de Mercado Libre \url{https://www.mercadolibre.com.uy/}. Para ello, es necesario registrarse en la web \url{https://developers.mercadolibre.com.uy/} y desde allí crear una aplicación. Una vez realizado este paso es posible obtener una clave (token) válida por 6 hs que mercado libre proporciona para la conexión a su API.
+
+De ésta manera y como fue mencionado, una vez que se obtiene el token es posible consultar la API. Para obtener la información de todos los inmuebles tanto a la venta como para el alquier en Uruguay es necesario realizar la consulta filtrando la categoría `MLU1459`. Sobre esta categoría existen distintas subcategorías. A los efectos del interés del presente trabajo fue consultada la API filtrando según la categoría `MLU1474` que corresponde a todos los apartamentos a la venta en Uruguay.
+
+Ahora bien, para obtener la información sobre los apartamentos a la venta en el departamento de Montevideo, se consultó la API filtrando según categoría `MLU1474` y además filtrando según el id (identificador) de cada uno de los barrios en Montevideo.
+
+Esto permitió obtener numerosos datos pero no fue suficiente. Para poder acceder a los atributos específicos de cada publicación (ítem) fue necesario realizar consultas filtrando específicamente en cada id de cada publicación. Es decir una vez btenida la información disponible consultando la categoría `MLU1474` y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaicones y se realizaron consultas por publicación.
+
+De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
+
+Para mayor información es posible consultar el código del script funcion_api_barrios.R disponible en el repositotio público en Github en el siguiebte link: \url{https://github.com/alvarovalinio/TFG/tree/main/mercado_libre/API/funciones}. 
+
+
+## Limpieza 
+
+La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
+En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
+
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance _fee), áera cubierta (covered _area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemlo `11111`, `5555555`. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa `NA`. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos. 
+
+Existe un conjunto de variables que toman valor `Si`, `No`, `NA`. Para todas ellas se asume que los `NA` son `No` y se realiza la recodificación correspondiente en función de ello.
+
+Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo son recodificadas como `NA`.
+
+Las variables cantidad de habitaciones (rooms) y garages (parking_lots) fueron eliminadas debido a la elevada proporción de Nas.
+
+Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de daros se recomienda dirigirse al Anexo X.
+
+## Variables geoespaciales
+
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, distancia a la Rambla.
+
+Las variables geoespaciales que fueron construidas son:
+
+-  zona_avditalia: Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra disponible el apartamento se encuentra al Norte o al Sur de la calle avenida italia o 18 de Julio.  \textcolor{red}{ESCRIBIR SOBRE CÓMO SE RECODIFICÓ}.
+
+- dist_shop: Fue contruida utilizando la distancia en metros cuadrados entre el centroide del barrio en el cuál se encuentra disponible el apartamento y el shopping más cercano. \textcolor{red}{ESCRIBIR SOBRE CÓMO SE RECODIFICÓ}.
+
+
+- dist_rambla: Fue construida utilizando la distancia (en m2) a la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión \textcolor{red}{CONTAR MÁS}.
+
+La herramienta utilizada para construir los archivos `.kml` que permite georreferenciar los shoppings en Montevideo y la calle avenida italia en continuación con 18 de julio fue `Google My Maps`, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (fuente wikipedia https://es.wikipedia.org/wiki/Google_My_Maps)
+
+De ésta forma, fueron construidos los archivos `.kml` que contienen las georreferencias de los shoppings de montevideo y de la calle avenida italia en contrinuación con 18 de julio.
+
+Los shoppings georreferenciados son:
+
+- Montevideo shopping center
+- Punta Carretas shopping
+- Tres cruces shopping
+- Nuevocentro shopping
+- Portones shopping
+
+Una vez obtenidos los archivos `.kml` los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica (SIG).
+
+El formato ESRI Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc/Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
+
+Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
+
+-  shp - es el archivo que almacena las entidades geométricas de los objetos.
+-  shx - es el archivo que almacena el índice de las entidades geométricas.
+-  dbf - es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
+
+(Fuete wikipedia https://es.wikipedia.org/wiki/Shapefile)
+
+A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
+
+
+```{r, message=FALSE}
+# Vectoria INE
+mapa_barrio <- st_read("vectorial_INE_barrios/ine_barrios")
+mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+#Puntos shoppings
+mall <- st_read("puntos_googlemaps/shoppings")
+mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+mall <- mall %>% select(Name, geometry)
+
+# Líneas avd_italia
+avd_italia <- st_read("lineas_googlemaps/avditalia_18")
+avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+avd_italia <- avd_italia %>% select(Name, geometry)
+```
+
+```{r, fig.cap = 'Mapa del departamento de Montevideo, Uruguay, y georreferencia de los shoppings y calle avenida italia en continuación con 18 de julio'}
+ggplot(mapa_barrio)+
+      geom_sf() +
+      geom_sf(data = mall) +
+      geom_sf(data = avd_italia, color = 'yellow', size = 0.7) +
+      theme(axis.text.x = element_text(angle = 45),
+            text = element_text(),
+            panel.grid.major = element_line(
+                  color = '#cccccc',linetype = 'dashed',size = .3),
+            panel.background = element_rect(fill = 'aliceblue'),
+            axis.title = element_blank(),
+            axis.text = element_text(size = 8),
+            legend.position = 'bottom',
+            legend.text = element_text(angle = 0, size = 7),
+            legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+      ggrepel::geom_label_repel(data = mall,aes(label = Name, geometry = geometry),
+      stat = "sf_coordinates", min.segment.length = 0,
+      colour = "black", segment.colour = "black",
+      size = 3, alpha = 0.8) +
+      xlab('Longitud') +
+      ylab('Latitud') 
+```
+
+A continuación se presenta el mapa según zona_avditalia asignada a cada barrio.
+
+
+```{r}
+# Centroide barrios
+
+#devuleve geometría con el centroide de cada barrios
+centroide_barrios <- st_centroid(mapa_barrio)
+
+# Extrae coordenadas (longitud y latitud) degeometría del centroide
+centroide_barrios <- centroide_barrios %>%
+      mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
+             lat_barrio = st_coordinates(centroide_barrios$geometry)[,2])
+
+# Pasa latitud y longitud del centroide a objeto sf
+centroide_barrios_sf <- centroide_barrios %>% 
+      st_as_sf(coords = c("lat_barrio","lon_barrio"), crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+# Tranforma coordenadas a formato long lat
+centroide_barrios_sf_t <- st_transform(centroide_barrios_sf,crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+centroide_barrios <- centroide_barrios %>% 
+      mutate(aux_lon = NA,
+             zona_avditalia = NA)
+
+# Extrae latitud y longitud de puntos en avd_italia (geometria)
+
+puntos_avditalia <- st_coordinates(avd_italia)
+
+puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
+      rename('lon_avditalia' = 'X',
+             'lat_avditalia' = 'Y')
+
+# Avd italia se conforma en total de 60 puntos
+# Para cada barrios tomamos el punto en avd.italia con menor diferencia de longitud
+# min {longitud centroide - longitud avd_italia }
+# luego comparamos las latitudes del centroide y el punto de avd italia con mínima diferencia en cuanto a longitud
+# si latitud avd italia < lat centroide barrio -> NORTE 
+# si latitud avd italia >= lat centroide barrio -> NORTE 
+
+for (i in 1:nrow(centroide_barrios)) {
+      centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
+                                                          puntos_avditalia$lon_avditalia))
+      centroide_barrios$zona_avditalia[i] <- ifelse(
+            puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
+                  centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
+}
+
+
+centroide_barrios <- centroide_barrios %>% 
+      data.frame() %>% 
+      select(NOMBBARR, zona_avditalia)
+
+mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR') 
+```
+
+
+```{r, fig.cap = 'Mapa del departamento de Montevideo según zona respecto la callle avenida italia en constinuación con 18 de julio'}
+ggplot(mapa_barrio)+
+            geom_sf(aes(fill = zona_avditalia )) +
+      geom_sf(data = mall) +
+      geom_sf(data = avd_italia, color = 'yellow', size = 0.6) +
+      theme(axis.text.x = element_text(angle = 45),
+            text = element_text(),
+            panel.grid.major = element_line(
+                  color = '#cccccc',linetype = 'dashed',size = .3),
+            panel.background = element_rect(fill = 'aliceblue'),
+            axis.title = element_blank(),
+            axis.text = element_text(size = 8),
+            legend.position = 'bottom',
+            legend.text = element_text(angle = 0, size = 7),
+            legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+      ggrepel::geom_label_repel(data = mall,aes(label = Name, geometry = geometry),
+                                stat = "sf_coordinates", min.segment.length = 0,
+                                colour = "black", segment.colour = "black",
+                                size = 3, alpha = 0.8) +
+      xlab('Longitud') + ylab('Latitud') +
+      scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
+```
+
+
+
+
+
