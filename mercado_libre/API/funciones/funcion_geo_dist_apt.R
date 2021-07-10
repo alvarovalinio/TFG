@@ -61,6 +61,88 @@ dist_barrios <- function(datos_entrada){
   datos_entrada <- datos_entrada %>% left_join(aptos_city, by ='city_name')
   
   
+  
+  #### Norte - Sur de Av italia
+  
+  
+  #Leemos linea avd_italia
+  avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avditalia_18")
+  #Pasa geometría a formato longlat 
+  avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  avd_italia <- avd_italia %>% select(Name, geometry)
+  
+  # Extrae latitud y longitud de puntos en avd_italia (geometria)
+  puntos_avditalia <- st_coordinates(avd_italia)
+  puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
+    rename('lon_avditalia' = 'X',
+           'lat_avditalia' = 'Y')
+  
+  # Obtenemos baricentro por barrio
+  
+  centroide_barrios <- st_centroid(mapa_barrio)
+  centroide_barrios <- centroide_barrios %>%
+    mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
+           lat_barrio = st_coordinates(centroide_barrios$geometry)[,2]) %>%
+    select(NOMBBARR, lon_barrio, lat_barrio)
+  
+  
+  
+  centroide_barrios <- centroide_barrios %>% 
+    mutate(aux_lon = NA,
+           zona_avditalia = NA)
+  
+  
+  for (i in 1:nrow(centroide_barrios)) {
+    centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
+                                                    puntos_avditalia$lon_avditalia))
+    centroide_barrios$zona_avditalia[i] <- ifelse(
+      puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
+        centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
+  }
+  
+  
+  
+  centroide_barrios_aux <- centroide_barrios %>% 
+    data.frame() %>% 
+    select(NOMBBARR, zona_avditalia,lon_barrio,lat_barrio)
+  
+  
+  datos_entrada <- datos_entrada %>% left_join(centroide_barrios_aux, by = 'NOMBBARR')
+  
+  
+  ###### Sustituimos los NA de lat - lon por el centroide de su respectivo barrio
+  
+  
+  datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(!is.na(longitude),longitude,
+                                              lon_barrio),
+                           latitude =ifelse(!is.na(latitude),latitude,
+                                            lat_barrio))
+  
+ 
+  ## Paso previo : Vemos si la obs esta al norte - sur y luego comparamos con
+  # norte - sur del barrior para ver si usamos la lat-lon original o el baricentro
+  
+  datos_entrada <- datos_entrada %>% 
+    mutate(aux_lon = NA,
+           zona_avditalia_aux = NA)
+  
+  
+  for (i in 1:nrow(datos_entrada)) {
+    datos_entrada$aux_lon[i] <- which.min(abs(datos_entrada$longitude[i] - 
+                                                    puntos_avditalia$lon_avditalia))
+    datos_entrada$zona_avditalia_aux[i] <- ifelse(
+      puntos_avditalia$lat_avditalia[datos_entrada$aux_lon[i]] < 
+        datos_entrada$latitude[i], 'Norte', 'Sur')
+  }
+  
+datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zona_avditalia_aux,
+                                            longitude,
+                                            lon_barrio),
+                         latitude = ifelse(zona_avditalia==zona_avditalia_aux,
+                                           latitude,
+                                           lat_barrio)) %>% 
+                        select(-aux_lon,-zona_avditalia_aux)
+  
   #####
   
   # Agregamos distancia al shopping
@@ -76,26 +158,13 @@ dist_barrios <- function(datos_entrada){
   colnames(shops) <- c("lon","lat","id")
   
   
-  # Obtenemos baricentro por barrio
-  
-  centroide_barrios <- st_centroid(mapa_barrio)
-  centroide_barrios <- centroide_barrios %>%
-    mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
-           lat_barrio = st_coordinates(centroide_barrios$geometry)[,2]) %>%
-    select(NOMBBARR, lon_barrio, lat_barrio)
-  
-  # Agregamos lat y long baricentro por barrios
-  
-  datos_entrada <- left_join(datos_entrada,centroide_barrios,by="NOMBBARR")
-  
-  
-  datos_entrada$dist_shop <- NA
+ datos_entrada$dist_shop <- NA
   
   for(i in 1:nrow(datos_entrada)){
     
-    if(!is.na(datos_entrada$lon_barrio[i])){
+    if(!is.na(datos_entrada$longitude[i])){
       
-      aux_dist <- distm(c(datos_entrada$lon_barrio[i],datos_entrada$lat_barrio[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
+      aux_dist <- distm(c(datos_entrada$longitude[i],datos_entrada$latitude[i]),c(shops$lon[1],shops$lat[1]),fun = distHaversine
       ) 
       
       
@@ -103,7 +172,7 @@ dist_barrios <- function(datos_entrada){
       for(j in 2:nrow(shops)){
         
         
-        aux_dist_2  <- distm(c(datos_entrada$lon_barrio[i],datos_entrada$lat_barrio[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
+        aux_dist_2  <- distm(c(datos_entrada$longitude[i],datos_entrada$latitude[i]),c(shops$lon[j],shops$lat[j]),fun = distHaversine
         ) 
         
         
@@ -126,7 +195,8 @@ dist_barrios <- function(datos_entrada){
     
   }
   
-  # Recodificacion de la variable dist_shop en niveles
+  
+ # Recodificacion de la variable dist_shop en niveles
   
   
   
@@ -135,45 +205,6 @@ dist_barrios <- function(datos_entrada){
                                                 TRUE ~ 'Más de 5 km')))
   
   
-  
-  #### Norte - Sur de Av italia
-  
-  
-  #Leemos linea avd_italia
-  avd_italia <- st_read("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps/avditalia_18")
-  #Pasa geometría a formato longlat 
-  avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-  avd_italia <- avd_italia %>% select(Name, geometry)
-  
-  # Extrae latitud y longitud de puntos en avd_italia (geometria)
-  puntos_avditalia <- st_coordinates(avd_italia)
-  puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
-    rename('lon_avditalia' = 'X',
-           'lat_avditalia' = 'Y')
-  
-  
-  
-  centroide_barrios <- centroide_barrios %>% 
-    mutate(aux_lon = NA,
-           zona_avditalia = NA)
-  
-  
-  for (i in 1:nrow(centroide_barrios)) {
-    centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
-                                                    puntos_avditalia$lon_avditalia))
-    centroide_barrios$zona_avditalia[i] <- ifelse(
-      puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
-        centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
-  }
-  
-  
-  
-  centroide_barrios <- centroide_barrios %>% 
-    data.frame() %>% 
-    select(NOMBBARR, zona_avditalia)
-  
-  
-  datos_entrada <- datos_entrada %>% left_join(centroide_barrios, by = 'NOMBBARR')
   
   
   #### Calculamos distancia a la playa
@@ -233,7 +264,9 @@ dist_barrios <- function(datos_entrada){
   }
   
     
-  
+
+  datos_entrada <- datos_entrada %>% select(-lon_barrio,lat_barrio)
+    
   
   return(datos_entrada)
   

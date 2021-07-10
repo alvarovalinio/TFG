@@ -17,18 +17,19 @@ source(here("mercado_libre/API/funciones","funcion_api_barrios.R"))
 
 clientID <- Sys.getenv("Client_ID")
 secret <- Sys.getenv("Secret_ID")
-code <- 'TG-60c03845cd8428000d855951-219703207' # Por cada token hay que generar uno
+code <- 'TG-60e6f7a69ecc2e000707479b-219703207' # Por cada token hay que generar uno
 redict_url <-  'https://www.mercadolibre.com.uy/' # Fijado al crear la "app"
 
 ### Apartamentos
 
-ruta_apt_crudos <- paste0("mercado_libre/API/datos/apt/crudos")
+ruta_apt_crudos <- paste0("mercado_libre/API/datos/crudos/apt")
 
 year_month <- paste0(substring(Sys.Date(),1,4),substring(Sys.Date(),6,7))
 
 dir.create(here(ruta_apt_crudos,year_month))
 
 ruta_apt_fecha_crudos <- paste0(ruta_apt_crudos,"/",year_month)
+
 
 for(i in 1:nrow(id_barrios)){
 
@@ -85,7 +86,7 @@ for(i in 1:nrow(id_barrios)){
 
 source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
 
-ruta_apt_limpios <- paste0("mercado_libre/API/datos/apt/limpios")
+ruta_apt_limpios <- paste0("mercado_libre/API/datos/limpios/apt")
 
 year_month <- paste0(substring(Sys.Date(),1,4),substring(Sys.Date(),6,7))
 
@@ -99,6 +100,10 @@ datos <- sapply(barrios_aptos, FUN=function(id_barrio){
 
 
 aptos <- transf_apt(datos,na=TRUE)[["aptos"]]
+
+# Agregamos fecha_bajada
+
+aptos$fecha_bajada <- year_month
 
 # Guardamos archivo
 
