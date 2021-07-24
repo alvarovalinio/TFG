@@ -60,7 +60,28 @@ dist_barrios <- function(datos_entrada){
   
   datos_entrada <- datos_entrada %>% left_join(aptos_city, by ='city_name')
   
+  #####
   
+  # Agregamos ingreso promedio barrios ECH
+  
+  load("mercado_libre/API/datos/ECH/HyP_2020_Terceros.RData")
+  
+  
+  f <- f %>% select(numero, nper, hogar, nombarrio, HT11, ht13, YHOG, YSVL, lp_06, pobre_06,
+                    i228, i174, i259, i175, h155, h155_1, h156, h156_1, pesomen) %>%
+    filter(hogar == 1)
+  
+  # Para considerar pesos, multiplicar ingreso hogar i* peso hogar i
+  # Sum ingreso hogar i * peso hogar i / sum
+  
+  f <- f %>% 
+    group_by(nombarrio) %>%
+    summarise(ingresomedio_ech = sum(pesomen*HT11, na.rm = TRUE) / 
+                sum(pesomen, na.rm = TRUE)) %>%
+    rename('NOMBBARR' = 'nombarrio')
+  
+  
+  datos_entrada <- left_join(datos_entrada, f, by = 'NOMBBARR')
   
   #### Norte - Sur de Av italia
   
@@ -114,11 +135,11 @@ dist_barrios <- function(datos_entrada){
   
   
   datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(!is.na(longitude),longitude,
-                                              lon_barrio),
-                           latitude =ifelse(!is.na(latitude),latitude,
-                                            lat_barrio))
+                                                               lon_barrio),
+                                            latitude =ifelse(!is.na(latitude),latitude,
+                                                             lat_barrio))
   
- 
+  
   ## Paso previo : Vemos si la obs esta al norte - sur y luego comparamos con
   # norte - sur del barrior para ver si usamos la lat-lon original o el baricentro
   
@@ -129,19 +150,19 @@ dist_barrios <- function(datos_entrada){
   
   for (i in 1:nrow(datos_entrada)) {
     datos_entrada$aux_lon[i] <- which.min(abs(datos_entrada$longitude[i] - 
-                                                    puntos_avditalia$lon_avditalia))
+                                                puntos_avditalia$lon_avditalia))
     datos_entrada$zona_avditalia_aux[i] <- ifelse(
       puntos_avditalia$lat_avditalia[datos_entrada$aux_lon[i]] < 
         datos_entrada$latitude[i], 'Norte', 'Sur')
   }
   
-datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zona_avditalia_aux,
-                                            longitude,
-                                            lon_barrio),
-                         latitude = ifelse(zona_avditalia==zona_avditalia_aux,
-                                           latitude,
-                                           lat_barrio)) %>% 
-                        select(-aux_lon,-zona_avditalia_aux)
+  datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zona_avditalia_aux,
+                                                               longitude,
+                                                               lon_barrio),
+                                            latitude = ifelse(zona_avditalia==zona_avditalia_aux,
+                                                              latitude,
+                                                              lat_barrio)) %>% 
+    select(-aux_lon,-zona_avditalia_aux)
   
   #####
   
@@ -158,7 +179,7 @@ datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zon
   colnames(shops) <- c("lon","lat","id")
   
   
- datos_entrada$dist_shop <- NA
+  datos_entrada$dist_shop <- NA
   
   for(i in 1:nrow(datos_entrada)){
     
@@ -196,13 +217,13 @@ datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zon
   }
   
   
- # Recodificacion de la variable dist_shop en niveles
+  # Recodificacion de la variable dist_shop en niveles
   
   
   
   datos_entrada <- datos_entrada %>% mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
-                                                dist_shop < 5000 ~ 'Entre 1 km y 5 km',
-                                                TRUE ~ 'Más de 5 km')))
+                                                                         dist_shop < 5000 ~ 'Entre 1 km y 5 km',
+                                                                         TRUE ~ 'Más de 5 km')))
   
   
   
@@ -223,7 +244,7 @@ datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zon
     rename('lon' = 'X',
            'lat' = 'Y')
   
- 
+  
   datos_entrada$dist_rambla <- NA
   
   for(i in 1:nrow(datos_entrada)){
@@ -263,10 +284,10 @@ datos_entrada <- datos_entrada %>% mutate(longitude = ifelse(zona_avditalia==zon
     
   }
   
-    
-
+  
+  
   datos_entrada <- datos_entrada %>% select(-lon_barrio,lat_barrio)
-    
+  
   
   return(datos_entrada)
   
