@@ -6,7 +6,7 @@ library(tidyverse)
 library(lubridate)
 library(sf) # Mapas
 library(RecordLinkage) #funcion para match palabras
-
+library(gdata)
 
 
 dist_barrios <- function(datos_entrada){
@@ -78,8 +78,15 @@ dist_barrios <- function(datos_entrada){
     group_by(nombarrio) %>%
     summarise(ingresomedio_ech = sum(pesomen*HT11, na.rm = TRUE) / 
                 sum(pesomen, na.rm = TRUE)) %>%
-    rename('NOMBBARR' = 'nombarrio')
+    rename('NOMBBARR' = 'nombarrio') %>% mutate(NOMBBARR = trim(NOMBBARR))
   
+  # Recodificamos los barrios de "f" que no son los mismos que el INE
+  
+  f$NOMBBARR <- recode(f$NOMBBARR, 
+                       'Malvín'='Malvin',
+                       'Malvín Norte'='Malvin Norte',
+                       'Maroñas, Parque Guaraní'='Maroñas, Parque Guarani',
+                       'Unión'='Union')
   
   datos_entrada <- left_join(datos_entrada, f, by = 'NOMBBARR')
   
