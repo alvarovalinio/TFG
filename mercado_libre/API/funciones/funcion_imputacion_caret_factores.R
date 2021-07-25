@@ -4,12 +4,14 @@
 # Parametros: 1) datos, 2)response_y = variable respuesta, 3)factor_NA =FALSE
 # por defecto es FALSE, lo cual quiere decir que imputa todos. Por otro lado
 # le podemos pasar un vector con el nombre de las variables que queremos imputar
+# 4) all_cores = F. Por defecto usamos detectCores() - 1, si toma el valor T usa todos
+# y sino le podemos pasar cuantos queremos
 
 library(tidyverse)
 library(caret)
 library(doParallel)
 
-imput_fact <- function(datos,response_y,modelo,factor_NA=FALSE){
+imput_fact <- function(datos,response_y,modelo,factor_NA=FALSE,all_cores=F){
   
     
 # Obtenemos variables con NA
@@ -70,7 +72,27 @@ for(i in 2:ncol(factores)){
  # Proceso en paralelo
   
 # Fit random forest: model_rf
-  cl <- makePSOCKcluster(5)
+  
+  if(all_cores==F){
+  
+  # Calculate the number of cores
+  no_cores <- detectCores() - 1
+  
+  } else if(all_cores==T){
+    
+    no_cores <- detectCores()
+    
+    
+    
+  } else{
+    
+    no_cores <- all_cores
+    
+    
+  }
+  
+  
+  cl <- makePSOCKcluster(no_cores)
   registerDoParallel(cl)
   
   ## All subsequent models are then run in parallel
