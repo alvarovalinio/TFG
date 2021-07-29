@@ -10,6 +10,7 @@
 library(tidyverse)
 library(caret)
 library(doParallel)
+library(doRNG)
 
 imput_fact <- function(datos,response_y,modelo,factor_NA=FALSE,all_cores=F){
   
@@ -64,6 +65,8 @@ for(i in 2:ncol(factores)){
   
   # Create reusable trainControl object: myControl
   
+  set.seed(1234)
+  
   fitControl <- trainControl(method = "adaptive_cv",
                              number = 3, repeats = 3,
                              adaptive = list(min=3, alpha = 0.05, method = 'BT', complete = FALSE),
@@ -76,7 +79,7 @@ for(i in 2:ncol(factores)){
   if(all_cores==F){
   
   # Calculate the number of cores
-  no_cores <- detectCores() - 1
+  no_cores <- detectCores(logical = FALSE)
   
   } else if(all_cores==T){
     
@@ -93,7 +96,10 @@ for(i in 2:ncol(factores)){
   
   
   cl <- makePSOCKcluster(no_cores)
+  
   registerDoParallel(cl)
+  
+  clusterSetRNGStream(cl, iseed=1234) # Para lograr reproducibilidad
   
   ## All subsequent models are then run in parallel
   model_rf <- train(

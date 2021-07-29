@@ -40,7 +40,7 @@ v_NA <- p_na %>% filter(prop_na>0) %>% row.names()
 
 ##### Arbol de regresion
 
-set.seed(12345)
+set.seed(1234)
 
 aptos_sin_na <- aptos %>% select(-c(all_of(v_NA),id,title,accepts_mercadopago,city_name,
                                  latitude,longitude,date_created,last_updated,
