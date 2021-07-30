@@ -138,9 +138,10 @@ transf_apt <- function(datos,na=FALSE){
   
   # Todas las variables que arrancan con has_ sustuimos NA por "No"
   
+
   aptos <- aptos %>% mutate_at(vars(starts_with('has_')),
-                               ~if_else(is.na(.), 'No',
-                                        as.character(.)))
+                               ~if_else(.=='Sí', 'Sí',
+                                        'No'))
   
   
   # todo los valores raros los ponemos con NA y despues vemos
