@@ -84,7 +84,7 @@ for(i in 1:nrow(id_barrios)){
 
 # Cargamos funcion
 
-source(here("mercado_libre/API/funciones","funcion_transf_apt.R"))
+eval(parse(here("mercado_libre/API/funciones","funcion_transf_apt.R"), encoding="UTF-8"))
 
 ruta_apt_limpios <- paste0("mercado_libre/API/datos/limpios/apt")
 
