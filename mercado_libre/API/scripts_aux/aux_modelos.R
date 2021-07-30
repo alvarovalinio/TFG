@@ -11,6 +11,7 @@ library(doParallel)
 #library(pracma)
 library(rpart)
 library(rpart.plot)
+library(rattle)
 
 #### DATOS
 
@@ -80,9 +81,56 @@ arbol.prune <- rpart(price ~ . , data = aptos_sin_na,method="anova",
 
 rpart.plot(arbol.prune,roundint = T,digits = 4)
 
+# TRAIN CONTROL CARET
 
+# Create custom indices: myFolds
+aptos_y <- aptos$price
+
+set.seed(12345)
+myFolds <- createFolds(aptos_y, k = 10)
+
+# Create reusable trainControl object: myControl
+myControl <- trainControl(
+      verboseIter = TRUE,
+      savePredictions = TRUE,
+      index = myFolds
+)
+
+# Arbol con Caret
+
+factores <- aptos %>% select_if(~is.factor(.)) 
+factores <- factores[,colnames(factores)%in%v_NA]
+
+aptos_sin_na <- aptos %>% select(-c(colnames(factores),id,title,accepts_mercadopago,city_name,
+                                    latitude,longitude,date_created,last_updated,
+                                    covered_area_unidad,property_type,tipo_cambio,
+                                    year_month,lat_barrio,fecha_bajada,condition))
+
+aptos_x <- aptos_sin_na %>% select(-price)
+
+set.seed(12345)
+arbol_caret <- train(
+      x = aptos_x, 
+      y = aptos_y,
+      method = 'rpart',
+      trControl = myControl,
+      preProcess = "medianImpute"
+)
+
+fancyRpartPlot(median_model$finalModel)
 
 #### CARET
+
+# Modelo lineal
+
+lm_caret <- train(
+      x = aptos_x, 
+      y = aptos_y,
+      method = 'lm',
+      trControl = myControl,
+      preProcess = c("medianImpute", "nzv")
+)
+
 
 # Proceso de imputacion factores
 
@@ -97,20 +145,6 @@ pracma::tic()
 aptos <- imput_fact(datos=aptos,response_y = 'price',modelo='ranger',
                     factor_NA = c('item_condition','tags'))
 pracma::toc()
-
-# Create custom indices: myFolds
-aptos_y <- aptos$price
-
-set.seed(12345)
-myFolds <- createFolds(aptos_y, k = 10)
-
-# Create reusable trainControl object: myControl
-
-myControl <- trainControl(
-  verboseIter = TRUE,
-  savePredictions = TRUE,
-  index = myFolds
-)
 
 # Matriz X
 
