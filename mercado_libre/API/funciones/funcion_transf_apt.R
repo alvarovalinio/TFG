@@ -140,8 +140,8 @@ transf_apt <- function(datos,na=FALSE){
   
 
   aptos <- aptos %>% mutate_at(vars(starts_with('has_')),
-                               ~if_else(.=='Sí', 'Sí',
-                                        'No'))
+                               ~case_when(.=='Sí' ~ 'Sí',
+                                          TRUE ~ 'No'))
   
   
   # todo los valores raros los ponemos con NA y despues vemos
