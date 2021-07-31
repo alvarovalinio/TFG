@@ -87,6 +87,7 @@ rpart.plot(arbol.prune,roundint = T,digits = 4)
 aptos_y <- aptos$price
 
 set.seed(12345)
+
 myFolds <- createFolds(aptos_y, k = 10)
 
 # Create reusable trainControl object: myControl
@@ -99,16 +100,32 @@ myControl <- trainControl(
 # Arbol con Caret
 
 factores <- aptos %>% select_if(~is.factor(.)) 
-factores <- factores[,colnames(factores)%in%v_NA]
-
+factores <- factores[,colnames(factores)%in%v_NA] # Sacamos factores que tienen NA
+# Despues imputamos alguno
+ 
 aptos_sin_na <- aptos %>% select(-c(colnames(factores),id,title,accepts_mercadopago,city_name,
                                     latitude,longitude,date_created,last_updated,
                                     covered_area_unidad,property_type,tipo_cambio,
-                                    year_month,lat_barrio,fecha_bajada,condition))
+                                    year_month,lat_barrio,fecha_bajada,condition,
+                                    unit_floor))
 
 aptos_x <- aptos_sin_na %>% select(-price)
 
-set.seed(12345)
+#set.seed(12345)
+
+# Proceso de paralelo
+
+# Calculate the number of cores
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
+
+pracma::tic()
+
 arbol_caret <- train(
       x = aptos_x, 
       y = aptos_y,
@@ -117,11 +134,31 @@ arbol_caret <- train(
       preProcess = "medianImpute"
 )
 
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
 fancyRpartPlot(median_model$finalModel)
+
 
 #### CARET
 
-# Modelo lineal
+# Modelo de regresión multiple
+
+pracma::tic()
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+clusterEvalQ(cl,'myControl')
 
 lm_caret <- train(
       x = aptos_x, 
@@ -130,6 +167,48 @@ lm_caret <- train(
       trControl = myControl,
       preProcess = c("medianImpute", "nzv")
 )
+
+
+stopCluster(cl)
+
+registerDoSEQ()
+
+pracma::toc()
+
+
+### Modelo de regresión Lasso
+
+pracma::tic()
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+clusterEvalQ(cl,'myControl')
+
+glmnet_caret <- train(
+  x = aptos_x, 
+  y = aptos_y,
+  method = 'glmnet',
+  trControl = myControl,
+  preProcess = c("medianImpute", "nzv"),
+  tuneGrid = expand.grid(
+    alpha = 0:1,
+    lambda = 0:10 / 10
+  )
+)
+
+
+stopCluster(cl)
+
+registerDoSEQ()
+
+pracma::toc()
+
 
 
 # Proceso de imputacion factores
