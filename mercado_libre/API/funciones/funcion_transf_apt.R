@@ -181,6 +181,9 @@ transf_apt <- function(datos,na=FALSE){
   aptos <- aptos %>% mutate(covered_area=ifelse(secuencia_area=='No',
                                                 covered_area,NA)) %>% select(-secuencia_area)
   
+  # Asignamos NA si toma valor > 1000
+  
+  aptos <- aptos %>% mutate(covered_area=ifelse(covered_area>1000,NA,covered_area))
   
   # Modificamos la variable total_area, asignamos la secuencia de 3 como NA
   
@@ -188,6 +191,8 @@ transf_apt <- function(datos,na=FALSE){
   
   aptos <- aptos %>% mutate(total_area=ifelse(secuencia_area=='No',
                                                 total_area,NA)) %>% select(-secuencia_area)
+  
+  aptos <- aptos %>% mutate(total_area=ifelse(total_area>1000,NA,total_area))
   
   # Creamos nueva variable, diferencia entre total - covered
   
