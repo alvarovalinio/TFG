@@ -101,13 +101,15 @@ myControl <- trainControl(
 
 factores <- aptos %>% select_if(~is.factor(.)) 
 factores <- factores[,colnames(factores)%in%v_NA] # Sacamos factores que tienen NA
+
 # Despues imputamos alguno
+# eliminamos variables numericas con proporcion de NA < 0.1
  
 aptos_sin_na <- aptos %>% select(-c(colnames(factores),id,title,accepts_mercadopago,city_name,
                                     latitude,longitude,date_created,last_updated,
                                     covered_area_unidad,property_type,tipo_cambio,
                                     year_month,lat_barrio,fecha_bajada,condition,
-                                    unit_floor))
+                                    unit_floor, floors, rooms,maintenance_fee))
 
 aptos_x <- aptos_sin_na %>% select(-price)
 
@@ -178,6 +180,14 @@ pracma::toc()
 
 ### Modelo de regresión Lasso
 
+aptos_x_lasso <- aptos_sin_na
+aptos_x_lasso$total_area[is.na(aptos_x_lasso$total_area)] <- mean(aptos_x_lasso$total_area[!is.na(aptos_x_lasso$total_area)])
+aptos_x_lasso$covered_area[is.na(aptos_x_lasso$covered_area)] <- mean(aptos_x_lasso$covered_area[!is.na(aptos_x_lasso$covered_area)])
+aptos_x_lasso$no_covered_area[is.na(aptos_x_lasso$no_covered_area)] <- mean(aptos_x_lasso$no_covered_area[!is.na(aptos_x_lasso$no_covered_area)])
+
+aptos_x_lasso <- model.matrix(price~.,aptos_x_lasso)
+
+
 pracma::tic()
 
 no_cores <- detectCores(logical = FALSE)
@@ -191,11 +201,11 @@ clusterSetRNGStream(cl, iseed=12345)
 clusterEvalQ(cl,'myControl')
 
 glmnet_caret <- train(
-  x = aptos_x, 
+  x = aptos_x_lasso, 
   y = aptos_y,
   method = 'glmnet',
   trControl = myControl,
-  preProcess = c("medianImpute", "nzv"),
+  preProcess = "nzv",
   tuneGrid = expand.grid(
     alpha = 0:1,
     lambda = 0:10 / 10
