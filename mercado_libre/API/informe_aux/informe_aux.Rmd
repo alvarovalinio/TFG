@@ -16,8 +16,6 @@ library(scales)
 library(here)
 ```
 
-
-
 # Base de datos
 
 ## Obtención
@@ -40,28 +38,56 @@ Para mayor información es posible consultar el código del script funcion_api_b
 La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
 En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
 
-En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance _fee), áera cubierta (covered _area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemlo `11111`, `5555555`. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa `NA`. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos. 
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance _fee), áera cubierta (covered _area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemlo `11111`, `5555555`. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa `NA`. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos.
+
+En lo que respecta a las variables área total (total_area) y área cubierta (covered_area) se decidió asignar `NA` a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
 
 Existe un conjunto de variables que toman valor `Si`, `No`, `NA`. Para todas ellas se asume que los `NA` son `No` y se realiza la recodificación correspondiente en función de ello.
 
-Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo son recodificadas como `NA`.
+Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo son recodificadas como `NA` ya que son datos incorrectos y no se conocen las georreferencias exactas.
 
-Las variables cantidad de habitaciones (rooms) y garages (parking_lots) fueron eliminadas debido a la elevada proporción de Nas.
+Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de `NA`. Entre ellas cantidad de habitaciones (rooms), garages (parking_lots), unidad (unir_floors), piso (floor), condición nuevo o usado (item_condition), property age, entre otras.
 
 Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de daros se recomienda dirigirse al Anexo X.
 
 ## Variables geoespaciales
 
-La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, distancia a la Rambla.
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, distancia a la Rambla .
 
-Las variables geoespaciales que fueron construidas son:
+### zona_avditalia
 
--  zona_avditalia: Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra disponible el apartamento se encuentra al Norte o al Sur de la calle avenida italia o 18 de Julio.  \textcolor{red}{ESCRIBIR SOBRE CÓMO SE RECODIFICÓ}.
+Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra disponible el apartamento se encuentra al Norte o al Sur de la calle avenida italia o 18 de Julio. 
 
-- dist_shop: Fue contruida utilizando la distancia en metros cuadrados entre el centroide del barrio en el cuál se encuentra disponible el apartamento y el shopping más cercano. \textcolor{red}{ESCRIBIR SOBRE CÓMO SE RECODIFICÓ}.
+### dist_shop
+
+Fue contruida utilizando la distancia en metros cuadrados entre el centroide del barrio en el cuál se encuentra disponible el apartamento y el shopping más cercano. Si bien se cuenta con la información de latitud y longitud específivo, debido a que existen georreferencias incorrectas en los datos para calcular la distancia al shopping más cercano se definió considerar la georreferencia del centroide del barrio al que pertenece. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile. 
+
+Luego se decidió realizar la siguiente recodificación: 
+
+- `Menos de 1 km`: distancia menor o igual de 1 km,
+- `Entre 1 km y 5 km`: distancia superior a 1 km e inferior 5 km, 
+- `Más de 5 km`: distancia superior a 5 km.
 
 
-- dist_rambla: Fue construida utilizando la distancia (en m2) a la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión \textcolor{red}{CONTAR MÁS}.
+### dist_rambla
+
+Fue construida utilizando la distancia (en m2) a la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
+
+Es importante mencionar que valores de latitud de la ubicación del inmueble inferiores a -35 y superiores a -34.7 así como valores de longitud inferiores a -56.5 y superiores a -56 se consideran datos erróneos y se les imputa la latitud del centroide del barrio al cual pertenece.  
+
+## Encuesta contínua de hogares
+
+La variable ingresomedio_ECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable HT11: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se recodificaron los valores según los percentiles: 
+
+-  `Bajo`: barrios con ingreso igual o inferior al primer cuartil (percentil 25%), 
+- `Medio - Bajo`: barrios con ingresos superior al primer cuartil e inferior o igual al segundo cuartil (percentil 50%),  
+- `Medio - Alto`: barrios con ingresos superior al segundo cuartil e inferior o igual al tercer cuartil (percentil 75%), 
+- `Alto`: barrios con ingreso superior al tercer cuartil (percentil 75%).
+
+
+## Fuentes externas de información
+
+Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio_ECH fue utilizada también la encuesta contínua de hogares 2020. 
 
 La herramienta utilizada para construir los archivos `.kml` que permite georreferenciar los shoppings en Montevideo y la calle avenida italia en continuación con 18 de julio fue `Google My Maps`, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (fuente wikipedia https://es.wikipedia.org/wiki/Google_My_Maps)
 
@@ -110,7 +136,7 @@ avd_italia <- avd_italia %>% select(Name, geometry)
 ggplot(mapa_barrio)+
       geom_sf() +
       geom_sf(data = mall) +
-      geom_sf(data = avd_italia, color = 'yellow', size = 0.7) +
+      geom_sf(data = avd_italia, color = 'yellow', size = 0.5) +
       theme(axis.text.x = element_text(angle = 45),
             text = element_text(),
             panel.grid.major = element_line(
@@ -190,7 +216,7 @@ mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR')
 ggplot(mapa_barrio)+
             geom_sf(aes(fill = zona_avditalia )) +
       geom_sf(data = mall) +
-      geom_sf(data = avd_italia, color = 'yellow', size = 0.6) +
+      geom_sf(data = avd_italia, color = 'yellow', size = 0.5) +
       theme(axis.text.x = element_text(angle = 45),
             text = element_text(),
             panel.grid.major = element_line(
@@ -209,7 +235,57 @@ ggplot(mapa_barrio)+
       scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 ```
 
+```{r, echo = FALSE}
+library(tidyverse)
+library(here)
 
+load(here("mercado_libre/API/ECH/RDATA_junio2021/HyP_2020_Terceros.RData"))
+
+
+f <- f %>% select(numero, nper, hogar, nombarrio, HT11, ht13, YHOG, YSVL, lp_06, pobre_06,
+             i228, i174, i259, i175, h155, h155_1, h156, h156_1, pesomen) %>%
+      filter(hogar == 1)
+
+# Para considerar pesos, multiplicar ingreso hogar i* peso hogar i
+# Sum ingreso hogar i * peso hogar i / sum
+
+f <- f %>% 
+      group_by(nombarrio) %>%
+      summarise(media_ingbarr = sum(pesomen*HT11, na.rm = TRUE) / 
+                      sum(pesomen, na.rm = TRUE))
+
+f <- f %>% rename('NOMBBARR' = 'nombarrio')
+
+# quitamos espacios en blanco al final de nombbarr
+f$NOMBBARR <- trimws(f$NOMBBARR, which = "right", whitespace = "[ \t\r\n]")
+
+f$NOMBBARR <- recode(as.factor(f$NOMBBARR), 
+                 'Malvín' = 'Malvin',
+                  'Malvín Norte' = 'Malvin Norte')
+
+mapa_barrio <- mapa_barrio %>% left_join(f, by = 'NOMBBARR')
+
+
+```
+
+
+```{r, fig.cap = 'Mapa del ingreso promedio de los hogares por barrio de Montevideo'}
+ggplot(mapa_barrio)+
+            geom_sf(aes(fill = media_ingbarr/1000 )) +
+      theme(axis.text.x = element_text(angle = 45),
+            text = element_text(),
+            panel.grid.major = element_line(
+                  color = '#cccccc',linetype = 'dashed',size = .3),
+            panel.background = element_rect(fill = 'aliceblue'),
+            axis.title = element_blank(),
+            axis.text = element_text(size = 8),
+            legend.position = 'bottom',
+            legend.text = element_text(angle = 0, size = 7),
+            legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+      xlab('Longitud') + ylab('Latitud') +
+      scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Ingreso promedio \n por",labels = comma)
+
+```
 
 
 

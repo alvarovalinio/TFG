@@ -7,7 +7,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE, cache = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE, cache = TRUE)
 library(readr)
 library(here)
 library(data.table)
@@ -15,6 +15,9 @@ library(tidyverse)
 library(knitr)
 library(lubridate)
 library(magrittr)
+library(ggcorrplot)
+library(corrplot)
+library(RColorBrewer)
 library(ggcorrplot)
 ```
 
@@ -28,36 +31,33 @@ yearmonth <- c('aptos_202106','aptos_202107')
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
       read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
 
+aptos <- aptos %>% group_by(id) %>% 
+  arrange(desc(fecha_bajada)) %>%
+  slice(1) %>% ungroup()
+
+aptos <- aptos %>% mutate_if(is.character, as.factor)
+
 ```
 
-
-
-
-```{r}
-aptos <- mutate(aptos, price = as.numeric(price))
-```
 
 El total de observaciones en la base de datos es de `r paste(dim(aptos)[1])`, mientras que el total de variables es de `r paste(dim(aptos)[2])`.
 
-El total de observaciones sin `NA` es de `r paste(dim(aptos %>% drop_na())[1])` :
+El total de observaciones sin `NA` es de `r paste(dim(aptos %>% drop_na())[1])`.
+
+Las proporciones de NA por variable son:
 
 
 ```{r, results='asis'}
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
    rename(prop_na=".") %>% arrange(desc(prop_na))
 
-p_na %>%  slice(1:15) %>% kable(booktabs=T)
+p_na %>%  filter(p_na > 0) %>% kable(booktabs=T)
 ```
 
-
-```{r}
-aptos <- aptos %>% select(-unit_floor, - rooms, - disposition, -floors, -property_age,
-                -maintenance_fee, -seller_contact, -item_condition)
-```
 
 El total de observaciones sin `NA` luego de quitar las variables con proprcion de `NA` superior a 10 % es de `r paste(dim(aptos %>% drop_na())[1])`.
 
-```{r precio,  fig.cap='Histograma del precio de oferta de los apartamentos a la venta en Montevideo (en logaritmos)'}
+```{r,  fig.cap='Histograma del precio de oferta de los apartamentos a la venta en Montevideo (en logaritmos)'}
 aptos %>% ggplot(aes(x=log(price))) + 
        geom_histogram(fill = 'darkgreen', alpha = 1, bins = 40) +
       theme(axis.ticks.x = element_blank(),
@@ -71,8 +71,15 @@ aptos %>% ggplot(aes(x=log(price))) +
 ```
 
 
-```{r avditaliaprice,  fig.cap='Gráfico de violin del precio de publicación según zona respecto a avenida italia'}
+```{r, results = 'asis'}
 
+aptos$ingresomedio_ech %>% 
+      fct_relevel('Alto', 'Medio - Alto', 'Medio - Bajo', 'Bajo') %>% 
+      table() %>% kable()
+
+```
+
+```{r, fig.cap='Gráfico de violin del precio de publicación (en logaritmos) según zona respecto a avenida italia'}
 aptos %>% 
       ggplot(aes(x=as.character(zona_avditalia), y=log(price),
                  fill=as.character(zona_avditalia))) + 
@@ -90,10 +97,10 @@ aptos %>%
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black') 
 ```
 
-```{r avditaliaprice2, eval = FALSE, fig.cap='Gráfico de violin del precio de publicación según dist_shop'}
+```{r, fig.cap='Gráfico de violin del precio de publicación (en logaritmos) según dist_shop'}
 
 aptos %>% 
-      ggplot(aes(x=as.character(dist_shop), y=price,
+      ggplot(aes(x=as.character(dist_shop), y=log(price),
                  fill=as.character(dist_shop))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
@@ -106,16 +113,16 @@ aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('Logaritmo del precio de publicación') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black')
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      facet_wrap(~ingresomedio_ech)
 ```
 
 
-
-```{r dist_shopprice,  eval = FALSE, fig.cap='Gráfico de violin del precio de publicación según distancia a un shopping y zona respecto a avenida italia'}
+```{r, fig.cap='Gráfico de dispersión del precio de publicación (en logaritmos) según distancia a la rambla por nivel de ingreso'}
 
 aptos %>% 
-      ggplot(aes(x=as.character(zona_avditalia), y=log(price), fill=as.character(zona_avditalia))) + 
-      geom_violin() +
+      ggplot(aes(x=dist_rambla, y=log(price), alpha = 1/3)) + 
+      geom_point(color = 'navyblue') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
             axis.title.x = element_blank(),
@@ -125,64 +132,17 @@ aptos %>%
             axis.text.y = element_text(face = 'bold', size = 12),
             legend.position = 'none') +
       scale_x_discrete() +
-      ylab('Precio de publicación (en logaritmos)') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      ylim(9,14) +
-      facet_wrap(~dist_shop)
-```
-
-
-```{r dist_shopbedrooms, eval=FALSE, fig.cap='Boxplot del precio de publicación según zona respecto a avenida itala y bedrooms'}
-
-aptos %>%
-      ggplot(aes(x=as.character(zona_avditalia), y=price, 
-                 fill=as.character(zona_avditalia))) +  
-      theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 14),
-            axis.title.x = element_blank(),
-            plot.title = element_blank(),
-            legend.title = element_blank(),
-            axis.text.x = element_text(face = 'bold', size = 12),
-            axis.text.y = element_text(face = 'bold', size = 12),
-            legend.position = 'none') +
-      scale_x_discrete() +
-      ylab('Precio de publicación') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      facet_wrap(~bedrooms)
-```
-
-
-
-```{r, eval = FALSE}
-correla <- aptos %>% filter(!is.na(price),!is.na(covered_area),!is.na(maintenance_fee)) %>% 
-  select(price,covered_area,maintenance_fee) %>% cor()
-
-ggcorrplot(corr = correla)
+      ylab('Logaritmo del precio de publicación') +
+      xlab('Distancia a la rambla (en m2)') +
+      facet_wrap(~full_bathrooms)
 
 ```
 
-
-
-```{r fullbath, fig.cap = 'Gráfico de barras de la cantidad de baños completos'}
-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
-      theme(axis.ticks.x = element_blank(),
-            legend.position = 'none',
-            axis.title.y = element_blank(),
-            axis.title.x = element_text(face = 'bold', size = 12),
-            axis.text.x = element_text(face = 'bold')) + 
-      scale_y_continuous(labels = scales::percent) +
-      geom_text(aes(x = as.factor(full_bathrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
-      labs(x = 'Cantidad de baños completos')
-
-```
-
-```{r pricebath, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según el apartamento tenga un solo baño (o ninguno) completo o más de uno'}
+```{r, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según el apartamento tenga un solo baño (o ninguno) completo o más de uno'}
 
 aptos %>%
       filter(!is.na(full_bathrooms)) %>%
-      ggplot(aes(x=as.character(full_bathrooms), y=price, 
+      ggplot(aes(x=as.character(full_bathrooms), y=log(price), 
                  fill=as.character(full_bathrooms))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
@@ -200,10 +160,90 @@ aptos %>%
 ```
 
 
+```{r, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según distancia al shopping más cercano'}
 
-```{r bedrooms, fig.cap = 'Gráfico de barras de la cantidad de dormitorios'}
+aptos %>%
+      ggplot(aes(x=as.character(dist_shop), y = log(price), 
+                 fill=as.character(dist_shop))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black')
+
+```
+
+
+```{r, fig.cap='Gráfico de violin del precio de publicación (en logaritmos) según distancia a un shopping y zona respecto a avenida italia'}
+
+aptos %>% 
+      ggplot(aes(x=as.character(dist_shop), y=log(price), 
+                 fill=as.character(dist_shop))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      facet_wrap(~zona_avditalia)
+
+```
+
+
+```{r, fig.cap='Boxplot del precio de publicación según zona respecto a avenida itala y bedrooms'}
+
+aptos %>%
+      ggplot(aes(x=zona_avditalia, y=log(price), 
+                 fill=as.character(zona_avditalia))) +  
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      facet_wrap(~has_security)
+
+```
+
+
+
+```{r, fig.cap = 'Gráfico de barras de la cantidad de baños completos'}
 aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(bedrooms)), y = (..count..)/sum(..count..), fill = bedrooms)) +
+      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) + 
+      scale_y_continuous(labels = scales::percent) +
+      geom_text(aes(x = as.factor(full_bathrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+      labs(x = 'Cantidad de baños completos')
+
+```
+
+
+```{r, fig.cap = 'Gráfico de barras de la cantidad de dormitorios'}
+aptos %>% ggplot() +
+      geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..), fill = bedrooms)) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -216,11 +256,11 @@ aptos %>% ggplot() +
 ```
 
 
+```{r, fig.cap='Gráfico de puntos del precio de publicación en logaritmos y distancia a la rambla por cantidad de habitaciones'}
 
-```{r preciopic2, fig.cap='Gráfico de Violin del precio de publicación (en logaritmos) según tiene patio'}
-
-aptos %>% ggplot(aes(x=as.character(has_balcony), y=price, fill=as.character(has_balcony))) + 
-      geom_violin() +
+aptos %>%
+      ggplot(aes(x=dist_rambla, y = log(price))) + 
+      geom_point(color = 'firebrick') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 14),
             axis.title.x = element_blank(),
@@ -228,13 +268,49 @@ aptos %>% ggplot(aes(x=as.character(has_balcony), y=price, fill=as.character(has
             legend.title = element_blank(),
             axis.text.x = element_text(face = 'bold', size = 12),
             axis.text.y = element_text(face = 'bold', size = 12),
-            legend.position = 'none')  +
-      ylab('Precio de publicación (en logaritmos)') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      scale_fill_manual(values = c('navyblue', 'darkgreen', 'firebrick', 'gray')) +
-      facet_wrap(~has_patio)
+            legend.position = 'none') +
+      scale_x_discrete() +
+      xlab('Distancia a la rambla (m2)') +
+      ylab('Precio de publicación') +
+      facet_wrap(~bedrooms)
 
 ```
+
+
+
+```{r}
+aptos_cor <- aptos %>% select(price, maintenance_fee, dist_rambla, covered_area,
+                              total_area, no_covered_area) %>% mutate(logprice = log(price))
+
+corr<-round(cor(aptos_cor[,-1], use='pairwise.complete.obs') , 2)
+
+ggcorrplot(corr, method = c("square"),type=c("upper"), 
+           ggtheme = ggplot2::theme_gray,lab=TRUE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
