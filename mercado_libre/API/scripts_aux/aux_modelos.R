@@ -32,7 +32,7 @@ aptos <- aptos %>% group_by(id) %>%
 aptos <- aptos %>% mutate_if(is.character, as.factor)
 
 # vemos prop de NA
-p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
   rename(prop_na=".") %>% arrange(desc(prop_na))
 
 # Guardamos variables que tiene NA
@@ -219,41 +219,112 @@ registerDoSEQ()
 
 pracma::toc()
 
+####### RF 
+
+pracma::tic()
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+clusterEvalQ(cl,'myControl')
+
+RF_caret <- train(
+  x = aptos_x, 
+  y = aptos_y,
+  method = 'ranger',
+  trControl = myControl,
+  preProcess = c("medianImpute", "nzv")
+)
+
+
+stopCluster(cl)
+
+registerDoSEQ()
+
+pracma::toc()
+
+
+######## RF con imputacion de los factores y agregando maintenance_fee
 
 
 # Proceso de imputacion factores
 
 # Sacamos variables "basura"
 
-aptos <- aptos %>% select(-c(id,title,accepts_mercadopago,city_name,
+aptos_imput <- aptos %>% select(-c(id,title,accepts_mercadopago,city_name,
                              latitude,longitude,date_created,last_updated,
                              covered_area_unidad,property_type,tipo_cambio,
                              year_month,lat_barrio,fecha_bajada,condition))
+
+# Imputamos item_condition usando RF para predecirla
+
 pracma::tic()
 
-aptos <- imput_fact(datos=aptos,response_y = 'price',modelo='ranger',
-                    factor_NA = c('item_condition','tags'))
+aptos_imput <- imput_fact(datos=aptos_imput,response_y = 'price',modelo='ranger',
+                    factor_NA = c('item_condition'))
 pracma::toc()
 
-# Matriz X
+# Proceso para definir Matriz X con item_condition imputado
 
-# Dejamos property_age con 42% de Na 
-aptos_x <- aptos %>% select(-c(p_na %>% filter(prop_na>0) %>% row.names(),
-                              id,price,title,accepts_mercadopago,city_name,
-                              latitude,longitude,date_created,last_updated,
-                              covered_area_unidad,property_type,tipo_cambio,
-                              year_month,lat_barrio,fecha_bajada,condition)) 
+# vemos prop de NA con imputado
+
+p_na_imput <- sapply(aptos_imput, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
+  rename(prop_na=".") %>% arrange(desc(prop_na))
+
+# Guardamos variables que tiene NA menor a 0.1 y a su vez maintenance_fee
+
+v_NA_imput <- p_na_imput %>% filter(prop_na>0) %>% row.names()
+
+factores_imput <- aptos_imput %>% select_if(~is.factor(.)) 
+factores_imput <- factores_imput[,colnames(factores_imput)%in%v_NA_imput] # Sacamos factores que tienen NA
 
 
+aptos_imput <- aptos_imput %>% select(-c(colnames(factores_imput),
+                                    unit_floor, floors, rooms)) # p_na_imput<.1 y maintanece_fee
 
-# Modelo
-tic()
-model <- train(
+
+aptos_x_imput <- aptos_imput %>% select(-price)
+
+
+# Modelo RF
+
+pracma::tic()
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+clusterEvalQ(cl,'myControl')
+
+RF_imput_caret <- train(
+  x = aptos_x_imput, 
   y = aptos_y,
-  x = aptos_x,
-  method = "ranger",
-  trControl = myControl
-   # preProcess = "knnImpute"
+  method = 'ranger',
+  trControl = myControl,
+  preProcess = c("medianImpute", "nzv")
 )
-toc()
+
+
+stopCluster(cl)
+
+registerDoSEQ()
+
+pracma::toc()
+
+
+# Guardamos modelos
+
+save(RF_caret,file='RF_caret.RData')
+save(RF_imput_caret,file='RF_imput_caret.RData')
+save(lm_caret,file='lm_caret.RData')
+save(glmnet_caret,file='glmnet_caret.RData')
 
