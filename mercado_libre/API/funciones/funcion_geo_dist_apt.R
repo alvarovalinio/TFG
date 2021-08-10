@@ -78,12 +78,6 @@ dist_barrios <- function(datos_entrada){
     group_by(nombarrio) %>%
     summarise(ingresomedio_ech = sum(pesomen*HT11, na.rm = TRUE) / 
                 sum(pesomen, na.rm = TRUE)) %>% 
-        mutate(ingresomedio_ech = factor(case_when(
-              ingresomedio_ech <= quantile(ingresomedio_ech, probs = 0.25) ~ "Bajo",
-              ingresomedio_ech <= quantile(ingresomedio_ech, probs = 0.5) ~ "Medio - Bajo",
-              ingresomedio_ech <= quantile(ingresomedio_ech, probs = 0.75) ~ "Medio - Alto",
-              TRUE  ~ "Alto"
-        ))) %>% 
     rename('NOMBBARR' = 'nombarrio') %>% mutate(NOMBBARR = trim(NOMBBARR))
   
   # Recodificamos los barrios de "f" que no son los mismos que el INE
