@@ -200,6 +200,25 @@ transf_apt <- function(datos,na=FALSE){
                                                     total_area - covered_area))
   
   
+  # Arreglamos la variable unit_floors
+  
+  aptos$unit_floor <-  as.numeric(aptos$unit_floor)
+  
+  
+  aptos <- aptos %>% mutate(unit_floor = ifelse(unit_floor > 20 | unit_floor < 0,NA,
+                                                      ifelse(unit_floor==0,1,unit_floor)))
+  
+  # Arreglamos la variable property_age
+  
+  aptos <- aptos %>% separate(property_age,into = c("property_age","no_importa"),sep=" ") %>% 
+    mutate(property_age = as.numeric(property_age)) %>% 
+    mutate(property_age = ifelse(property_age < 0 | 
+                                   property_age > round(fecha_bajada/100),NA,
+                                 ifelse(property_age > 1900,
+                                        round(fecha_bajada/100)-property_age,
+                                        property_age))) %>% select(-no_importa)
+  
+  
   # Para hacer debuggin
   
   aux <- aptos
