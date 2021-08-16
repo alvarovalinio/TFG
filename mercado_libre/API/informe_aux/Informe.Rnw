@@ -1,0 +1,321 @@
+\documentclass[12pt,twoside,spanish,a4paper]{book}
+\usepackage{geometry}\geometry{top=3cm,bottom=3cm,left=3cm,right=3cm}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{url}
+%\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{tocbibind}
+\usepackage{titlesec}
+\usepackage{makeidx}
+\usepackage{boxedminipage}
+\usepackage[utf8]{inputenc}
+%\usepackage[all,2cell,dvips]{xy}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[spanish,es-tabla]{babel}
+%\usepackage{parskip}
+%\usepackage{multirow}
+%\usepackage{multicol}
+\usepackage{verbatim}
+\usepackage{hyperref}
+%\usepackage{fancyvrb}
+\usepackage[authoryear]{natbib}
+
+\fancyhf{} 
+\fancyhead[LE]{\leftmark} 
+\fancyhead[RO]{\nouppercase{\rightmark}} 
+%\fancyfoot[LE,RO]{\thepage} 
+\rfoot{\thepage} 
+\pagestyle{fancy} 
+
+\topmargin 2mm
+\oddsidemargin 2mm
+\evensidemargin 2mm
+
+\makeindex
+\setcounter{secnumdepth}{3}
+
+\linespread{1.6}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+<<echo=FALSE>>=
+options(scipen = 999)  
+@
+
+<<echo=FALSE, message=FALSE, warning=FALSE>>=
+#install.packages("knitr")
+library(knitr)
+@
+
+\pagenumbering{roman}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% CARATULA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thispagestyle{empty}
+
+\begin{center}
+
+%\includegraphics[width=0.20\textwidth]{img/udelar_logo.jpg}
+
+
+
+UNIVERSIDAD DE LA REPÚBLICA
+
+Facultad de Ciencias Económicas y de Administración
+
+Licenciatura en Estadística
+
+Trabajo final de grado
+
+\vspace{2.5cm}
+
+\textbf{\large TÍTULO}
+
+\vspace{1.5 cm}
+
+\textbf{Lucia Coudet}
+\textbf{Alvaro Valiño}
+
+
+\end{center}
+
+
+\vspace{2cm}
+
+\noindent Tutores:\\
+\noindent Natalia Da Silva\\
+
+
+\vspace{1cm}
+
+\begin{center}
+
+\noindent Montevideo, Fecha.
+
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% RESUMEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% 'resumen.Rnw'
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\listoffigures
+\listoftables
+
+
+\setcounter{page}{1} 
+ 
+\pagenumbering{arabic}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introducción \label{cap:Intro}}
+
+Hola aca hay que poner la intro
+
+\chapter{Antecedentes \label{cap:Antec}}
+
+\chapter{Marco teórico y metodología\label{cap:MT}}
+
+Supervisado – aprendizaje automatico
+
+Con el fin de obtener predicciones del precio de oferta de los inmuebles, se procedió a realizar técnicas de aprendizaje automático. Estas consisten en modelar y analizar conjuntos de datos, mediante el aprendizaje de ejemplos, con el fin de predecir y estimar resultados en forma automática.
+
+En este contexto, se realizó un análisis supervisado, en la medida de que se cuenta con una variable de salida ($Y$) y varias variables de entrada ($X$). Por lo tanto, se tiene que los posibles modelos son de la forma:
+
+
+\begin{center}
+
+$Y=f(x)+\epsilon$
+
+\end{center}
+
+Siendo $f$ una función desconocida y $\epsilon$ un error aleatorio independiente de $X$ e $Y$ con media 0. Se denota a la matriz $X$ de dimiensión $n \times p$ a la matriz de datos, donde se tiene $n$ observaciones de entrenamiento y $p$ variables. 
+
+La i-ésima fila se corresponde a la i-ésima observación (perteneciente al conjunto de entrenamiento) siendo de la forma $x_{i}=(x_{i1},\dots,x_{ip})^{T}$, con $x_{i}\in\mathbb R^{p}$. Por otro lado, se denota una nueva observación (o pertenciente al conjunto de testeo) como $x^{*}=(x_{i1}^{*},\dots,x^{*}_{ip})^{T}$, donde está es un vector p-dimensional (al igual que $x_{i}$). 
+
+Se destaca que al ajustar los diferentes modelos se tomó como conjunto de entrenamiento a aproximadamente el $80\%$ de las observaciones. A la hora de estimar $f$, se realizó mediante métodos paramétricos y no paramétricos. 
+
+En el primer caso, se asumió la forma funcional de $f$ y se procedió a estimar sus respectivos parámetros. Por otro lado, en los métodos no paramétricos, no se asumió la forma funcional de $f$.
+
+Arboles de regresión
+
+En primer lugar, se procedió a modelar mediante la implementación de un árbol de decisión. En la medida de que se cuenta con una variable de salida continua, se construyó un árbol de regresión.
+
+A pesar de que en la literatura existen diversos enfoques para la construcción de estos modelos, se trabajó con el método \textit{CART} el cual fue propuesto por \textit{Breiman}, \textit{Friedman}, \textit{Olshen} y \textit{Stone} en 1984.
+
+Este método, se caracteriza por la realización de particiones binarias recursivas del espacio de las variables de entrada. Mediante las mismas, se conforma una organización jerárquica en forma de árbol, donde en cada nodo interior se tiene una pregunta (dicotómica) sobre una variable de entrada y en cada nodo terminal (denominado "hoja") una decisión.
+
+De está forma, se procede a dividir el conjunto de los valores posibles de $X_{1}\dots,X_{p}$ (variables de entrada) en $J$ regiones disjuntas $R_{1},\dots,R_{J}$. *(James, 2013)*
+
+Luego para cada observación que se encuentra en la región $R_{j}$ se realiza la misma predicción. Siendo está, en el contexto de árboles de regresión, el promedio de la variable respuesta en dicha región.
+
+
+En el momento de la construcción de las regiones ($R_{1},\dots,R_{J}$) se realiza de tal forma que en cada subconjunto resultante (denominados como "nodos hijos") en cada iteración implique una disminución en la impureza de estos.
+Para ello, se construyen las regiones $R_{1]$, \dots, $R_{j]$ de forma tal que minimicen la suma de cuadrados de los residuos (o por sus silabas en ingles *RSS*).  
+\begin{center}
+
+$\displaystyle \sum^{J}_{j=1} \sum_{i\  \in R_{j}} \left(y_{i} - \hat{y}_{R_{j}} \right) ^{2}$ (Hastie, 2001)
+
+\end{center}
+Siendo $\hat{y}_{R_{j}}$ el promedio de la variable respuesta en la j-ésima región.
+Para lograr este cometido se utiliza una separación recursiva binaria de la siguiente forma. Se selecciona la variable $X_{j}$ y el número $s$ dividendo el espacio en dos regiones $R_{1}(j,s) = \lbrace X : X_{j} < s \rbrace$ y $R_{2}(j,s) = \lbrace X: X_{j} \geq s \brace$  de forma tal que se haga mínimo 
+
+\begin{center}
+
+$\displaystyle \sum_{i:x_{i} \in R_{1}(j,s)} \left(y - \hat{y}_{R_{1}}\right)^{2} + \sum_{i:x_{i} \in R_{2}(j,s)} \left(y - \hat{y}_{R_{2}}\right)^{2}$
+
+\end{center}
+
+Una vez encontrada la mejor partición se separan los datos en las regiones resultantes y se repite el proceso en cada región. Es decir, se busca nuevamente la mejor variable y el mejor punto de corte de forma se incremente la disminución de la impureza en los nodos hijos.
+El proceso continúa hasta que se satisfaga algún criterio de parada (como por ejemplo que los nodos terminales tengan cierto número de observaciones).
+Luego de definido el criterio de construcción de las regiones, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de *costo-complejidad*. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (*overfitting*). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. *(Hastie, 2001)*
+El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de *cross-validation* aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de *costo-complejidad*.
+
+En dicho método se define a $T_{\alpha}$ como un subárbol obtenido al podar a $T_{0}$. De esta forma, para cada $\alpha$ se busca $T_{\alpha}$ que minimice la siguiente expresión:
+
+\begin{center}
+
+$C_{\alpha}(T)=\displaystyle \sum^{|T|}_{m=1} N_{m} Q_{m}(T) + \alpha|T|$ (Hastie, 2001)
+
+\end{center}
+
+Donde se tiene que $|T|$ es igual número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste la medida de impureza.
+
+En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante *cross-validation*.
+
+
+\chapter{Datos \label{cap:Antec}}
+
+\section{Descripción de los datos utilizados \label{sec:desc}}
+
+\section{Obtención \label{sec:obtencion}}
+
+Los datos de precio de oferta de los apartamentos a la venta en Montevideo y todas las covariables utilizadas para modelizar fueron obtenidas a través de la Interfaz para acceder a la página web (API) de Mercado Libre \url{https://www.mercadolibre.com.uy/}. Para ello, es necesario registrarse en la web \url{https://developers.mercadolibre.com.uy/} y desde allí crear una aplicación. Una vez realizado este paso es posible obtener una clave (token) válida por 6 hs que mercado libre proporciona para la conexión a su API.
+
+De ésta manera y como fue mencionado, una vez que se obtiene el token es posible consultar la API. Para obtener la información de todos los inmuebles tanto a la venta como para el alquier en Uruguay es necesario realizar la consulta filtrando la categoría MLU1459. Sobre esta categoría existen distintas subcategorías. A los efectos del interés del presente trabajo fue consultada la API filtrando según la categoría MLU1474 que corresponde a todos los apartamentos a la venta en Uruguay.
+
+Ahora bien, para obtener la información sobre los apartamentos a la venta en el departamento de Montevideo, se consultó la API filtrando según categoría MLU1474 y además filtrando según el id (identificador) de cada uno de los barrios en Montevideo.
+
+Esto permitió obtener numerosos datos pero no fue suficiente. Para poder acceder a los atributos específicos de cada publicación (ítem) fue necesario realizar consultas filtrando específicamente en cada id de cada publicación. Es decir una vez btenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaicones y se realizaron consultas por publicación.
+
+De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
+
+Para mayor información es posible consultar el código del script funcion api barrios. Disponible en el repositotio público en Github en el siguiebte link: \url{https://github.com/alvarovalinio/TFG/tree/main/mercado_libre/API/funciones}. 
+
+\section{Procesamiento y criterios de limpieza\label{sec:procesamiento}}
+
+La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
+En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
+
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo 11111, 5555555. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos.
+
+En lo que respecta a las variables área total (totalarea) y área cubierta (coveredarea) se decidió asignar NA a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
+
+Existe un conjunto de variables que toman valor Si, No, NA. Para todas ellas se asume que los NA son No y se realiza la recodificación correspondiente en función de ello.
+
+Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo son recodificadas como NA ya que son datos incorrectos y no se conocen las georreferencias exactas.
+
+Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parkinglots), unidad (unirfloors), piso (floor), condición nuevo o usado (itemcondition), property age, entre otras.
+
+Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de daros se recomienda dirigirse al Anexo X.
+
+\section{Variables geoespaciales\label{sec:geo}}
+
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, distancia a la Rambla.
+
+\subsection{Zona respecto a avenida italia \label{subsec:zona}}
+
+Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra disponible el apartamento se encuentra al Norte o al Sur de la calle avenida italia o 18 de Julio. 
+
+\subsection{Distancia al shopping más cercano \label{subsec:shop}}
+
+Fue contruida utilizando la distancia en metros cuadrados entre el centroide del barrio en el cuál se encuentra disponible el apartamento y el shopping más cercano. Si bien se cuenta con la información de latitud y longitud específivo, debido a que existen georreferencias incorrectas en los datos para calcular la distancia al shopping más cercano se definió considerar la georreferencia del centroide del barrio al que pertenece. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile. 
+
+Luego se decidió realizar la siguiente recodificación: 
+  
+\begin{itemize}    
+\item Menos de 1 km: distancia menor o igual de 1 km,
+\item Entre 1 km y 5 km: distancia superior a 1 km e inferior 5 km, 
+\item Más de 5 km: distancia superior a 5 km.
+\end{itemize}
+
+\subsection{Distancia a la rambla \label{subsec:rambla}}
+
+Fue construida utilizando la distancia (en m2) a la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
+
+Es importante mencionar que valores de latitud de la ubicación del inmueble inferiores a -35 y superiores a -34.7 así como valores de longitud inferiores a -56.5 y superiores a -56 se consideran datos erróneos y se les imputa la latitud del centroide del barrio al cual pertenece.  
+
+\section{Encuesta contínua de hogares\label{sec:ech}}
+
+La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable HT11: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se recodificaron los valores según los percentiles: 
+
+\begin{itemize}      
+\item Bajo: barrios con ingreso igual o inferior al primer cuartil (percentil 25\%), 
+\item Medio - Bajo: barrios con ingresos superior al primer cuartil e inferior o igual al segundo cuartil (percentil 50\%),  
+\item Medio - Alto: barrios con ingresos superior al segundo cuartil e inferior o igual al tercer cuartil (percentil 75\%), 
+\item Alto: barrios con ingreso superior al tercer cuartil (percentil 75\%).
+\end{itemize}
+
+\section{Fuentes externas de información \label{sec:fuentes}}
+
+Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio ECH fue utilizada también la encuesta contínua de hogares 2020. 
+
+La herramienta utilizada para construir los archivos .kml que permite georreferenciar los shoppings en Montevideo y la calle avenida italia en continuación con 18 de julio fue Google My Maps, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. fuente wikipedia \url{https://es.wikipedia.org/wiki/Google_My_Maps}.
+
+De ésta forma, fueron construidos los archivos .kml que contienen las georreferencias de los shoppings de montevideo y de la calle avenida italia en contrinuación con 18 de julio.
+
+Los shoppings georreferenciados son:
+
+\begin{itemize}      
+\item Montevideo shopping center
+\item Punta Carretas shopping
+\item Tres cruces shopping
+\item Nuevocentro shopping
+\item Portones shopping
+\end{itemize}      
+
+Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica SIG).
+
+El formato ESRI Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
+
+Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
+      
+\begin{itemize}       
+\item  shp es el archivo que almacena las entidades geométricas de los objetos.
+\item  shx es el archivo que almacena el índice de las entidades geométricas.
+\item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
+\end{itemize}       
+
+(Fuete wikipedia https://es.wikipedia.org/wiki/Shapefile)
+
+A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAFíA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{apa}
+\bibliography{TFGbiblo}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% ANEXO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{appendix}
+
+\chapter{Anexos} 
+
+\section{siete \label{ane:ind}}
+
+
+\section{ocho \label{ane:var}}
+
+\end{appendix}
+
+
+\end{document}
