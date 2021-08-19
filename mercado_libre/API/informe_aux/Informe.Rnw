@@ -63,8 +63,6 @@ library(here)
 
 %\includegraphics[width=0.20\textwidth]{img/udelar_logo.jpg}
 
-
-
 UNIVERSIDAD DE LA REPÚBLICA
 
 Facultad de Ciencias Económicas y de Administración
@@ -120,7 +118,23 @@ Trabajo final de grado
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introducción \label{cap:Intro}}
 
-Hola aca hay que poner la intro
+El presente trabajo tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas, mediante las cuáles poder realizar predicciones de una variable de interés.
+
+Con el fin de llevar a cabo este objetivo, fueron realizadas todas las etapas de un análisis estadístico, desde la obtención de los datos, limpieza y pre-procesamiento, hasta la generación de nuevas variable (ETL y data engeenering).
+
+Uno de los puntos muy importantes de éste trabajo es la obtención y procesamiento de los datos, los cuales fueron obtenidos través de la Interfaz para acceder a la página web (API) de Mercado Libre. Para ello fue necesario la creación de un código que permita una descarga automatizada de la información disponible.
+
+Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, *R*, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
+
+En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en árboles de decisión.
+Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
+
+
+Asimismo, con el fin de mejorar el desempeño predictivo de los modelos fue realizado un proceso de entraniento y validación de los resultados. 
+
+En la medida que existe un trade off entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques: un enfoque desd las técnicas clases y un enfoque desde técnicas alternativas. El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables. Por su parte, las metodologías como ser de árbol de regresión suelen tener un desempeño predictivo superior a expensas de la pérdida del grado de interpretabilidad.
+
+Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
 
 \chapter{Antecedentes \label{cap:Antec}}
 
