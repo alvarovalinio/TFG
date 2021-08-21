@@ -12,13 +12,17 @@ library(doParallel)
 library(rpart)
 library(rpart.plot)
 library(rattle)
+library(ranger)
+library(missRanger)
+
+options(scipen = 999)
 
 #### DATOS
 
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107')
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
 
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
@@ -30,6 +34,18 @@ aptos <- aptos %>% group_by(id) %>%
   slice(1) %>% ungroup()
 
 aptos <- aptos %>% mutate_if(is.character, as.factor)
+
+
+# Filtramos por el criterio en price:
+
+aptos_todos <- aptos
+
+aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
+
+# Perdemos esta cantidad de registros
+
+nrow(aptos_todos) - nrow(aptos)
+
 
 # vemos prop de NA
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
@@ -81,6 +97,31 @@ arbol.prune <- rpart(price ~ . , data = aptos_sin_na,method="anova",
 
 rpart.plot(arbol.prune,roundint = T,digits = 4)
 
+# RANDOM FOREST - RANGER
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+rf <- ranger(price ~ ., data = train,
+             importance = 'impurity')
+
+
+vip::vip(rf) # Importancia de las variables
+
+# Veamos RMSE en el conjunto de testeo
+
+sqrt(mean((test$price-predictions(predict(rf,test)))^2))
+
+
+
+
+################
+#### CARET ####
+################
+
 # TRAIN CONTROL CARET
 
 # Create custom indices: myFolds
@@ -108,8 +149,8 @@ factores <- factores[,colnames(factores)%in%v_NA] # Sacamos factores que tienen 
 aptos_sin_na <- aptos %>% select(-c(colnames(factores),id,title,accepts_mercadopago,city_name,
                                     latitude,longitude,date_created,last_updated,
                                     covered_area_unidad,property_type,tipo_cambio,
-                                    year_month,lat_barrio,fecha_bajada,condition,
-                                    unit_floor, floors, rooms,maintenance_fee))
+                                    year_month,lat_barrio,fecha_bajada,
+                                    unit_floor, floors, rooms,maintenance_fee,property_age))
 
 aptos_x <- aptos_sin_na %>% select(-price)
 
@@ -219,6 +260,9 @@ registerDoSEQ()
 
 pracma::toc()
 
+
+glmnet_caret$bestTune # Regression Lasso
+
 ####### RF 
 
 pracma::tic()
@@ -249,10 +293,55 @@ registerDoSEQ()
 pracma::toc()
 
 
+#######################################################
+
+# Imputamos usando missRanger
+
+aptos_imputar <- aptos %>% select(-c(id,title,accepts_mercadopago,city_name,
+                                     latitude,longitude,date_created,last_updated,
+                                     covered_area_unidad,property_type,tipo_cambio,
+                                     year_month,lat_barrio,fecha_bajada,condition))
+
+aptos_imputado <- missRanger(aptos_imputar, pmm.k = 3, num.trees = 100)
+
+aptos_x_imput <- aptos_imputado %>% select(-price)
+
+pracma::tic()
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+clusterEvalQ(cl,'myControl')
+
+RF_imput_caret <- train(
+  x = aptos_x_imput, 
+  y = aptos_y,
+  method = 'ranger',
+  trControl = myControl,
+  preProcess = c("nzv")
+)
+
+
+stopCluster(cl)
+
+registerDoSEQ()
+
+pracma::toc()
+
+
+
+### Corremos caret con los imputados
+
+
 ######## RF con imputacion de los factores y agregando maintenance_fee
 
 
-# Proceso de imputacion factores
+# Proceso de imputacion factores  PENSAR Y VER CONDITION PARA IMPUTAR
 
 # Sacamos variables "basura"
 
@@ -328,3 +417,114 @@ save(RF_imput_caret,file='RF_imput_caret.RData')
 save(lm_caret,file='lm_caret.RData')
 save(glmnet_caret,file='glmnet_caret.RData')
 
+#############################################################
+
+library(h2o)
+
+h2o.init()
+
+
+aptos_h2o <- as.h2o(aptos_sin_na)
+
+aptos_y <- "price"
+aptos_x <- setdiff(colnames(aptos_h2o), aptos_y)
+
+# Training, validation and test sets
+
+# Split data into train & validation sets
+sframe <- h2o.splitFrame(aptos_h2o, seed = 42)
+train <- sframe[[1]]
+valid <- sframe[[2]]
+
+# MODELING
+# Train random forest model
+rf_model <- h2o.randomForest(x = aptos_x,
+                             y = aptos_y,
+                             training_frame = train,
+                             validation_frame = valid)
+
+# Calculate model performance
+perf <- h2o.performance(rf_model, valid = TRUE)
+
+###########################################################
+
+# Veamos h2o con los factores imputados
+
+
+aptos_imput <- aptos %>% select(-c(id,title,accepts_mercadopago,city_name,
+                                   latitude,longitude,date_created,last_updated,
+                                   covered_area_unidad,property_type,tipo_cambio,
+                                   year_month,lat_barrio,fecha_bajada,condition))
+
+aptos_imput$total_area[is.na(aptos_imput$total_area)] <- mean(aptos_imput$total_area[!is.na(aptos_imput$total_area)])
+aptos_imput$covered_area[is.na(aptos_imput$covered_area)] <- mean(aptos_imput$covered_area[!is.na(aptos_imput$covered_area)])
+aptos_imput$no_covered_area[is.na(aptos_imput$no_covered_area)] <- mean(aptos_imput$no_covered_area[!is.na(aptos_imput$no_covered_area)])
+
+
+# Imputamos item_condition usando RF para predecirla
+
+pracma::tic()
+
+aptos_imput <- imput_fact(datos=aptos_imput,response_y = 'price',modelo='ranger',
+                          factor_NA = c('item_condition','tags'))
+pracma::toc()
+
+
+
+h2o.init()
+
+
+aptos_h2o <- as.h2o(aptos_imput)
+
+aptos_y <- "price"
+aptos_x <- setdiff(colnames(aptos_h2o), aptos_y)
+
+# Training, validation and test sets
+
+# Split data into train & validation sets
+sframe <- h2o.splitFrame(aptos_h2o, seed = 42)
+train <- sframe[[1]]
+valid <- sframe[[2]]
+
+# MODELING
+# Train random forest model
+rf_model <- h2o.randomForest(x = aptos_x,
+                             y = aptos_y,
+                             training_frame = train,
+                             validation_frame = valid)
+
+# Calculate model performance
+perf <- h2o.performance(rf_model, valid = TRUE)
+
+#################################################
+
+# Filtramos precios extremos
+
+aptos_imput <- aptos_imput %>% filter(price>50000 & price<500000)
+
+h2o.init()
+
+
+aptos_h2o <- as.h2o(aptos_imput)
+
+aptos_y <- "price"
+aptos_x <- setdiff(colnames(aptos_h2o), aptos_y)
+
+# Training, validation and test sets
+
+# Split data into train & validation sets
+sframe <- h2o.splitFrame(aptos_h2o, seed = 42)
+train <- sframe[[1]]
+valid <- sframe[[2]]
+
+# MODELING
+# Train random forest model
+rf_model <- h2o.randomForest(x = aptos_x,
+                             y = aptos_y,
+                             training_frame = train,
+                             validation_frame = valid)
+
+# Calculate model performance
+perf <- h2o.performance(rf_model, valid = TRUE)
+
+perf
