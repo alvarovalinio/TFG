@@ -1,0 +1,102 @@
+################
+#### MODELS ####
+################
+
+rm(list=ls())
+
+library(tidyverse)
+library(here)
+library(caret)
+library(doParallel)
+#library(pracma)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(ranger)
+library(missRanger)
+
+options(scipen = 999)
+
+# Funciones auxiliares
+
+source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
+
+#### DATOS
+
+aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
+                              pattern = "*.csv", full.names = T)
+
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
+
+aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
+      read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
+
+
+aptos <- aptos %>% group_by(id) %>% 
+      arrange(desc(fecha_bajada)) %>%
+      slice(1) %>% ungroup()
+
+aptos <- aptos %>% mutate_if(is.character, as.factor)
+
+# Filtramos por el criterio en price - eliminamos obs. con price superior al percentil 95%
+
+aptos_todos <- aptos
+
+aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
+
+# Perdemos esta cantidad de registros
+
+nrow(aptos_todos) - nrow(aptos)
+
+# vemos prop de NA
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
+      rename(prop_na=".") %>% arrange(desc(prop_na))
+
+#### Definimos variables Sin na
+
+aptos_sin_na <- imput_media(aptos,p=.1)
+
+##### Arbol de regresion
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+set.seed(1234)
+arbol <- rpart(price~ . , data=train)
+
+summary(arbol)
+
+# Proceso de poda
+
+broom::tidy(arbol$cptable)
+
+# Grafico de la evolucion del error
+
+cp_error <- data.frame(arbol$cptable)
+
+cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
+
+# Otra forma
+
+plotcp(arbol) 
+
+# Obtengamos el cp
+
+cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
+
+# Arbol podado:
+
+arbol.prune <- rpart(price ~ . , data = train,method="anova",
+                     control=rpart.control(cp=cp_opt))
+
+# Grafico
+
+rpart.plot(arbol.prune,roundint = T,digits = 4)
+
+
+
+
+

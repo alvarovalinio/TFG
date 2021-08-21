@@ -247,6 +247,116 @@ $RMSE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (y_j - \hat{y}_j)
 
 dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
 
+
+\chapter{Modelos \label{cap:Modelos}}
+
+En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.1, y se procede en ésta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que {el proceso generador de datos de éstos valores es un proceso aleatorio. Es decir, los datos faltantes son generados al azar.
+
+Posteriormente, se realiza imputación de valores faltantes utilizando Random Forest sobre las variable con NA.
+
+<<librerias, echo=FALSE, message=FALSE, warning=FALSE>>=
+library(tidyverse)
+library(here)
+library(caret)
+library(doParallel)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(ranger)
+library(missRanger)
+@
+
+
+<<Datos_imputmedia, echo=FALSE, message=FALSE, warning=FALSE>>=
+options(scipen = 999)
+
+# Funciones auxiliares
+
+source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
+
+#### DATOS
+
+aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
+                              pattern = "*.csv", full.names = T)
+
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
+
+aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
+      read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
+
+
+aptos <- aptos %>% group_by(id) %>% 
+      arrange(desc(fecha_bajada)) %>%
+      slice(1) %>% ungroup()
+
+aptos <- aptos %>% mutate_if(is.character, as.factor)
+
+# Filtramos por el criterio en price - eliminamos obs. con price superior al percentil 95%
+
+aptos_todos <- aptos
+
+aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
+
+# Perdemos esta cantidad de registros
+
+# nrow(aptos_todos) - nrow(aptos)
+
+# vemos prop de NA
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
+      rename(prop_na=".") %>% arrange(desc(prop_na))
+
+#### Definimos variables Sin na
+
+aptos_sin_na <- imput_media(aptos,p=.1)
+@
+
+A continuación se presenta el Árbol. En el mismo se puede observar que la primera partición es realizada con la variable 
+
+<<Arbol_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
+##### Arbol de regresion
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+set.seed(1234)
+arbol <- rpart(price~ . , data=train)
+
+# summary(arbol)
+
+# Proceso de poda
+
+#broom::tidy(arbol$cptable)
+
+# Grafico de la evolucion del error
+
+cp_error <- data.frame(arbol$cptable)
+
+#cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
+
+# Otra forma
+
+#plotcp(arbol) 
+
+# Obtengamos el cp
+
+cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
+
+# Arbol podado:
+
+arbol.prune <- rpart(price ~ . , data = train,method="anova",
+                     control=rpart.control(cp=cp_opt))
+
+# Grafico
+
+rpart.plot(arbol.prune,roundint = T,digits = 4)
+@
+
+
+
+
 \chapter{Datos \label{cap:Antec}}
 
 \section{Descripción de los datos utilizados \label{sec:desc}}
