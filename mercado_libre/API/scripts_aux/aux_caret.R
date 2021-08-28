@@ -1,4 +1,3 @@
-
 # Librerias
 
 library(tidyverse)
@@ -6,6 +5,7 @@ library(here)
 library(ranger)
 library(missRanger)
 library(caret)
+library(doParallel)
 
 options(scipen = 999)
 
@@ -83,11 +83,61 @@ RF_caret <- train(
       preProcess = c("nzv")
 )
 
+
+# Resultados del modelo
+
+RF_caret
+
 # Vemos graficamente el comportamiento de los hiperparametros
 plot(RF_caret)
 
 # Busqueda orientada en el espacio de los hiperparametros
 # (adaptive resampling)
+
+# Definimos grilla segun lo que vemos
+
+# Define the tuning grid: tuneGrid
+# Define the tuning grid: tuneGrid
+
+tuneGrid <- data.frame(
+   .mtry = c(12:20),
+   .splitrule = "variance", #rule to split on
+   .min.node.size = 5
+)
+
+
+# Hacemos ajuste de los hiperparametros con parallel
+
+# Proceso de paralelo
+
+# Calculate the number of cores
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
+
+pracma::tic()
+
+RF_caret_tunning <- train(
+   x = aptos_x, 
+   y = aptos_y,
+   tuneGrid = tuneGrid,
+   method = 'ranger',
+   trControl = myControl,
+   preProcess = c("nzv")
+)
+
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
+
 
 ########################################
 # Caso 2: imputamos usando Miss Ranger #
@@ -105,9 +155,9 @@ aptos_imputar <- aptos %>% select(-c(id,title,accepts_mercadopago,city_name,
 aptos_imputado <- missRanger(aptos_imputar %>% select(-price), 
                              pmm.k = 3, num.trees = 100)
 
-aptos_x_imput <- aptos_imputado %>% select(-price)
+aptos_x_imput <- aptos_imputado
 
-aptos_y_imput <- aptos_imputado$price 
+aptos_y_imput <- aptos$price 
 
 # 2do - Modelo Random Forest
 RF_caret_missr <- train(
@@ -118,8 +168,13 @@ RF_caret_missr <- train(
       preProcess = c("nzv")
 )
 
+# Veamos los resultados del modelo
+
+RF_caret_missr
+
+
 # Vemos graficamente el comportamiento de los hiperparametros
-plot(RF_caret)
+plot(RF_caret_missr)
 
 # Busqueda orientada en el espacio de los hiperparametros
 # (adaptive resampling)
