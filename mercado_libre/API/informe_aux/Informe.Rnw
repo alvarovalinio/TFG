@@ -43,7 +43,7 @@
 \SweaveOpts{concordance=TRUE}
 
 <<echo=FALSE>>=
-options(scipen = 999)  
+options(scipen = 999, cache = TRUE)  
 @
 
 <<echo=FALSE, message=FALSE, warning=FALSE>>=
@@ -142,7 +142,7 @@ Todas las etapas fueron realizando preservando la reproducibilidad de todos los 
 
 \textbf{Supervisado – aprendizaje automatico}
 
-Con el fin de obtener predicciones del precio de oferta de los inmuebles, se procedió a realizar técnicas de aprendizaje automático. Estas consisten en modelar y analizar conjuntos de datos, mediante el aprendizaje de ejemplos, con el fin de predecir y estimar resultados en forma automática.
+Con el fin de obtener predicciones del precio de oferta de los inmuebles, fueron implementadas diferentes técnicas de aprendizaje automático. Estas consisten en modelar y analizar conjuntos de datos, mediante el aprendizaje de ejemplos, con el fin de predecir y estimar resultados en forma automática.
 
 En este contexto, se realizó un análisis supervisado, en la medida de que se cuenta con una variable de salida ($Y$) y varias variables de entrada ($X$). Por lo tanto, se tiene que los posibles modelos son de la forma:
 
@@ -152,7 +152,7 @@ $Y=f(x)+\epsilon$
 
 \end{center}
 
-Siendo $f$ una función desconocida y $\epsilon$ un error aleatorio independiente de $X$ e $Y$ con media 0. Se denota a la matriz $X$ de dimiensión $n \times p$ a la matriz de datos, donde se tiene $n$ observaciones de entrenamiento y $p$ variables. 
+Siendo $f$ una función desconocida y $\epsilon$ un error aleatorio independiente de $X$ e $Y$ con media 0. Se denota a la matriz $X$ de dimensión $n \times p$ a la matriz de datos, donde se tiene $n$ observaciones de entrenamiento y $p$ variables. 
 
 La i-ésima fila se corresponde a la i-ésima observación (perteneciente al conjunto de entrenamiento) siendo de la forma $x_{i}=(x_{i1},\dots,x_{ip})^{T}$, con $x_{i}\in\mathbb R^{p}$. Por otro lado, se denota una nueva observación (o pertenciente al conjunto de testeo) como $x^{*}=(x_{i1}^{*},\dots,x^{*}_{ip})^{T}$, donde está es un vector p-dimensional (al igual que $x_{i}$). 
 
@@ -209,7 +209,8 @@ En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penaliza
 \textbf{Bagging – Random Forest}
 
 A pesar de que los árboles de regresión poseen un alto grado de interpretabilidad, estos poseen la gran limitante de ser inestables. Esto en el sentido de que pequeñas variaciones en el conjunto de entrenamiento y testeo generan grandes cambios en las estimaciones.
-Por lo tanto, con el fin de realizar predicciones del precio de oferta de los apartamentos a la venta, se procedió a emplear diferentes métodos con el fin de obtener un método de predicción estable.
+Por lo tanto, se emplearon diferentes métodos alternativos buscando estabilidad en las predicciones.
+
 En primer lugar, se aplicó el método *Bagging* desarrollado por *Breiman* en 1994. Este método consiste en construir un estimador combinando distintas versiones de estimadores.
 En este contexto, estas nuevas versiones se construyen generando nuevos conjuntos de entrenamiento, mediante la técnica de remuestreo *bootstrap*. La cual consiste en la generación de varias muestras con reemplazo, del conjunto de datos de entrenamiento, donde a cada observación se le asigna el mismo peso ($\frac{1}{n}$, siendo $n$ el número de observaciones). Al número de muestras *bootstrap* se le suele denotar con la letra $B$.
 A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras *bootstrap*, donde a partir de cada una de ellas se construye un estimador. Luego, se le asigna a la observación el promedio de las respuestas de los estimadores construidos en cada muestra. 
@@ -222,6 +223,41 @@ En los dos métodos anteriormente mencionados, se tiene que cada observación po
 Este conjunto de observaciones se denomina como *out of bag observations* (*OOB*). Por lo tanto, en cada iteración se procede a predecir dichas observaciones, mediante el estimador obtenido. Repitiendo este procedimiento para las $n$ observaciones, se calcula el *error OOB*. Dicha medida se procedió a utilizar como una primera aproximación en cuanto a la performance predictiva de ambos modelos.
 A pesar de que los métodos anteriormente mencionados logran solucionar el problema de la inestabilidad por parte de los árboles de decisión, estos métodos se caracterizan por presentar una baja interpretabilidad. 
 Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos *Bagging* y *Random Forest* se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
+
+\textbf{Boosting}
+
+Por otro lado, el tercer método empleado consiste en el procedimiento *Boosting* aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
+
+Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método *Boosting*, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
+
+Boosting tiene 3 tuning parameters:
+
+
+1. El número de árboles $B$. A diferencia de bagging y random forest, boosting puede generar sobreajuste a los datos en caso que $B$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. Se utiliza validación cruzada para estimar a $B$.
+
+2. El parámetro $\lambda$ que controla la tasa a la que aprende el algoritmo. $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. La selección correcta de éste parámetro depende del problema específico. Por lo general, cuánto menor el valor de $\lambda$, mayor el $B$ necesario.
+
+3. El número de particiones en cada árbol $d$ que controla la complejidad de cada estimador. Usualmente un valor de $d=1$ funciona bien. Esto implica que cada árbol tenga solamente una partición. En éste caso lo que se tiene entonces es un modelo aditivo ya que cada término involucra una sola variable. $d$ puede ser intepretado también como el parámetro que controla el orden de interacción (interaction depth) entre los modelos, ya que las $d$ particiones pueden involucrar a los sumo $d$ variables.
+
+Algoritmo 
+
+1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el set de entrenamiento.
+2. Para cada $b = 1, 2, \cdots, B$ repite:
+
+a. Se ajusta un árbol $\hat{f}^b(x)$ con $d$ particiones (es decir, $d+1$ nodos terminales) en los datos de entrenamiento (X,r).
+
+b. Se actualiza $\hat{f}$ agregando el nuevo árbol en una versión reducida:
+
+$$\hat{f}(x) \leftarrow \hat{f}(x) + \lambda \hat{f}^b(x)$$
+
+c. Se actualizan los residuos 
+
+$$r_i \leftarrow r_i - \lambda \hat{f}^b(x_i) $$
+
+3. Se general el modelo
+
+$$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
+
 
 \textbf{Cross – validation}
 
