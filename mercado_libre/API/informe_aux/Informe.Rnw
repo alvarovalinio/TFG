@@ -259,6 +259,249 @@ $$r_i \leftarrow r_i - \lambda \hat{f}^b(x_i) $$
 $$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
 
 
+
+\textbf{Support Vector Regression (SVR)}
+
+A pesar de que los SVM pueden ser utilizados tanto para problemas de clasificación como de regresión, estos fueron creados originalmente para abordar problemas del primer tipo. Por lo tanto, en primer lugar se explicitara la metodología para los construcción de los mismos en problemas de clasificación y luego se generalizará para los problemas de regresión.
+
+Se destaca que a su vez estos fueron creados para problemas de clasificación donde la variable de salida es dicotómica. Sin embargo, existen algunas soluciones para lidear con esta limitante a la hora de trabajar con $K$ clases, siendo $K>2$.
+
+En el contexto de los problemas de clasificación, los SVM surgen como una generalización más flexible de los \textit{Suport Vector Classifiers}. Donde a su vez, estos últimos surgen de generalizar los clasificadores denominados \textit{Maximal Margin Classifier}. 
+
+De esta forma, en primer lugar se procede a definir el método \textit{Maximal Margin Classifier}. Este método se encuentra dentro de los métodos de clasificación mediante la separación por hiperplanos. Donde se tiene que si un vector $X=(X_{1},\dots,X_{p})^{T}$ de dimensión $p$ se encuentra en el hiperplano de dimensión $p$ si sastiface la siguiente ecuación:
+
+\begin{center}
+
+$\beta_{0}+\beta_{1}X_{1}+\dots+\beta_{p}X_{p}=0$ (James, 2013) $(1)$
+
+\end{center}
+
+
+Por lo tanto, se tiene que si $X$ no sastiface $(1)$, dependiendo del signo de la ecuación, $X$ se encuentra a un lado o otro del plano. Resultando mediante la construicción del plano dos "mitades" del espacio p-dimensional.
+
+De esta forma, se define para cada observación la variable de salida $y_{1},\dots,y_{n} \in \{-1,1\}$, donde $-1$ y $1$ representan las diferentes clases. Con fin de clasificar a las $n$ observaciones, se procede a construir un hiperplano el cual posea la siguiente propiedad:
+
+\begin{center}
+
+$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}>0$ si $y_{i}=1$ (James, 2013) $(2)$
+
+$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}<0$ si $y_{i}=-1$ (James, 2013) $(3)$
+
+
+\end{center}
+
+
+Utilizando $(2)$ y $(3)$ se procede a clasificar una nueva observación en función del signo de $f(x^{*})=\beta_{0}+\beta_{1}x^{*}_{1}+\dots+\beta_{p}x^{*}_{p}$. En caso de que el signo de $f(x^{*})$ sea positivo se clasifica a la observación en la clase $1$ y en caso contrario en la clase $-1$.
+
+
+Sin embargo, en el caso de que el conjunto de datos de entrenamiento pueda ser efectivamente separado por la construcción de un hiperplano, entonces existen infinitos hiperplanos que cumplen esta propiedad. Por lo tanto, el método de *Maximal Margin Classifier* consiste en construir el hiperplano que logre una mejor clasificación.
+
+En este se construye aquel hiperplano el cual se encuentre a la mayor distancia euclídea de cada observación en el conjunto de entrenamiento. Por lo tanto, se procede a calcular la distancia entre cada observación y el hiperplano, donde a la menor de estas se le denomina como el *margen*. Siendo este la menor distancia que se encuentra una observación del hiperplano.
+
+De esta forma, el método consiste en crear aquel hiperplano, en el cual el *margen* sea lo más grande posible. Dicho de otra forma, el método busca construir el hiperplano en el cual se maximiza el mínimo de las distancias entre el mismo y cada observación en el conjunto de entrenamiento.
+
+A las observaciones que definen el *margen* se las denota como *support vectors*, ya que son estas últimas las que definen la construcción del hiperplano que maximiza el *margen*. Por lo tanto, este método y por consecuente las generalizaciones de este poseen la propiedad de que solo algunas observaciones poseen un rol activo en la hora de definir los diferentes clasificadores.
+
+El hiperplano con el mayor *margen* se obtiene a través de la solución del siguiente problema de optimización :
+
+\begin{center}
+
+$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(4)$
+
+restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(5)$
+
+$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M$ $\forall\  i=1,\dots,n$ (James, 2013) $(6)$
+
+\end{center}
+
+Donde $(6)$ implica que cada observación se encuentre en el lado correcto del hiperplano con cierta "seguridad" (siempre y cuando $M$ sea mayor a $0$). Por otro lado, $(5)$ implica que la distancia euclidia entre la i-ésima observación y el hiperplano esta dada por $y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})$. De esta forma las restricciones $(5)$ y $(6)$ aseguran que cada observación esta en el lado correcto del hiperplano y a una distancia de por lo menos $M$. 
+
+Por lo tanto, se tiene que $M$ representa el *margen* del hiperplano y el problema de optimización consiste en obtener $\beta_{0},\dots,\beta_{p}$ tales que maximicen $M$.
+
+Sin embargo, en muchos casos el problema anteriormente planteado no tiene solución con $M>0$, es decir no existe dicho hiperplano el cual logre separar al conjunto de entrenamiento de forma tal que todas las observaciones estén bien clasificadas. 
+Más aún, a pesar de que dicho hiperplano exista, por su forma de construcción, el mismo tiende a clasificar de forma "perfecta" a las observaciones del conjunto de entrenamiento. Esta particularidad determina un alto grado de sensibilidad a observaciones individuales. Por lo tanto, este método se caracteriza por presentar un alto grado de *overfitting*.
+
+De esta forma, surge el clasificador *Support vector classifiers* (SVC) como una generalización del método anterior, con el fin de dar solución a los dos problemas anteriormente mencionados.
+
+Los SVC consisten en la clasificación de observaciones (en dos clases) mediante la creación de un hiperplano que no separe de forma "perfecta" las dos clases. Este método consiste en clasificar de forma incorrecta algunas observaciones pertenecientes al conjunto de entrenamiento con el fin de lograr una mejor clasificación en el resto de las observaciones.
+
+Dicho método se suele denominar como *clasificador de margen suave*, ya que a diferencia del *Maximal Margin Classifier*, este método permite que algunas observaciones esten en lado incorrecto del margen o incluso del hiperplano. 
+
+El hiperplano obtenido en SVC, surge de la solución del siguiente problema de optimización:
+
+\begin{center}
+
+$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(7)$
+
+restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(8)$
+
+$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M(1-\epsilon_{i})$ $\forall\  i=1,\dots,n$ (James, 2013) $(9)$
+
+$\epsilon_{i}\geq0$, $\displaystyle \sum^{n}_{i=1}\epsilon_{i}\leq C$, $C\geq0$ (James, 2013) $(10)$
+
+\end{center}
+
+Al igual que en el método *Maximal Margin Classifier* $M$ representa el *margen*, el cual se busca que este sea lo más ancho posible. Por otro lado, se tiene que la ecuación $(9)$ es una versión más "flexible" de la ecuación $(6)$, donde se agrega el termino $1-\epsilon_{i}$. 
+
+Estas variables, $\epsilon_{1},\dots,\epsilon_{n}$, se denominan *slack variables* (James, 2013) y cumple el rol de permitir que algunas observaciones se encuentren mal clasificadas. Donde se tiene que : 1) $\epsilon_{i}=0$ entonces la i-ésima observación esta en el lado correcto del *margen*, 2) $\epsilon_{i} >0$ entonces la i-ésima observación esta en el lado incorrecto del *margen* y 3) $\epsilon_{i}>1$ entonces la i-ésima observación se encuentra en lado incorrecto del hiperplano.
+
+Por otro lado, en $(10)$ se tiene que el parámetro $C$ cumple un rol de *tunning parameter*. Este al ser una cota superior en la suma de los $\epsilon_{i}$, determina el número y la magnitud de las violaciones toleradas en el margen e hiperplano. Donde se tiene que si $C=0$, entonces el problema $(7)-(10)$ es análogo al problema $(4)-(6)$. 
+
+En el caso donde $C>0$, entonces como máximo se tiene que $C$ observaciones se encuentran en el lado incorrecto del hiperplano. Esto en la medida de que la i-ésima observación está en el lado incorrecto del hiperplano si $\epsilon_{i}>1$ y por $(10)$ no puede haber más de $C$ sumandos mayores a 1.
+
+Por lo tanto, el parámetro $C$ controla el *trade-off* entre sesgo y varianza (James, 2013), ya que: 1) Si $C$ es "pequeño", entonces se obtienen *márgenes* angostos y por ende pocas observaciones violan los mismos. De esta forma, el clasificador se encuentra muy ajustado a los datos presentando un bajo sesgo, pero una alta varianza. 2) Si $C$ es "grande", entonces los *márgenes* que se obtienen son anchos y por lo tanto muchas observaciones violan los mismos. Resultando en un clasificador con ajuste más "flexible" el cual presenta (posiblemente) mayor sesgo pero menor varianza. Dicho parámetro se procede a estimar mediante un procedimiento de *cross-validation*. 
+
+Al igual que el problema $(4)-(6)$, a la hora de resolver $(7)-(10)$ solo un subgrupo de observaciones posee un rol activo a la hora de definir el hiperplano. En el caso de SVC las observaciones que se encuentran en el margen o violan el mismo, determinan el hiperplano obtenido. Por lo tanto, en este contexto, se le denomina a dichas observaciones como *support vectors*. En donde, si $C$ es "pequeño", entonces se tienen pocos *supports vectors* y por ende pocas observaciones determinan el hiperplano (caso contrario cuando $C$ es "grande").
+
+En la medida de que la propiedad anteriormente mencionada implica que el clasificador este construido en función de un número reducido de observaciones, determina que el método (al igual que las generalizaciones del mismo, *Support Vector Machines*) sea robusto al comportamiento de observaciones atípicas. (James, 2013)
+
+Luego se tiene que la solución del problema $(7)-(10)$ involucra el producto escalar entre las observaciones y no las observaciones en si (Hastie, 2017). Por lo tanto, el clasificador puede ser expresado de la siguiente forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(11)$
+
+\end{center}
+
+De esta forma, se tiene que para evaluar $f(x)$ es necesario el cálculo del producto escalar entre la nueva observación ($x^{*}$) y cada una de las observaciones pertenecientes al conjunto de entrenamiento. A su vez, en $(11)$ se cuenta con $n$ parámetros $\alpha_{i}$ con $i=1,\dots,n$. Donde cada uno corresponde a una observación de entrenamiento y de esta forma el método presenta un claro *overfitting*.
+
+Sin embargo, se tiene que $\alpha_{i} \neq0$ solo para las observaciones que son *support vectors*, es decir si la observación de entrenamiento no es un *support vector*, entonces el coeficiente asociado a la misma es igual a 0 (Hastie, 2017). Por lo tanto, si se define a $S$ como el conjunto de índices de los *support vectors*, entonces se puede reescribir al clasificador de la forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(12)$
+
+\end{center}
+
+Donde se tiene que (generalmente) en $(12)$ se encuentra un número considerablemente menor de observaciones (y por ende parámetros) que en $(11)$. A pesar de que los clasificadores construidos mediante *Support Vector Classifiers* logran resolver las problematicas planteadas en *Maximal Margin Classifier*, estos poseen una gran limitante. Siendo está asumir que la frontera que separa a las dos clases en las cuales se busca clasificar a las observaciones es del tipo lineal.
+
+Para afrontar esta limitante surge el método *Support Vector Machines*, los cuales se utilizan en el caso de fronteras no lineales entre las dos clases. Este método es una extensión de clasificador *Support Vector Classifier*, donde se busca agrandar el espacio original de las variables con el fin de lograr obtener una frontera lineal entre las clases en este nuevo espacio. Este procedimiento se denomina como *the kernel trick*.
+
+Para ello se utiliza una función denominada *kernel* la cual permite cuantificar la similitud entre dos observaciones (James, 2013). Esta función es una generalización del producto escalar y se denota de la siguiente forma:
+
+
+\begin{center}
+
+$K(x_{i},x_{j})$ (James, 2013) $(13)$
+
+\end{center}
+
+Por lo tanto, el método de *Support Vector Machines* consiste en sustituir en la expresión $(12)$ el producto escalar entre $x^{*}$ y $x_{i}$ por la función *kernel*. De esta forma el clasificador tiene la siguiente expresión:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i}\  K(x^{*},x_{i})$ (James, 2013) $(14)$
+
+
+\end{center}
+
+
+En función a las ecuaciones $(12)$ y $(14)$ se observa que el clasificador *SVC* es un caso particular de *SVM*, donde se cumple la siguiente igualdad:
+
+\begin{center}
+
+$K(x^{*},x_{i})=\displaystyle \sum_{j=1}^{p} x^{*}_{j}x_{ij}$ (James, 2013) $(15)$
+
+\end{center}
+
+El *kernel* de la ecuación anterior se denomina como *linear kernel*, el cual en caso de que las observaciones se encuentren estandarizadas, cuantifica la similitud entre dos observaciones mediante el coeficiente de correlación de *Pearson* (James, 2013).
+
+A la hora de aplicar *SVM* existen diferentes *kernels* lo cuales se podrían utilizar. Uno de lo más utilizados en la bibliografía se denomina *radial kernel*. Este es de la forma:
+
+\begin{center}
+
+$K(x^{*},x_{i})=exp \left(-\gamma \displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}  \right)$, $\gamma>0$ (James, 2013) $(16)$
+
+\end{center}
+
+
+En donde si la observación $x^{*}$ se encuentra lejos de la observación $x_{i}$ en terminos de distancia euclidia, entonces se tiene que $\displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}$ es una cantidad grande y por consecuente $K(x^{*},x_{i})$ es pequeño. Por lo tanto, en $(14)$ $x_{i}$ no va a tener un rol activo a la hora de predecir la clase de $x^{*}$.
+
+Esto significando que el *radial kernel* posee un comportamiento local, en el sentido de que solo las observaciones de entrenamiento cercanas tienen efecto en la predicción de la clase de una nueva observación.
+
+Por otro lado, se tiene que $\gamma$ es un parámetro de escala, el cual afecta la varianza en la estimación. Al igual que $C$, dicho parámetro generalmente se estima mediante *cross-validation*.
+
+*SVM* presentan la limitante de que, por su forma de construcción, solo pueden aplicarse a problemas de clasificación entre dos grupos. Para solucionar {este problema, la bibliografía menciona diversos enfoques que no van a ser mencionados en éste trabajo.
+en función de la clase que posee una mayor frecuencia.
+
+
+\textbf{Aplicación para modelos de regresión}
+
+Una vez desarrollado los conceptos para abordar problemas de clasificación mediante la construcción de *SVM*, se procede a explicitar dicho procedimiento en problemas de regresión. En este contexto, se le suele llamar al método *SVM* de la forma *Support Vector Regression* (*SVR*).
+
+Los *SVR* al ser una generalización de los *SVM* (en problemas de clasificación), poseen características muy similares, principalmente la robustez en cuanto a observaciones atípicas. De esta forma, se tiene que los *SVR* pertenecen al "grupo" denominado *robust regression*, donde en estos métodos se busca minimizar el efecto de observaciones atípicas en la ecuación de regresión. (Kunh-Johnson, 2013)
+
+Estos métodos surgen como altenartiva a los modelos de regresión lineal, ya que estos ultimos a la hora de estimar los parametros buscan minimizar la suma de cuadrados residualas (*SSE*). Lo cual conlleva que una observación que no sigue la tendencia del resto, puede ser muy influyente. (Kunh-Johnson, 2013)
+
+A pesar de que existen varios enfoques para llevar acabo *SVR* en este informe se centró en el denominado $\epsilon$*-insensitive regression* (Kunh-Johnson, 2013). En este contexto, a la hora de obtener las estimaciones de los parametros del modelo, se define una nueva función de perdida denominada $\epsilon$*-insensitive loss function*, siendo de la forma:
+
+\begin{center}
+
+$L(y,f(x,\alpha))=L(|y-f(x,\alpha)|_{\epsilon})$ (Vapnik, 2000) $(17)$
+
+\end{center}
+
+
+\begin{center}
+
+$|y-f(x,\alpha)|_{\epsilon} = \begin{cases} 0, & \mbox{si } |y-f(x,\alpha)|_{\epsilon} \leq \epsilon \mbox{} \\ |y-f(x,\alpha)|_{\epsilon}-\epsilon, & \mbox{en otro caso } \mbox{} \end{cases}$     (Vapnik, 2000) $(18)$
+
+\end{center}
+
+En función de $(18)$, se tiene que la perdida es igual a 0 si la discrepancia entre los predicho y lo observado es menor a $\epsilon$, siendo $\epsilon$ un limite fijado de antemano. Por lo tanto se tiene que tanto los outliers, como las observaciones que poseen un buen ajuste (residuos pequeños), no tienen efecto en la ecuación de regresión. 
+
+En este contexto, para estimar los parámetros del modelo, *SVR* utiliza la función de perdida anteriormente definida, pero a su vez considerando un parámetro de penalización. En dicho método se busca obtener los coeficientes que minimizan la siguiente expresión:
+
+\begin{center}
+
+$C \displaystyle \sum_{i=1}^{n}L(|y-f(x,\beta)|_{\epsilon}) + \displaystyle \sum_{j=1}^{P} \beta^{2}_{j}$ (Kunh-Johnson, 2013) $(19)$
+
+
+\end{center}
+
+Donde en $(19)$ el parámetro $C$ es un parámetro de penalización, el cual generalmente se estima mediante *cross-validation*. En este contexto el parámetro $C$ cumple un rol de indicar la complejidad del modelo. Cuando este es "grande" el modelo obtiene mayor flexibilidad, en la medida que el efecto de los errores es aumentado. Por otro lado, al disminuir este parámetro el modelo se vuelve más rígido y con menor posibilidad de sobre ajustar a las observaciones.
+
+Luego, de forma análoga a como se explicitó para los problemas de clasificación, en este contexto se tiene que la función de regresión tiene la siguiente forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (Kunh-Johnson, 2013) $(20)$
+
+\end{center}
+
+
+Nuevamente, como se observó en $(12)$, se cuenta un número muy elevado de parámetros a estimar. Sin embargo, en *SVR* también se tiene la propiedad de que solo un subconjunto de los datos tiene un rol activo en la predicción de una nueva observación. Esto en la medida de que los parámetros $\alpha_{i}$ asociados a las observaciones de entrenamiento las cuales se encuentran a $\pm\ \epsilon$ de la recta de regresión (es decir se encuentran dentro del "intervalo" de longitud $2 \epsilon$ alrededor de la recta de regresión) son iguales a $0$. (Kunh-Johnson, 2013)
+
+A las observaciones las cuales determinan a la recta de regresión se les denomina *support vectors*. Además, en la medida de que en $(20)$ el predictor se encuentra sujeto al producto escalar entre la nueva observacion y las observaciones de entrenamiento (enrealidad solo aquellas que sean *support vectors*), se puede generalizar con el fin de captar relaciones no lineales entre las variables. 
+
+Para ello, de forma análoga a $(14)$, se puede agrandar el espacio original de las variables, con el fin de obtener relaciones lineales en un nuevo espacio. Esto nuevamente aplicado la función *kernel* y de esta forma el predictor queda expresado como:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} K(x^{*},x_{i})$ (Kunh-Johnson, 2013) $(21)$
+
+\end{center}
+
+A su vez, en la bibliografía se encuentran diferentes tipos de *kernels*. Sin embargo uno de los más recurrentes es el denominado *radial kernel*, el cual como se mencionó anteriormente tiene la forma $(16)$.
+
+Luego, se destacan dos aspectos de los modelos tanto para problemas de clasificación como regresión. En primer lugar, en el caso de que la frontera entre ambas clases sea "realmente" lineal (problemas de clasificación) o la relación entre las variables sea "realmente" lineal (problemas de regresión), se recomienda usar un *linear kernel* sobre un *radial kernel*. (Kunh-Johnson, 2013)
+ 
+A su vez, en la medida de que tanto en el clasificador como en la ecuación de regresión ($f(x)$) se expresa a través del producto escalar entre las observaciones, se recomienda estandarizar las mismas con el fin de tener una misma unidad de medida. (Kunh-Johnson, 2013)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \textbf{Cross – validation}
 
 Por último, a la hora de evaluar la performance de los diferentes modelos planteados, se realizó un procedimiento de *cross-validation*, particularmente *k-folds*.
