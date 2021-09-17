@@ -22,6 +22,7 @@
 \usepackage{hyperref}
 %\usepackage{fancyvrb}
 \usepackage[authoryear]{natbib}
+\usepackage{booktabs}
 
 \fancyhf{} 
 \fancyhead[LE]{\leftmark} 
@@ -40,18 +41,79 @@
 \linespread{1.6}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+\SweaveOpts{concordance=TRUE,cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "c", caption = TRUE, comment = FALSE}
 
 <<echo=FALSE>>=
 options(scipen = 999, cache = TRUE)  
 @
 
-<<echo=FALSE, message=FALSE, warning=FALSE>>=
+<<librerias>>=
 library(knitr)
 library(tidyverse)
 library(sf)
 library(scales)
 library(here)
+library(gridExtra)
+library(data.table)
+library(magrittr)
+library(ggcorrplot)
+library(corrplot)
+library(RColorBrewer)
+library(ggcorrplot)
+library(caret)
+library(doParallel)
+library(rpart)
+library(rpart.plot)
+library(rattle)
+library(ranger)
+library(missRanger)
+library(kableExtra)
+library(xtable)
+library(RColorBrewer)
+@
+
+
+<<funciones, echo=FALSE, message=FALSE, warning=FALSE>>=
+source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
+@
+
+<<Datos_imputmedia>>=
+options(scipen = 999)
+
+#### DATOS
+
+aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
+                              pattern = "*.csv", full.names = T)
+
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
+
+aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
+      read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
+
+
+aptos <- aptos %>% group_by(id) %>% 
+      arrange(desc(fecha_bajada)) %>%
+      slice(1) %>% ungroup()
+
+aptos <- aptos %>% mutate_if(is.character, as.factor)
+
+# Filtramos por el criterio en price - eliminamos obs. con price superior al percentil 95%
+
+aptos_todos <- aptos
+
+aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
+
+# Perdemos esta cantidad de registros
+
+# nrow(aptos_todos) - nrow(aptos)
+
+# vemos prop de NA
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
+      rename(prop_na=".") %>% arrange(desc(prop_na))
+
+#### Definimos variables Sin na
+
+aptos_sin_na <- imput_media(aptos,p=.1)
 @
 
 \pagenumbering{roman}
@@ -136,506 +198,6 @@ En la medida que existe un trade off entre interpretación del modelo y poder pr
 
 Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
 
-\chapter{Antecedentes \label{cap:Antec}}
-
-\chapter{Marco teórico y metodología\label{cap:MT}}
-
-\textbf{Supervisado – aprendizaje automatico}
-
-Con el fin de obtener predicciones del precio de oferta de los inmuebles, fueron implementadas diferentes técnicas de aprendizaje automático. Estas consisten en modelar y analizar conjuntos de datos, mediante el aprendizaje de ejemplos, con el fin de predecir y estimar resultados en forma automática.
-
-En este contexto, se realizó un análisis supervisado, en la medida de que se cuenta con una variable de salida ($Y$) y varias variables de entrada ($X$). Por lo tanto, se tiene que los posibles modelos son de la forma:
-
-\begin{center}
-
-$Y=f(x)+\epsilon$
-
-\end{center}
-
-Siendo $f$ una función desconocida y $\epsilon$ un error aleatorio independiente de $X$ e $Y$ con media 0. Se denota a la matriz $X$ de dimensión $n \times p$ a la matriz de datos, donde se tiene $n$ observaciones de entrenamiento y $p$ variables. 
-
-La i-ésima fila se corresponde a la i-ésima observación (perteneciente al conjunto de entrenamiento) siendo de la forma $x_{i}=(x_{i1},\dots,x_{ip})^{T}$, con $x_{i}\in\mathbb R^{p}$. Por otro lado, se denota una nueva observación (o pertenciente al conjunto de testeo) como $x^{*}=(x_{i1}^{*},\dots,x^{*}_{ip})^{T}$, donde está es un vector p-dimensional (al igual que $x_{i}$). 
-
-Se destaca que al ajustar los diferentes modelos se tomó como conjunto de entrenamiento a aproximadamente el $80\%$ de las observaciones. A la hora de estimar $f$, se realizó mediante métodos paramétricos y no paramétricos. 
-
-En el primer caso, se asumió la forma funcional de $f$ y se procedió a estimar sus respectivos parámetros. Por otro lado, en los métodos no paramétricos, no se asumió la forma funcional de $f$.
-
-\textbf{Arboles de regresión}
-
-En primer lugar, se procedió a modelar mediante la implementación de un árbol de decisión. En la medida de que se cuenta con una variable de salida continua, se construyó un árbol de regresión.
-
-A pesar de que en la literatura existen diversos enfoques para la construcción de estos modelos, se trabajó con el método \textit{CART} el cual fue propuesto por \textit{Breiman}, \textit{Friedman}, \textit{Olshen} y \textit{Stone} en 1984.
-
-Este método, se caracteriza por la realización de particiones binarias recursivas del espacio de las variables de entrada. Mediante las mismas, se conforma una organización jerárquica en forma de árbol, donde en cada nodo interior se tiene una pregunta (dicotómica) sobre una variable de entrada y en cada nodo terminal (denominado "hoja") una decisión.
-
-De está forma, se procede a dividir el conjunto de los valores posibles de $X_{1}\dots,X_{p}$ (variables de entrada) en $J$ regiones disjuntas $R_{1},\dots,R_{J}$. *(James, 2013)*
-
-Luego para cada observación que se encuentra en la región $R_{j}$ se realiza la misma predicción. Siendo está, en el contexto de árboles de regresión, el promedio de la variable respuesta en dicha región.
-
-
-En el momento de la construcción de las regiones ($R_{1},\dots,R_{J}$) se realiza de tal forma que en cada subconjunto resultante (denominados como "nodos hijos") en cada iteración implique una disminución en la impureza de estos.
-Para ello, se construyen las regiones $R_{1]$, \dots, $R_{j]$ de forma tal que minimicen la suma de cuadrados de los residuos (o por sus silabas en ingles *RSS*).  
-\begin{center}
-
-$\displaystyle \sum^{J}_{j=1} \sum_{i\  \in R_{j}} \left(y_{i} - \hat{y}_{R_{j}} \right) ^{2}$ (Hastie, 2001)
-
-\end{center}
-Siendo $\hat{y}_{R_{j}}$ el promedio de la variable respuesta en la j-ésima región.
-Para lograr este cometido se utiliza una separación recursiva binaria de la siguiente forma. Se selecciona la variable $X_{j}$ y el número $s$ dividendo el espacio en dos regiones $R_{1}(j,s) = \lbrace{ X : X_{j} < s \rbrace}$ y $R_{2}(j,s) = \lbrace{ X: X_{j} \geq s \rbrace}$  de forma tal que se haga mínimo 
-
-\begin{center}
-
-$\displaystyle \sum_{i:x_{i} \in R_{1}(j,s)} \left(y - \hat{y}_{R_{1}}\right)^{2} + \sum_{i:x_{i} \in R_{2}(j,s)} \left(y - \hat{y}_{R_{2}}\right)^{2}$
-
-\end{center}
-
-Una vez encontrada la mejor partición se separan los datos en las regiones resultantes y se repite el proceso en cada región. Es decir, se busca nuevamente la mejor variable y el mejor punto de corte de forma se incremente la disminución de la impureza en los nodos hijos.
-El proceso continúa hasta que se satisfaga algún criterio de parada (como por ejemplo que los nodos terminales tengan cierto número de observaciones).
-Luego de definido el criterio de construcción de las regiones, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de *costo-complejidad*. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (*overfitting*). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. *(Hastie, 2001)*
-El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de *cross-validation* aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de *costo-complejidad*.
-
-En dicho método se define a $T_{\alpha}$ como un subárbol obtenido al podar a $T_{0}$. De esta forma, para cada $\alpha$ se busca $T_{\alpha}$ que minimice la siguiente expresión:
-
-\begin{center}
-
-$C_{\alpha}(T)=\displaystyle \sum^{|T|}_{m=1} N_{m} Q_{m}(T) + \alpha|T|$ (Hastie, 2001)
-
-\end{center}
-
-Donde se tiene que $|T|$ es igual número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste la medida de impureza.
-
-En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante *cross-validation*.
-
-\textbf{Bagging – Random Forest}
-
-A pesar de que los árboles de regresión poseen un alto grado de interpretabilidad, estos poseen la gran limitante de ser inestables. Esto en el sentido de que pequeñas variaciones en el conjunto de entrenamiento y testeo generan grandes cambios en las estimaciones.
-Por lo tanto, se emplearon diferentes métodos alternativos buscando estabilidad en las predicciones.
-
-En primer lugar, se aplicó el método *Bagging* desarrollado por *Breiman* en 1994. Este método consiste en construir un estimador combinando distintas versiones de estimadores.
-En este contexto, estas nuevas versiones se construyen generando nuevos conjuntos de entrenamiento, mediante la técnica de remuestreo *bootstrap*. La cual consiste en la generación de varias muestras con reemplazo, del conjunto de datos de entrenamiento, donde a cada observación se le asigna el mismo peso ($\frac{1}{n}$, siendo $n$ el número de observaciones). Al número de muestras *bootstrap* se le suele denotar con la letra $B$.
-A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras *bootstrap*, donde a partir de cada una de ellas se construye un estimador. Luego, se le asigna a la observación el promedio de las respuestas de los estimadores construidos en cada muestra. 
-
-Este método, en el contexto de árboles de regresión, consiste en la creación de $B$ árboles, cada uno mediante un nuevo conjunto de entrenamiento obtenido mediante una muestra *bootstrap*. Se destaca que a estos árboles no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma mejorando la precisión de la predicción.
-Luego, como una generalización del método *Bagging* aplicado a árboles de decisión, surge el segundo método empleado con el fin obtener un modelo estable a la hora de realizar predicciones. Este se denomina *Random Forest*, donde al igual que el método anterior, consiste en la creación de varios arboles de decisión (en este caso de regresión) mediante la generación de muestras *bootstrap*.
-Sin embargo, el método *Random Forest*, no considera en cada división el total de variables, sino un subconjunto de estas elegido de forma aleatoria. “A pesar de que a la hora de elegir el número de variables existen diferentes aproximaciones, en este informe se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. Esto en la medida de que es el número de variables que utiliza por defecto (en problemas de clasificación) la función *randomForest()* del paquete *randomForest*” CAMBIAR ESTO.
-Este método se destaca sobre el método *Bagging* principalmente cuando se tiene que una variable es muy influyente. Esto en la medida de que si se consideran todas las variables a la hora de construir los diferentes $B$ árboles, en la medida de que se tiene una variable muy influyente, posiblemente dichos árboles no difieran mucho entre sí. Esta limitante no se presenta en *Random Forest* en el sentido de que selecciona de forma aleatoria un subconjunto de los predictores en cada iteración.
-En los dos métodos anteriormente mencionados, se tiene que cada observación posee una probabilidad de aproximadamente $\frac{2}{3}$ de ser seleccionada en cada remuestra realizada. De esta forma, se cuenta con un conjunto de observaciones las cuales no son utilizadas para construir el estimador.
-Este conjunto de observaciones se denomina como *out of bag observations* (*OOB*). Por lo tanto, en cada iteración se procede a predecir dichas observaciones, mediante el estimador obtenido. Repitiendo este procedimiento para las $n$ observaciones, se calcula el *error OOB*. Dicha medida se procedió a utilizar como una primera aproximación en cuanto a la performance predictiva de ambos modelos.
-A pesar de que los métodos anteriormente mencionados logran solucionar el problema de la inestabilidad por parte de los árboles de decisión, estos métodos se caracterizan por presentar una baja interpretabilidad. 
-Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos *Bagging* y *Random Forest* se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
-
-\textbf{Boosting}
-
-Por otro lado, el tercer método empleado consiste en el procedimiento *Boosting* aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
-
-Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método *Boosting*, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
-
-Boosting tiene 3 tuning parameters:
-
-
-1. El número de árboles $B$. A diferencia de bagging y random forest, boosting puede generar sobreajuste a los datos en caso que $B$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. Se utiliza validación cruzada para estimar a $B$.
-
-2. El parámetro $\lambda$ que controla la tasa a la que aprende el algoritmo. $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. La selección correcta de éste parámetro depende del problema específico. Por lo general, cuánto menor el valor de $\lambda$, mayor el $B$ necesario.
-
-3. El número de particiones en cada árbol $d$ que controla la complejidad de cada estimador. Usualmente un valor de $d=1$ funciona bien. Esto implica que cada árbol tenga solamente una partición. En éste caso lo que se tiene entonces es un modelo aditivo ya que cada término involucra una sola variable. $d$ puede ser intepretado también como el parámetro que controla el orden de interacción (interaction depth) entre los modelos, ya que las $d$ particiones pueden involucrar a los sumo $d$ variables.
-
-Algoritmo 
-
-1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el set de entrenamiento.
-2. Para cada $b = 1, 2, \cdots, B$ repite:
-
-a. Se ajusta un árbol $\hat{f}^b(x)$ con $d$ particiones (es decir, $d+1$ nodos terminales) en los datos de entrenamiento (X,r).
-
-b. Se actualiza $\hat{f}$ agregando el nuevo árbol en una versión reducida:
-
-$$\hat{f}(x) \leftarrow \hat{f}(x) + \lambda \hat{f}^b(x)$$
-
-c. Se actualizan los residuos 
-
-$$r_i \leftarrow r_i - \lambda \hat{f}^b(x_i) $$
-
-3. Se general el modelo
-
-$$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
-
-
-
-\textbf{Support Vector Regression (SVR)}
-
-A pesar de que los SVM pueden ser utilizados tanto para problemas de clasificación como de regresión, estos fueron creados originalmente para abordar problemas del primer tipo. Por lo tanto, en primer lugar se explicitara la metodología para los construcción de los mismos en problemas de clasificación y luego se generalizará para los problemas de regresión.
-
-Se destaca que a su vez estos fueron creados para problemas de clasificación donde la variable de salida es dicotómica. Sin embargo, existen algunas soluciones para lidear con esta limitante a la hora de trabajar con $K$ clases, siendo $K>2$.
-
-En el contexto de los problemas de clasificación, los SVM surgen como una generalización más flexible de los \textit{Suport Vector Classifiers}. Donde a su vez, estos últimos surgen de generalizar los clasificadores denominados \textit{Maximal Margin Classifier}. 
-
-De esta forma, en primer lugar se procede a definir el método \textit{Maximal Margin Classifier}. Este método se encuentra dentro de los métodos de clasificación mediante la separación por hiperplanos. Donde se tiene que si un vector $X=(X_{1},\dots,X_{p})^{T}$ de dimensión $p$ se encuentra en el hiperplano de dimensión $p$ si sastiface la siguiente ecuación:
-
-\begin{center}
-
-$\beta_{0}+\beta_{1}X_{1}+\dots+\beta_{p}X_{p}=0$ (James, 2013) $(1)$
-
-\end{center}
-
-
-Por lo tanto, se tiene que si $X$ no sastiface $(1)$, dependiendo del signo de la ecuación, $X$ se encuentra a un lado o otro del plano. Resultando mediante la construicción del plano dos "mitades" del espacio p-dimensional.
-
-De esta forma, se define para cada observación la variable de salida $y_{1},\dots,y_{n} \in \{-1,1\}$, donde $-1$ y $1$ representan las diferentes clases. Con fin de clasificar a las $n$ observaciones, se procede a construir un hiperplano el cual posea la siguiente propiedad:
-
-\begin{center}
-
-$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}>0$ si $y_{i}=1$ (James, 2013) $(2)$
-
-$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}<0$ si $y_{i}=-1$ (James, 2013) $(3)$
-
-
-\end{center}
-
-
-Utilizando $(2)$ y $(3)$ se procede a clasificar una nueva observación en función del signo de $f(x^{*})=\beta_{0}+\beta_{1}x^{*}_{1}+\dots+\beta_{p}x^{*}_{p}$. En caso de que el signo de $f(x^{*})$ sea positivo se clasifica a la observación en la clase $1$ y en caso contrario en la clase $-1$.
-
-
-Sin embargo, en el caso de que el conjunto de datos de entrenamiento pueda ser efectivamente separado por la construcción de un hiperplano, entonces existen infinitos hiperplanos que cumplen esta propiedad. Por lo tanto, el método de *Maximal Margin Classifier* consiste en construir el hiperplano que logre una mejor clasificación.
-
-En este se construye aquel hiperplano el cual se encuentre a la mayor distancia euclídea de cada observación en el conjunto de entrenamiento. Por lo tanto, se procede a calcular la distancia entre cada observación y el hiperplano, donde a la menor de estas se le denomina como el *margen*. Siendo este la menor distancia que se encuentra una observación del hiperplano.
-
-De esta forma, el método consiste en crear aquel hiperplano, en el cual el *margen* sea lo más grande posible. Dicho de otra forma, el método busca construir el hiperplano en el cual se maximiza el mínimo de las distancias entre el mismo y cada observación en el conjunto de entrenamiento.
-
-A las observaciones que definen el *margen* se las denota como *support vectors*, ya que son estas últimas las que definen la construcción del hiperplano que maximiza el *margen*. Por lo tanto, este método y por consecuente las generalizaciones de este poseen la propiedad de que solo algunas observaciones poseen un rol activo en la hora de definir los diferentes clasificadores.
-
-El hiperplano con el mayor *margen* se obtiene a través de la solución del siguiente problema de optimización :
-
-\begin{center}
-
-$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(4)$
-
-restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(5)$
-
-$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M$ $\forall\  i=1,\dots,n$ (James, 2013) $(6)$
-
-\end{center}
-
-Donde $(6)$ implica que cada observación se encuentre en el lado correcto del hiperplano con cierta "seguridad" (siempre y cuando $M$ sea mayor a $0$). Por otro lado, $(5)$ implica que la distancia euclidia entre la i-ésima observación y el hiperplano esta dada por $y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})$. De esta forma las restricciones $(5)$ y $(6)$ aseguran que cada observación esta en el lado correcto del hiperplano y a una distancia de por lo menos $M$. 
-
-Por lo tanto, se tiene que $M$ representa el *margen* del hiperplano y el problema de optimización consiste en obtener $\beta_{0},\dots,\beta_{p}$ tales que maximicen $M$.
-
-Sin embargo, en muchos casos el problema anteriormente planteado no tiene solución con $M>0$, es decir no existe dicho hiperplano el cual logre separar al conjunto de entrenamiento de forma tal que todas las observaciones estén bien clasificadas. 
-Más aún, a pesar de que dicho hiperplano exista, por su forma de construcción, el mismo tiende a clasificar de forma "perfecta" a las observaciones del conjunto de entrenamiento. Esta particularidad determina un alto grado de sensibilidad a observaciones individuales. Por lo tanto, este método se caracteriza por presentar un alto grado de *overfitting*.
-
-De esta forma, surge el clasificador *Support vector classifiers* (SVC) como una generalización del método anterior, con el fin de dar solución a los dos problemas anteriormente mencionados.
-
-Los SVC consisten en la clasificación de observaciones (en dos clases) mediante la creación de un hiperplano que no separe de forma "perfecta" las dos clases. Este método consiste en clasificar de forma incorrecta algunas observaciones pertenecientes al conjunto de entrenamiento con el fin de lograr una mejor clasificación en el resto de las observaciones.
-
-Dicho método se suele denominar como *clasificador de margen suave*, ya que a diferencia del *Maximal Margin Classifier*, este método permite que algunas observaciones esten en lado incorrecto del margen o incluso del hiperplano. 
-
-El hiperplano obtenido en SVC, surge de la solución del siguiente problema de optimización:
-
-\begin{center}
-
-$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(7)$
-
-restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(8)$
-
-$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M(1-\epsilon_{i})$ $\forall\  i=1,\dots,n$ (James, 2013) $(9)$
-
-$\epsilon_{i}\geq0$, $\displaystyle \sum^{n}_{i=1}\epsilon_{i}\leq C$, $C\geq0$ (James, 2013) $(10)$
-
-\end{center}
-
-Al igual que en el método *Maximal Margin Classifier* $M$ representa el *margen*, el cual se busca que este sea lo más ancho posible. Por otro lado, se tiene que la ecuación $(9)$ es una versión más "flexible" de la ecuación $(6)$, donde se agrega el termino $1-\epsilon_{i}$. 
-
-Estas variables, $\epsilon_{1},\dots,\epsilon_{n}$, se denominan *slack variables* (James, 2013) y cumple el rol de permitir que algunas observaciones se encuentren mal clasificadas. Donde se tiene que : 1) $\epsilon_{i}=0$ entonces la i-ésima observación esta en el lado correcto del *margen*, 2) $\epsilon_{i} >0$ entonces la i-ésima observación esta en el lado incorrecto del *margen* y 3) $\epsilon_{i}>1$ entonces la i-ésima observación se encuentra en lado incorrecto del hiperplano.
-
-Por otro lado, en $(10)$ se tiene que el parámetro $C$ cumple un rol de *tunning parameter*. Este al ser una cota superior en la suma de los $\epsilon_{i}$, determina el número y la magnitud de las violaciones toleradas en el margen e hiperplano. Donde se tiene que si $C=0$, entonces el problema $(7)-(10)$ es análogo al problema $(4)-(6)$. 
-
-En el caso donde $C>0$, entonces como máximo se tiene que $C$ observaciones se encuentran en el lado incorrecto del hiperplano. Esto en la medida de que la i-ésima observación está en el lado incorrecto del hiperplano si $\epsilon_{i}>1$ y por $(10)$ no puede haber más de $C$ sumandos mayores a 1.
-
-Por lo tanto, el parámetro $C$ controla el *trade-off* entre sesgo y varianza (James, 2013), ya que: 1) Si $C$ es "pequeño", entonces se obtienen *márgenes* angostos y por ende pocas observaciones violan los mismos. De esta forma, el clasificador se encuentra muy ajustado a los datos presentando un bajo sesgo, pero una alta varianza. 2) Si $C$ es "grande", entonces los *márgenes* que se obtienen son anchos y por lo tanto muchas observaciones violan los mismos. Resultando en un clasificador con ajuste más "flexible" el cual presenta (posiblemente) mayor sesgo pero menor varianza. Dicho parámetro se procede a estimar mediante un procedimiento de *cross-validation*. 
-
-Al igual que el problema $(4)-(6)$, a la hora de resolver $(7)-(10)$ solo un subgrupo de observaciones posee un rol activo a la hora de definir el hiperplano. En el caso de SVC las observaciones que se encuentran en el margen o violan el mismo, determinan el hiperplano obtenido. Por lo tanto, en este contexto, se le denomina a dichas observaciones como *support vectors*. En donde, si $C$ es "pequeño", entonces se tienen pocos *supports vectors* y por ende pocas observaciones determinan el hiperplano (caso contrario cuando $C$ es "grande").
-
-En la medida de que la propiedad anteriormente mencionada implica que el clasificador este construido en función de un número reducido de observaciones, determina que el método (al igual que las generalizaciones del mismo, *Support Vector Machines*) sea robusto al comportamiento de observaciones atípicas. (James, 2013)
-
-Luego se tiene que la solución del problema $(7)-(10)$ involucra el producto escalar entre las observaciones y no las observaciones en si (Hastie, 2017). Por lo tanto, el clasificador puede ser expresado de la siguiente forma:
-
-\begin{center}
-
-$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(11)$
-
-\end{center}
-
-De esta forma, se tiene que para evaluar $f(x)$ es necesario el cálculo del producto escalar entre la nueva observación ($x^{*}$) y cada una de las observaciones pertenecientes al conjunto de entrenamiento. A su vez, en $(11)$ se cuenta con $n$ parámetros $\alpha_{i}$ con $i=1,\dots,n$. Donde cada uno corresponde a una observación de entrenamiento y de esta forma el método presenta un claro *overfitting*.
-
-Sin embargo, se tiene que $\alpha_{i} \neq0$ solo para las observaciones que son *support vectors*, es decir si la observación de entrenamiento no es un *support vector*, entonces el coeficiente asociado a la misma es igual a 0 (Hastie, 2017). Por lo tanto, si se define a $S$ como el conjunto de índices de los *support vectors*, entonces se puede reescribir al clasificador de la forma:
-
-\begin{center}
-
-$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(12)$
-
-\end{center}
-
-Donde se tiene que (generalmente) en $(12)$ se encuentra un número considerablemente menor de observaciones (y por ende parámetros) que en $(11)$. A pesar de que los clasificadores construidos mediante *Support Vector Classifiers* logran resolver las problematicas planteadas en *Maximal Margin Classifier*, estos poseen una gran limitante. Siendo está asumir que la frontera que separa a las dos clases en las cuales se busca clasificar a las observaciones es del tipo lineal.
-
-Para afrontar esta limitante surge el método *Support Vector Machines*, los cuales se utilizan en el caso de fronteras no lineales entre las dos clases. Este método es una extensión de clasificador *Support Vector Classifier*, donde se busca agrandar el espacio original de las variables con el fin de lograr obtener una frontera lineal entre las clases en este nuevo espacio. Este procedimiento se denomina como *the kernel trick*.
-
-Para ello se utiliza una función denominada *kernel* la cual permite cuantificar la similitud entre dos observaciones (James, 2013). Esta función es una generalización del producto escalar y se denota de la siguiente forma:
-
-
-\begin{center}
-
-$K(x_{i},x_{j})$ (James, 2013) $(13)$
-
-\end{center}
-
-Por lo tanto, el método de *Support Vector Machines* consiste en sustituir en la expresión $(12)$ el producto escalar entre $x^{*}$ y $x_{i}$ por la función *kernel*. De esta forma el clasificador tiene la siguiente expresión:
-
-\begin{center}
-
-$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i}\  K(x^{*},x_{i})$ (James, 2013) $(14)$
-
-
-\end{center}
-
-
-En función a las ecuaciones $(12)$ y $(14)$ se observa que el clasificador *SVC* es un caso particular de *SVM*, donde se cumple la siguiente igualdad:
-
-\begin{center}
-
-$K(x^{*},x_{i})=\displaystyle \sum_{j=1}^{p} x^{*}_{j}x_{ij}$ (James, 2013) $(15)$
-
-\end{center}
-
-El *kernel* de la ecuación anterior se denomina como *linear kernel*, el cual en caso de que las observaciones se encuentren estandarizadas, cuantifica la similitud entre dos observaciones mediante el coeficiente de correlación de *Pearson* (James, 2013).
-
-A la hora de aplicar *SVM* existen diferentes *kernels* lo cuales se podrían utilizar. Uno de lo más utilizados en la bibliografía se denomina *radial kernel*. Este es de la forma:
-
-\begin{center}
-
-$K(x^{*},x_{i})=exp \left(-\gamma \displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}  \right)$, $\gamma>0$ (James, 2013) $(16)$
-
-\end{center}
-
-
-En donde si la observación $x^{*}$ se encuentra lejos de la observación $x_{i}$ en terminos de distancia euclidia, entonces se tiene que $\displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}$ es una cantidad grande y por consecuente $K(x^{*},x_{i})$ es pequeño. Por lo tanto, en $(14)$ $x_{i}$ no va a tener un rol activo a la hora de predecir la clase de $x^{*}$.
-
-Esto significando que el *radial kernel* posee un comportamiento local, en el sentido de que solo las observaciones de entrenamiento cercanas tienen efecto en la predicción de la clase de una nueva observación.
-
-Por otro lado, se tiene que $\gamma$ es un parámetro de escala, el cual afecta la varianza en la estimación. Al igual que $C$, dicho parámetro generalmente se estima mediante *cross-validation*.
-
-*SVM* presentan la limitante de que, por su forma de construcción, solo pueden aplicarse a problemas de clasificación entre dos grupos. Para solucionar {este problema, la bibliografía menciona diversos enfoques que no van a ser mencionados en éste trabajo.
-en función de la clase que posee una mayor frecuencia.
-
-
-\textbf{Aplicación para modelos de regresión}
-
-Una vez desarrollado los conceptos para abordar problemas de clasificación mediante la construcción de *SVM*, se procede a explicitar dicho procedimiento en problemas de regresión. En este contexto, se le suele llamar al método *SVM* de la forma *Support Vector Regression* (*SVR*).
-
-Los *SVR* al ser una generalización de los *SVM* (en problemas de clasificación), poseen características muy similares, principalmente la robustez en cuanto a observaciones atípicas. De esta forma, se tiene que los *SVR* pertenecen al "grupo" denominado *robust regression*, donde en estos métodos se busca minimizar el efecto de observaciones atípicas en la ecuación de regresión. (Kunh-Johnson, 2013)
-
-Estos métodos surgen como altenartiva a los modelos de regresión lineal, ya que estos ultimos a la hora de estimar los parametros buscan minimizar la suma de cuadrados residualas (*SSE*). Lo cual conlleva que una observación que no sigue la tendencia del resto, puede ser muy influyente. (Kunh-Johnson, 2013)
-
-A pesar de que existen varios enfoques para llevar acabo *SVR* en este informe se centró en el denominado $\epsilon$*-insensitive regression* (Kunh-Johnson, 2013). En este contexto, a la hora de obtener las estimaciones de los parametros del modelo, se define una nueva función de perdida denominada $\epsilon$*-insensitive loss function*, siendo de la forma:
-
-\begin{center}
-
-$L(y,f(x,\alpha))=L(|y-f(x,\alpha)|_{\epsilon})$ (Vapnik, 2000) $(17)$
-
-\end{center}
-
-
-\begin{center}
-
-$|y-f(x,\alpha)|_{\epsilon} = \begin{cases} 0, & \mbox{si } |y-f(x,\alpha)|_{\epsilon} \leq \epsilon \mbox{} \\ |y-f(x,\alpha)|_{\epsilon}-\epsilon, & \mbox{en otro caso } \mbox{} \end{cases}$     (Vapnik, 2000) $(18)$
-
-\end{center}
-
-En función de $(18)$, se tiene que la perdida es igual a 0 si la discrepancia entre los predicho y lo observado es menor a $\epsilon$, siendo $\epsilon$ un limite fijado de antemano. Por lo tanto se tiene que tanto los outliers, como las observaciones que poseen un buen ajuste (residuos pequeños), no tienen efecto en la ecuación de regresión. 
-
-En este contexto, para estimar los parámetros del modelo, *SVR* utiliza la función de perdida anteriormente definida, pero a su vez considerando un parámetro de penalización. En dicho método se busca obtener los coeficientes que minimizan la siguiente expresión:
-
-\begin{center}
-
-$C \displaystyle \sum_{i=1}^{n}L(|y-f(x,\beta)|_{\epsilon}) + \displaystyle \sum_{j=1}^{P} \beta^{2}_{j}$ (Kunh-Johnson, 2013) $(19)$
-
-
-\end{center}
-
-Donde en $(19)$ el parámetro $C$ es un parámetro de penalización, el cual generalmente se estima mediante *cross-validation*. En este contexto el parámetro $C$ cumple un rol de indicar la complejidad del modelo. Cuando este es "grande" el modelo obtiene mayor flexibilidad, en la medida que el efecto de los errores es aumentado. Por otro lado, al disminuir este parámetro el modelo se vuelve más rígido y con menor posibilidad de sobre ajustar a las observaciones.
-
-Luego, de forma análoga a como se explicitó para los problemas de clasificación, en este contexto se tiene que la función de regresión tiene la siguiente forma:
-
-\begin{center}
-
-$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (Kunh-Johnson, 2013) $(20)$
-
-\end{center}
-
-
-Nuevamente, como se observó en $(12)$, se cuenta un número muy elevado de parámetros a estimar. Sin embargo, en *SVR* también se tiene la propiedad de que solo un subconjunto de los datos tiene un rol activo en la predicción de una nueva observación. Esto en la medida de que los parámetros $\alpha_{i}$ asociados a las observaciones de entrenamiento las cuales se encuentran a $\pm\ \epsilon$ de la recta de regresión (es decir se encuentran dentro del "intervalo" de longitud $2 \epsilon$ alrededor de la recta de regresión) son iguales a $0$. (Kunh-Johnson, 2013)
-
-A las observaciones las cuales determinan a la recta de regresión se les denomina *support vectors*. Además, en la medida de que en $(20)$ el predictor se encuentra sujeto al producto escalar entre la nueva observacion y las observaciones de entrenamiento (enrealidad solo aquellas que sean *support vectors*), se puede generalizar con el fin de captar relaciones no lineales entre las variables. 
-
-Para ello, de forma análoga a $(14)$, se puede agrandar el espacio original de las variables, con el fin de obtener relaciones lineales en un nuevo espacio. Esto nuevamente aplicado la función *kernel* y de esta forma el predictor queda expresado como:
-
-\begin{center}
-
-$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} K(x^{*},x_{i})$ (Kunh-Johnson, 2013) $(21)$
-
-\end{center}
-
-A su vez, en la bibliografía se encuentran diferentes tipos de *kernels*. Sin embargo uno de los más recurrentes es el denominado *radial kernel*, el cual como se mencionó anteriormente tiene la forma $(16)$.
-
-Luego, se destacan dos aspectos de los modelos tanto para problemas de clasificación como regresión. En primer lugar, en el caso de que la frontera entre ambas clases sea "realmente" lineal (problemas de clasificación) o la relación entre las variables sea "realmente" lineal (problemas de regresión), se recomienda usar un *linear kernel* sobre un *radial kernel*. (Kunh-Johnson, 2013)
- 
-A su vez, en la medida de que tanto en el clasificador como en la ecuación de regresión ($f(x)$) se expresa a través del producto escalar entre las observaciones, se recomienda estandarizar las mismas con el fin de tener una misma unidad de medida. (Kunh-Johnson, 2013)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\textbf{Cross – validation}
-
-Por último, a la hora de evaluar la performance de los diferentes modelos planteados, se realizó un procedimiento de *cross-validation*, particularmente *k-folds*.
-El algoritmo consiste en dividir la muestra en $k$ submuestras de igual tamaño. Luego $k-1$ submuestras se usan como datos de entrenamiento y la muestra restante $k$ se usa para testear los datos.
-A continuación, se procede a ajustar los datos de esa muestra con el modelo construido con las $k-1$ muestras. Donde el proceso se repite $k$ veces, con cada una de las $k$ muestras. De tal forma que cada $k$ muestras es utilizada una sola vez como datos de testeo. 
-De esta forma, todas las observaciones se usan tanto para train como para test. A su vez, cada observación se usa para test una sola vez y para train $k-1$ veces. Los errores obtenidos en cada etapa se promedian para producir una sola estimación (error medio obtenido de los $k$ análisis realizados).
-Con el fin de medir el error de predicción del modelo en los modelos planteados anteriormente se consideró la siguiente medida:
-
-\begin{center}
-
-$RMSE= \displaystyle \frac{1}{k} \sum_{k=1}^{K} RMSE_{k}$
-
-\end{center}
-
-Donde $RMSE_{k}$ es la raiz del error cuadratico medio en la k-ésima muestra.
-
-\begin{center}
-
-$RMSE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (y_j - \hat{y}_j)^{2}}$
-
-\end{center}
-
-dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
-
-
-\chapter{Modelos \label{cap:Modelos}}
-
-En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.1, y se procede en ésta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que {el proceso generador de datos de éstos valores es un proceso aleatorio. Es decir, los datos faltantes son generados al azar.
-
-Posteriormente, se realiza imputación de valores faltantes utilizando Random Forest sobre las variable con NA.
-
-<<librerias, echo=FALSE, message=FALSE, warning=FALSE>>=
-library(tidyverse)
-library(here)
-library(caret)
-library(doParallel)
-library(rpart)
-library(rpart.plot)
-library(rattle)
-library(ranger)
-library(missRanger)
-@
-
-
-<<Datos_imputmedia, echo=FALSE, message=FALSE, warning=FALSE>>=
-options(scipen = 999)
-
-# Funciones auxiliares
-
-source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
-
-#### DATOS
-
-aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
-                              pattern = "*.csv", full.names = T)
-
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
-
-aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
-      read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
-
-
-aptos <- aptos %>% group_by(id) %>% 
-      arrange(desc(fecha_bajada)) %>%
-      slice(1) %>% ungroup()
-
-aptos <- aptos %>% mutate_if(is.character, as.factor)
-
-# Filtramos por el criterio en price - eliminamos obs. con price superior al percentil 95%
-
-aptos_todos <- aptos
-
-aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
-
-# Perdemos esta cantidad de registros
-
-# nrow(aptos_todos) - nrow(aptos)
-
-# vemos prop de NA
-p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
-      rename(prop_na=".") %>% arrange(desc(prop_na))
-
-#### Definimos variables Sin na
-
-aptos_sin_na <- imput_media(aptos,p=.1)
-@
-
-A continuación se presenta el Árbol. En el mismo se puede observar que la primera partición es realizada con la variable 
-
-<<Arbol_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
-##### Arbol de regresion
-
-set.seed(1234)
-ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
-
-train <- aptos_sin_na[ids,]
-test <- aptos_sin_na[-ids,]
-
-set.seed(1234)
-arbol <- rpart(price~ . , data=train)
-
-# summary(arbol)
-
-# Proceso de poda
-
-#broom::tidy(arbol$cptable)
-
-# Grafico de la evolucion del error
-
-cp_error <- data.frame(arbol$cptable)
-
-#cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
-
-# Otra forma
-
-#plotcp(arbol) 
-
-# Obtengamos el cp
-
-cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
-
-# Arbol podado:
-
-arbol.prune <- rpart(price ~ . , data = train,method="anova",
-                     control=rpart.control(cp=cp_opt))
-
-# Grafico
-
-rpart.plot(arbol.prune,roundint = T,digits = 4)
-@
-
-
-
-
 \chapter{Datos \label{cap:Antec}}
 
 \section{Descripción de los datos utilizados \label{sec:desc}}
@@ -659,7 +221,7 @@ Para mayor información es posible consultar el código del script funcion api b
 La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
 En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
 
-En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo 11111, 5555555. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos.
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos.
 
 De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma.
 
@@ -667,9 +229,17 @@ En lo que respecta a las variables área total (totalarea) y área cubierta (cov
 
 Existe un conjunto de variables que toman valor Si, No, NA. Para todas ellas se asume que los NA son No y se realiza la recodificación correspondiente en función de ello.
 
-Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo son recodificadas como NA ya que son datos incorrectos y no se conocen las georreferencias exactas.
+Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo (latitudes inferiores a -35 y superiores a -34.7 , y longitudes inferiores a -56.5 y superiores a -56 ) son considerados datos erróneos. De esta forma se optó por recodificarlos imputando la coordenada del centroide del barrio donde está ubicado el apartamento. 
+
+Más aun, se pudo detectar la existencia de georreferencias incorrectas ya que en algunos casos la misma no se encontraba dentro del polígono del barrio dónde se ubica el apartamento. Para estos casos, asumimos que el dato correcto es el nombre del barrio y no la georreferencia específica.
+
+Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avd italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a avenida italia y 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
 
 Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parkinglots), unidad (unirfloors), piso (floor), condición nuevo o usado (itemcondition), property age, entre otras.
+
+En lo que respecta al tipo de cambio, los valores del precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio de fecha de bajada de los datos. La obtención del valor del tipo de cambio se realiza de manera automatizada haciendo web scrapping sobre la págine del \textit{Instituto Nacional de Estadistica} (INE).
+
+De manera similar, los gastos comunes expresados en dólares estadounidenses fueron convertidos a pesos uruguayos.
 
 Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de daros se recomienda dirigirse al Anexo X.
 
@@ -683,7 +253,7 @@ Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra d
 
 \subsection{Distancia al shopping más cercano \label{subsec:shop}}
 
-Fue contruida utilizando la distancia en metros cuadrados entre el centroide del barrio en el cuál se encuentra disponible el apartamento y el shopping más cercano. Si bien se cuenta con la información de latitud y longitud específivo, debido a que existen georreferencias incorrectas en los datos para calcular la distancia al shopping más cercano se definió considerar la georreferencia del centroide del barrio al que pertenece. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile. 
+Fue contruida calculando la distancia en metros cuadrados entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
 
 Luego se decidió realizar la siguiente recodificación: 
   
@@ -695,22 +265,15 @@ Luego se decidió realizar la siguiente recodificación:
 
 \subsection{Distancia a la rambla \label{subsec:rambla}}
 
-Fue construida utilizando la distancia (en m2) a la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
+Fue construida utilizando la distancia (en m2) entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
 
-Es importante mencionar que valores de latitud de la ubicación del inmueble inferiores a -35 y superiores a -34.7 así como valores de longitud inferiores a -56.5 y superiores a -56 se consideran datos erróneos y se les imputa la latitud del centroide del barrio al cual pertenece.  
 
 \section{Encuesta contínua de hogares\label{sec:ech}}
 
-La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable HT11: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se recodificaron los valores según los percentiles: 
+La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable HT11: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
 
-\begin{itemize}      
-\item Bajo: barrios con ingreso igual o inferior al primer cuartil (percentil 25\%), 
-\item Medio - Bajo: barrios con ingresos superior al primer cuartil e inferior o igual al segundo cuartil (percentil 50\%),  
-\item Medio - Alto: barrios con ingresos superior al segundo cuartil e inferior o igual al tercer cuartil (percentil 75\%), 
-\item Alto: barrios con ingreso superior al tercer cuartil (percentil 75\%).
-\end{itemize}
+\section{Fuentes externas de información\label{sec:fuentes}}
 
-\section{Fuentes externas de información \label{sec:fuentes}}
 
 Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio ECH fue utilizada también la encuesta contínua de hogares 2020. 
 
@@ -730,7 +293,11 @@ Los shoppings georreferenciados son:
 
 Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica SIG).
 
-El formato ESRI Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
+De manera similar fueron construidos los archivos que guardan la información necesaria para la construcción de la variable avenida italia en constinuación con 18 de Julio.
+
+\subsection{Formato ESRI Shapefila\label{subsec:shapefile}}
+
+El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
 
 Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
       
@@ -745,7 +312,7 @@ Un shapefile es un formato vectorial de almacenamiento digital donde se guarda l
 A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
 
-<<echo=FALSE, message=FALSE, warning=FALSE>>=
+<<echo=FALSE>>=
 # Vectoria INE
 mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"))
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
@@ -918,6 +485,763 @@ ggplot(mapa_barrio)+
       scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Ingreso promedio \n por mil ECH",labels = comma)
 @
 
+
+
+\chapter{Antecedentes \label{cap:Antec}}
+
+\chapter{Marco teórico y metodología\label{cap:MT}}
+
+\section{Supervisado – aprendizaje automatico\label{sec:machinelearning}}
+
+Con el fin de obtener predicciones del precio de oferta de los inmuebles, fueron implementadas diferentes técnicas de aprendizaje automático. Estas consisten en modelar y analizar conjuntos de datos, mediante el aprendizaje de ejemplos, con el fin de predecir y estimar resultados en forma automática.
+
+En este contexto, se realizó un análisis supervisado, en la medida de que se cuenta con una variable de salida ($Y$) y varias variables de entrada ($X$). Por lo tanto, se tiene que los posibles modelos son de la forma:
+
+\begin{center}
+
+$Y=f(x)+\epsilon$
+
+\end{center}
+
+Siendo $f$ una función desconocida y $\epsilon$ un error aleatorio independiente de $X$ e $Y$ con media 0. Se denota a la matriz $X$ de dimensión $n \times p$ a la matriz de datos, donde se tiene $n$ observaciones de entrenamiento y $p$ variables. 
+
+La i-ésima fila se corresponde a la i-ésima observación (perteneciente al conjunto de entrenamiento) siendo de la forma $x_{i}=(x_{i1},\dots,x_{ip})^{T}$, con $x_{i}\in\mathbb R^{p}$. Por otro lado, se denota una nueva observación (o pertenciente al conjunto de testeo) como $x^{*}=(x_{i1}^{*},\dots,x^{*}_{ip})^{T}$, donde está es un vector p-dimensional (al igual que $x_{i}$). 
+
+Se destaca que al ajustar los diferentes modelos se tomó como conjunto de entrenamiento a aproximadamente el $80\%$ de las observaciones. A la hora de estimar $f$, se realizó mediante métodos paramétricos y no paramétricos. 
+
+En el primer caso, se asumió la forma funcional de $f$ y se procedió a estimar sus respectivos parámetros. Por otro lado, en los métodos no paramétricos, no se asumió la forma funcional de $f$.
+
+\subsection{Modelo lineal de precios hedónicos\label{subsec:ml}}
+
+El modelo lineal de precios hedónicos parte del supuesto de que los precios observados de los productos se pueden desglosar en una suma de cantidades específicas de determinadas características asociadas al bien lo cual define un set implícito de precios, también conocidos como precios hedónicos.
+
+De ésta forma, el precio del bien es regresado sobre las características del mismo, y utilizando técnicas clásicas de estimación se obtienen los anteriormente mencionados precios hedónicos.
+
+Formalmente, el modelo se especifíca como:
+
+$$y = f(x) + \epsilon$$
+
+dónde 
+
+$$f(x) = \mathbf{X'\beta} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$$
+
+$\epsilon$ es el vector de errores del modelo, con $\epsilon_i$ independientes e identicamente distribuidos $N(0, \sigma^2)$.
+
+Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de parámetros de un modelo líneal clásico.
+
+En particular, éste modelo puede aplicarse a los precios de los bienes inmuebles.
+Entre las características asociadas al bien pueden considerarse características que son propias del mismo así como también características asociadas a la geolocaliación, entre otras. (De Bruyne, K., Van Hove, J., 2013).
+
+Una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heteroscedasticidad, multicolinealidad, y variables omitidas.
+
+El modelo de precios hedónicos puede ser generalizado para el caso no lineal.
+
+
+\subsection{Árboles de regresión\label{subsec:arbol}}
+
+En primer lugar, se procedió a modelar mediante la implementación de un árbol de decisión. En la medida de que se cuenta con una variable de salida continua, se construyó un árbol de regresión.
+
+A pesar de que en la literatura existen diversos enfoques para la construcción de estos modelos, se trabajó con el método \textit{CART} el cual fue propuesto por \textit{Breiman}, \textit{Friedman}, \textit{Olshen} y \textit{Stone} en 1984.
+
+Este método, se caracteriza por la realización de particiones binarias recursivas del espacio de las variables de entrada. Mediante las mismas, se conforma una organización jerárquica en forma de árbol, donde en cada nodo interior se tiene una pregunta (dicotómica) sobre una variable de entrada y en cada nodo terminal (denominado "hoja") una decisión.
+
+De está forma, se procede a dividir el conjunto de los valores posibles de $X_{1}\dots,X_{p}$ (variables de entrada) en $J$ regiones disjuntas $R_{1},\dots,R_{J}$. *(James, 2013)*
+
+Luego para cada observación que se encuentra en la región $R_{j}$ se realiza la misma predicción. Siendo está, en el contexto de árboles de regresión, el promedio de la variable respuesta en dicha región.
+
+
+En el momento de la construcción de las regiones ($R_{1},\dots,R_{J}$) se realiza de tal forma que en cada subconjunto resultante (denominados como "nodos hijos") en cada iteración implique una disminución en la impureza de estos.
+Para ello, se construyen las regiones $R_{1]$, \dots, $R_{j]$ de forma tal que minimicen la suma de cuadrados de los residuos (o por sus silabas en ingles *RSS*).  
+\begin{center}
+
+$\displaystyle \sum^{J}_{j=1} \sum_{i\  \in R_{j}} \left(y_{i} - \hat{y}_{R_{j}} \right) ^{2}$ (Hastie, 2001)
+
+\end{center}
+Siendo $\hat{y}_{R_{j}}$ el promedio de la variable respuesta en la j-ésima región.
+Para lograr este cometido se utiliza una separación recursiva binaria de la siguiente forma. Se selecciona la variable $X_{j}$ y el número $s$ dividendo el espacio en dos regiones $R_{1}(j,s) = \lbrace{ X : X_{j} < s \rbrace}$ y $R_{2}(j,s) = \lbrace{ X: X_{j} \geq s \rbrace}$  de forma tal que se haga mínimo 
+
+\begin{center}
+
+$\displaystyle \sum_{i:x_{i} \in R_{1}(j,s)} \left(y - \hat{y}_{R_{1}}\right)^{2} + \sum_{i:x_{i} \in R_{2}(j,s)} \left(y - \hat{y}_{R_{2}}\right)^{2}$
+
+\end{center}
+
+Una vez encontrada la mejor partición se separan los datos en las regiones resultantes y se repite el proceso en cada región. Es decir, se busca nuevamente la mejor variable y el mejor punto de corte de forma se incremente la disminución de la impureza en los nodos hijos.
+El proceso continúa hasta que se satisfaga algún criterio de parada (como por ejemplo que los nodos terminales tengan cierto número de observaciones).
+Luego de definido el criterio de construcción de las regiones, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de *costo-complejidad*. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (*overfitting*). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. *(Hastie, 2001)*
+El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de *cross-validation* aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de *costo-complejidad*.
+
+En dicho método se define a $T_{\alpha}$ como un subárbol obtenido al podar a $T_{0}$. De esta forma, para cada $\alpha$ se busca $T_{\alpha}$ que minimice la siguiente expresión:
+
+\begin{center}
+
+$C_{\alpha}(T)=\displaystyle \sum^{|T|}_{m=1} N_{m} Q_{m}(T) + \alpha|T|$ (Hastie, 2001)
+
+\end{center}
+
+Donde se tiene que $|T|$ es igual número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste la medida de impureza.
+
+En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante *cross-validation*.
+
+\subsection{Bagging - Ranfom Forest\label{subsec:rf}}
+
+A pesar de que los árboles de regresión poseen un alto grado de interpretabilidad, estos poseen la gran limitante de ser inestables. Esto en el sentido de que pequeñas variaciones en el conjunto de entrenamiento y testeo generan grandes cambios en las estimaciones.
+Por lo tanto, se emplearon diferentes métodos alternativos buscando estabilidad en las predicciones.
+
+En primer lugar, se aplicó el método *Bagging* desarrollado por *Breiman* en 1994. Este método consiste en construir un estimador combinando distintas versiones de estimadores.
+En este contexto, estas nuevas versiones se construyen generando nuevos conjuntos de entrenamiento, mediante la técnica de remuestreo *bootstrap*. La cual consiste en la generación de varias muestras con reemplazo, del conjunto de datos de entrenamiento, donde a cada observación se le asigna el mismo peso ($\frac{1}{n}$, siendo $n$ el número de observaciones). Al número de muestras *bootstrap* se le suele denotar con la letra $B$.
+A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras *bootstrap*, donde a partir de cada una de ellas se construye un estimador. Luego, se le asigna a la observación el promedio de las respuestas de los estimadores construidos en cada muestra. 
+
+Este método, en el contexto de árboles de regresión, consiste en la creación de $B$ árboles, cada uno mediante un nuevo conjunto de entrenamiento obtenido mediante una muestra *bootstrap*. Se destaca que a estos árboles no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma mejorando la precisión de la predicción.
+Luego, como una generalización del método *Bagging* aplicado a árboles de decisión, surge el segundo método empleado con el fin obtener un modelo estable a la hora de realizar predicciones. Este se denomina *Random Forest*, donde al igual que el método anterior, consiste en la creación de varios arboles de decisión (en este caso de regresión) mediante la generación de muestras *bootstrap*.
+Sin embargo, el método *Random Forest*, no considera en cada división el total de variables, sino un subconjunto de estas elegido de forma aleatoria. “A pesar de que a la hora de elegir el número de variables existen diferentes aproximaciones, en este informe se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. Esto en la medida de que es el número de variables que utiliza por defecto (en problemas de clasificación) la función *randomForest()* del paquete *randomForest*” CAMBIAR ESTO.
+Este método se destaca sobre el método *Bagging* principalmente cuando se tiene que una variable es muy influyente. Esto en la medida de que si se consideran todas las variables a la hora de construir los diferentes $B$ árboles, en la medida de que se tiene una variable muy influyente, posiblemente dichos árboles no difieran mucho entre sí. Esta limitante no se presenta en *Random Forest* en el sentido de que selecciona de forma aleatoria un subconjunto de los predictores en cada iteración.
+En los dos métodos anteriormente mencionados, se tiene que cada observación posee una probabilidad de aproximadamente $\frac{2}{3}$ de ser seleccionada en cada remuestra realizada. De esta forma, se cuenta con un conjunto de observaciones las cuales no son utilizadas para construir el estimador.
+Este conjunto de observaciones se denomina como *out of bag observations* (*OOB*). Por lo tanto, en cada iteración se procede a predecir dichas observaciones, mediante el estimador obtenido. Repitiendo este procedimiento para las $n$ observaciones, se calcula el *error OOB*. Dicha medida se procedió a utilizar como una primera aproximación en cuanto a la performance predictiva de ambos modelos.
+A pesar de que los métodos anteriormente mencionados logran solucionar el problema de la inestabilidad por parte de los árboles de decisión, estos métodos se caracterizan por presentar una baja interpretabilidad. 
+Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos *Bagging* y *Random Forest* se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
+
+
+\subsection{Boosting\label{subsec:boosting}}
+
+Por otro lado, el tercer método empleado consiste en el procedimiento *Boosting* aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
+
+Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método *Boosting*, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
+
+Boosting tiene 3 tuning parameters:
+
+
+1. El número de árboles $B$. A diferencia de bagging y random forest, boosting puede generar sobreajuste a los datos en caso que $B$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. Se utiliza validación cruzada para estimar a $B$.
+
+2. El parámetro $\lambda$ que controla la tasa a la que aprende el algoritmo. $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. La selección correcta de éste parámetro depende del problema específico. Por lo general, cuánto menor el valor de $\lambda$, mayor el $B$ necesario.
+
+3. El número de particiones en cada árbol $d$ que controla la complejidad de cada estimador. Usualmente un valor de $d=1$ funciona bien. Esto implica que cada árbol tenga solamente una partición. En éste caso lo que se tiene entonces es un modelo aditivo ya que cada término involucra una sola variable. $d$ puede ser intepretado también como el parámetro que controla el orden de interacción (interaction depth) entre los modelos, ya que las $d$ particiones pueden involucrar a los sumo $d$ variables.
+
+Algoritmo 
+
+1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el set de entrenamiento.
+2. Para cada $b = 1, 2, \cdots, B$ repite:
+
+a. Se ajusta un árbol $\hat{f}^b(x)$ con $d$ particiones (es decir, $d+1$ nodos terminales) en los datos de entrenamiento (X,r).
+
+b. Se actualiza $\hat{f}$ agregando el nuevo árbol en una versión reducida:
+
+$$\hat{f}(x) \leftarrow \hat{f}(x) + \lambda \hat{f}^b(x)$$
+
+c. Se actualizan los residuos 
+
+$$r_i \leftarrow r_i - \lambda \hat{f}^b(x_i) $$
+
+3. Se general el modelo
+
+$$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
+
+
+\subsection{Support Vector Regression (SVR)\label{subsec:svr}}
+
+
+Support vector machines (SVM) son un conjunto de técnicas de aprendizaje estadístico utilizadas  para problemas de clasificación y de regresión. Originalmente, los SVM fueron creados para abordar problemas del primer tipo. Por lo tanto, en primer lugar se explicitará la metodología para los construcción de los mismos en problemas de clasificación y luego se generalizará para los problemas de regresión.
+
+Se destaca que a su vez estos fueron creados para problemas de clasificación donde la variable de salida es dicotómica. Sin embargo, existen algunas soluciones para lidear con esta limitante a la hora de trabajar con $K$ clases, siendo $K>2$.
+
+En el contexto de los problemas de clasificación, los SVM surgen como una generalización más flexible de los \textit{Suport Vector Classifiers}. Donde a su vez, estos últimos surgen de generalizar los clasificadores denominados \textit{Maximal Margin Classifier}. 
+
+De esta forma, en primer lugar se procede a definir el método \textit{Maximal Margin Classifier}. Éste método se encuentra dentro de los métodos de clasificación mediante la separación por hiperplanos. Donde se tiene que si un vector $X=(X_{1},\dots,X_{p})^{T}$ de dimensión $p$ se encuentra en el hiperplano de dimensión $p$ si sastiface la siguiente ecuación:
+
+\begin{center}
+
+$\beta_{0}+\beta_{1}X_{1}+\dots+\beta_{p}X_{p}=0$ (James, 2013) $(1)$
+
+\end{center}
+
+
+Por lo tanto, se tiene que si $X$ no sastiface $(1)$, dependiendo del signo de la ecuación, $X$ se encuentra a un lado o otro del plano. Resultando mediante la construicción del plano dos "mitades" del espacio p-dimensional.
+
+De esta forma, se define para cada observación la variable de salida $y_{1},\dots,y_{n} \in \{-1,1\}$, donde $-1$ y $1$ representan las diferentes clases. Con fin de clasificar a las $n$ observaciones, se procede a construir un hiperplano el cual posea la siguiente propiedad:
+
+\begin{center}
+
+$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}>0$ si $y_{i}=1$ (James, 2013) $(2)$
+
+$\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip}<0$ si $y_{i}=-1$ (James, 2013) $(3)$
+
+
+\end{center}
+
+
+Utilizando $(2)$ y $(3)$ se procede a clasificar una nueva observación en función del signo de $f(x^{*})=\beta_{0}+\beta_{1}x^{*}_{1}+\dots+\beta_{p}x^{*}_{p}$. En caso de que el signo de $f(x^{*})$ sea positivo se clasifica a la observación en la clase $1$ y en caso contrario en la clase $-1$.
+
+
+Sin embargo, en el caso de que el conjunto de datos de entrenamiento pueda ser efectivamente separado por la construcción de un hiperplano, entonces existen infinitos hiperplanos que cumplen esta propiedad. Por lo tanto, el método de \textit{Maximal Margin Classifier} consiste en construir el hiperplano que logre una mejor clasificación.
+
+En este se construye aquel hiperplano el cual se encuentre a la mayor distancia euclídea de cada observación en el conjunto de entrenamiento. Por lo tanto, se procede a calcular la distancia entre cada observación y el hiperplano, donde a la menor de estas se le denomina como el *margen*. Siendo este la menor distancia que se encuentra una observación del hiperplano.
+
+De esta forma, el método consiste en crear aquel hiperplano, en el cual el \textit{margen} sea lo más grande posible. Dicho de otra forma, el método busca construir el hiperplano en el cual se maximiza el mínimo de las distancias entre el mismo y cada observación en el conjunto de entrenamiento.
+
+A las observaciones que definen el margen se las denota como \textit{support vectors}, ya que son estas últimas las que definen la construcción del hiperplano que maximiza el margen. Por lo tanto, este método y por consecuente las generalizaciones de este poseen la propiedad de que solo algunas observaciones poseen un rol activo en la hora de definir los diferentes clasificadores.
+
+El hiperplano con el mayor margen se obtiene a través de la solución del siguiente problema de optimización :
+
+\begin{center}
+
+$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(4)$
+
+restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(5)$
+
+$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M$ $\forall\  i=1,\dots,n$ (James, 2013) $(6)$
+
+\end{center}
+
+Donde $(6)$ implica que cada observación se encuentre en el lado correcto del hiperplano con cierta "seguridad" (siempre y cuando $M$ sea mayor a $0$). Por otro lado, $(5)$ implica que la distancia euclidia entre la i-ésima observación y el hiperplano esta dada por $y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})$. De esta forma las restricciones $(5)$ y $(6)$ aseguran que cada observación esta en el lado correcto del hiperplano y a una distancia de por lo menos $M$. 
+
+Por lo tanto, se tiene que $M$ representa el margen del hiperplano y el problema de optimización consiste en obtener $\beta_{0},\dots,\beta_{p}$ tales que maximicen $M$.
+
+Sin embargo, en muchos casos el problema anteriormente planteado no tiene solución con $M>0$, es decir no existe dicho hiperplano el cual logre separar al conjunto de entrenamiento de forma tal que todas las observaciones estén bien clasificadas. 
+Más aún, a pesar de que dicho hiperplano exista, por su forma de construcción, el mismo tiende a clasificar de forma "perfecta" a las observaciones del conjunto de entrenamiento. Esta particularidad determina un alto grado de sensibilidad a observaciones individuales. Por lo tanto, este método se caracteriza por presentar un alto grado de \textit{overfitting}.
+
+De esta forma, surge el clasificador \textit{Support vector classifiers} (SVC) como una generalización del método anterior, con el fin de dar solución a los dos problemas anteriormente mencionados.
+
+Los SVC consisten en la clasificación de observaciones (en dos clases) mediante la creación de un hiperplano que no separe de forma "perfecta" las dos clases. Este método consiste en clasificar de forma incorrecta algunas observaciones pertenecientes al conjunto de entrenamiento con el fin de lograr una mejor clasificación en el resto de las observaciones.
+
+Dicho método se suele denominar como \textit{clasificador de margen suave}, ya que a diferencia del \textit{Maximal Margin Classifier}, este método permite que algunas observaciones esten en lado incorrecto del margen o incluso del hiperplano. 
+
+El hiperplano obtenido en SVC, surge de la solución del siguiente problema de optimización:
+
+\begin{center}
+
+$max_{\beta_{0},\beta_{1},\dots,\beta_{p},M}$ $M$ (James, 2013) $(7)$
+
+restringido a $\displaystyle \sum^{p}_{j=1} \beta^{2}_{j}=1$ (James, 2013) $(8)$
+
+$y_{i}(\beta_{0}+\beta_{1}x_{i1}+\dots+\beta_{p}x_{ip})\geq M(1-\epsilon_{i})$ $\forall\  i=1,\dots,n$ (James, 2013) $(9)$
+
+$\epsilon_{i}\geq0$, $\displaystyle \sum^{n}_{i=1}\epsilon_{i}\leq C$, $C\geq0$ (James, 2013) $(10)$
+
+\end{center}
+
+Al igual que en el método \textit{Maximal Margin Classifier} $M$ representa el margen, el cual se busca que este sea lo más ancho posible. Por otro lado, se tiene que la ecuación $(9)$ es una versión más "flexible" de la ecuación $(6)$, donde se agrega el termino $1-\epsilon_{i}$. 
+
+Estas variables, $\epsilon_{1},\dots,\epsilon_{n}$, se denominan \textit{slack variables} (James, 2013) y cumple el rol de permitir que algunas observaciones se encuentren mal clasificadas. Donde se tiene que : 1) $\epsilon_{i}=0$ entonces la i-ésima observación esta en el lado correcto del margen, 2) $\epsilon_{i} >0$ entonces la i-ésima observación esta en el lado incorrecto del margen y 3) $\epsilon_{i}>1$ entonces la i-ésima observación se encuentra en lado incorrecto del hiperplano.
+
+Por otro lado, en $(10)$ se tiene que el parámetro $C$ cumple un rol de \textit{tunning parameter}. Este al ser una cota superior en la suma de los $\epsilon_{i}$, determina el número y la magnitud de las violaciones toleradas en el margen e hiperplano. Donde se tiene que si $C=0$, entonces el problema $(7)-(10)$ es análogo al problema $(4)-(6)$. 
+
+En el caso donde $C>0$, entonces como máximo se tiene que $C$ observaciones se encuentran en el lado incorrecto del hiperplano. Esto en la medida de que la i-ésima observación está en el lado incorrecto del hiperplano si $\epsilon_{i}>1$ y por $(10)$ no puede haber más de $C$ sumandos mayores a 1.
+
+Por lo tanto, el parámetro $C$ controla el \textit{trade-off} entre sesgo y varianza (James, 2013), ya que: 1) Si $C$ es "pequeño", entonces se obtienen márgenes angostos y por ende pocas observaciones violan los mismos. De esta forma, el clasificador se encuentra muy ajustado a los datos presentando un bajo sesgo, pero una alta varianza. 2) Si $C$ es "grande", entonces los márgenes que se obtienen son anchos y por lo tanto muchas observaciones violan los mismos. Resultando en un clasificador con ajuste más "flexible" el cual presenta (posiblemente) mayor sesgo pero menor varianza. Dicho parámetro se procede a estimar mediante un procedimiento de cross-validation. 
+
+Al igual que el problema $(4)-(6)$, a la hora de resolver $(7)-(10)$ solo un subgrupo de observaciones posee un rol activo a la hora de definir el hiperplano. En el caso de SVC las observaciones que se encuentran en el margen o violan el mismo, determinan el hiperplano obtenido. Por lo tanto, en este contexto, se le denomina a dichas observaciones como support vectors. En donde, si $C$ es "pequeño", entonces se tienen pocos supports vectors y por ende pocas observaciones determinan el hiperplano (caso contrario cuando $C$ es "grande").
+
+En la medida de que la propiedad anteriormente mencionada implica que el clasificador este construido en función de un número reducido de observaciones, determina que el método (al igual que las generalizaciones del mismo, Support Vector Machines) sea robusto al comportamiento de observaciones atípicas. (James, 2013)
+
+Luego se tiene que la solución del problema $(7)-(10)$ involucra el producto escalar entre las observaciones y no las observaciones en si (Hastie, 2017). Por lo tanto, el clasificador puede ser expresado de la siguiente forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(11)$
+
+\end{center}
+
+De esta forma, se tiene que para evaluar $f(x)$ es necesario el cálculo del producto escalar entre la nueva observación ($x^{*}$) y cada una de las observaciones pertenecientes al conjunto de entrenamiento. A su vez, en $(11)$ se cuenta con $n$ parámetros $\alpha_{i}$ con $i=1,\dots,n$. Donde cada uno corresponde a una observación de entrenamiento y de esta forma el método presenta un claro overfitting.
+
+Sin embargo, se tiene que $\alpha_{i} \neq0$ solo para las observaciones que son support vectors, es decir si la observación de entrenamiento no es un support vector, entonces el coeficiente asociado a la misma es igual a 0 (Hastie, 2017). Por lo tanto, si se define a $S$ como el conjunto de índices de los support vectors, entonces se puede reescribir al clasificador de la forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i} \langle x^{*},x_{i}\rangle$ (James, 2013) $(12)$
+
+\end{center}
+
+Donde se tiene que (generalmente) en $(12)$ se encuentra un número considerablemente menor de observaciones (y por ende parámetros) que en $(11)$. A pesar de que los clasificadores construidos mediante Support Vector Classifiers logran resolver las problematicas planteadas en Maximal Margin Classifier, estos poseen una gran limitante. Siendo está asumir que la frontera que separa a las dos clases en las cuales se busca clasificar a las observaciones es del tipo lineal.
+
+Para afrontar esta limitante surge el método \textit{Support Vector Machines}, los cuales se utilizan en el caso de fronteras no lineales entre las dos clases. Este método es una extensión de clasificador Support Vector Classifier, donde se busca agrandar el espacio original de las variables con el fin de lograr obtener una frontera lineal entre las clases en este nuevo espacio. Este procedimiento se denomina como \textit{the kernel trick}.
+
+Para ello se utiliza una función denominada \textit{kernel} la cual permite cuantificar la similitud entre dos observaciones (James, 2013). Esta función es una generalización del producto escalar y se denota de la siguiente forma:
+
+
+\begin{center}
+
+$K(x_{i},x_{j})$ (James, 2013) $(13)$
+
+\end{center}
+
+Por lo tanto, el método de *Support Vector Machines* consiste en sustituir en la expresión $(12)$ el producto escalar entre $x^{*}$ y $x_{i}$ por la función *kernel*. De esta forma el clasificador tiene la siguiente expresión:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i \in S} \alpha_{i}\  K(x^{*},x_{i})$ (James, 2013) $(14)$
+
+
+\end{center}
+
+
+En función a las ecuaciones $(12)$ y $(14)$ se observa que el clasificador SVC es un caso particular de SVM, donde se cumple la siguiente igualdad:
+
+\begin{center}
+
+$K(x^{*},x_{i})=\displaystyle \sum_{j=1}^{p} x^{*}_{j}x_{ij}$ (James, 2013) $(15)$
+
+\end{center}
+
+El kernel de la ecuación anterior se denomina como \textit{linear kernel}, el cual en caso de que las observaciones se encuentren estandarizadas, cuantifica la similitud entre dos observaciones mediante el \textit{coeficiente de correlación de Pearson} (James, 2013).
+
+A la hora de aplicar SVM existen diferentes kernels lo cuales se podrían utilizar. Uno de lo más utilizados en la bibliografía se denomina \textit{radial kernel}. Este es de la forma:
+
+\begin{center}
+
+$K(x^{*},x_{i})=exp \left(-\gamma \displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}  \right)$, $\gamma>0$ (James, 2013) $(16)$
+
+\end{center}
+
+
+En donde si la observación $x^{*}$ se encuentra lejos de la observación $x_{i}$ en terminos de distancia euclidia, entonces se tiene que $\displaystyle \sum_{j=1}^{p} (x^{*}_{j}-x_{ij})^{2}$ es una cantidad grande y por consecuente $K(x^{*},x_{i})$ es pequeño. Por lo tanto, en $(14)$ $x_{i}$ no va a tener un rol activo a la hora de predecir la clase de $x^{*}$.
+
+Esto significando que el radial kernel posee un comportamiento local, en el sentido de que solo las observaciones de entrenamiento cercanas tienen efecto en la predicción de la clase de una nueva observación.
+
+Por otro lado, se tiene que $\gamma$ es un parámetro de escala, el cual afecta la varianza en la estimación. Al igual que $C$, dicho parámetro generalmente se estima mediante cross-validation.
+
+SVM presentan la limitante de que, por su forma de construcción, solo pueden aplicarse a problemas de clasificación entre dos grupos. Para solucionar este problema, la bibliografía menciona diversos enfoques que no van a ser mencionados en éste trabajo.
+en función de la clase que posee una mayor frecuencia.
+
+
+\textbf{Aplicación para modelos de regresión}
+
+Una vez desarrollado los conceptos para abordar problemas de clasificación mediante la construcción de SVM, se procede a explicitar dicho procedimiento en problemas de regresión. En este contexto, se le suele llamar al método SVM de la forma \textit{Support Vector Regression} (SVR).
+
+Los SVR al ser una generalización de los SVM (en problemas de clasificación), poseen características muy similares, principalmente la robustez en cuanto a observaciones atípicas. De esta forma, se tiene que los SVR pertenecen al "grupo" denominado \textit{robust regression}, donde en estos métodos se busca minimizar el efecto de observaciones atípicas en la ecuación de regresión. (Kunh-Johnson, 2013)
+
+Estos métodos surgen como altenartiva a los modelos de regresión lineal, ya que estos ultimos a la hora de estimar los parametros buscan minimizar la suma de cuadrados residualas (SSE). Lo cual conlleva que una observación que no sigue la tendencia del resto, puede ser muy influyente. (Kunh-Johnson, 2013)
+
+A pesar de que existen varios enfoques para llevar acabo SVR en este informe se centró en el denominado $\epsilon$*-\textit{insensitive regression} (Kunh-Johnson, 2013). En este contexto, a la hora de obtener las estimaciones de los parámetros del modelo, se define una nueva función de perdida denominada $\epsilon$*-insensitive loss function*, siendo de la forma:
+
+\begin{center}
+
+$L(y,f(x,\alpha))=L(|y-f(x,\alpha)|_{\epsilon})$ (Vapnik, 2000) $(17)$
+
+\end{center}
+
+
+\begin{center}
+
+$|y-f(x,\alpha)|_{\epsilon} = \begin{cases} 0, & \mbox{si } |y-f(x,\alpha)|_{\epsilon} \leq \epsilon \mbox{} \\ |y-f(x,\alpha)|_{\epsilon}-\epsilon, & \mbox{en otro caso } \mbox{} \end{cases}$     (Vapnik, 2000) $(18)$
+
+\end{center}
+
+En función de $(18)$, se tiene que la perdida es igual a 0 si la discrepancia entre los predicho y lo observado es menor a $\epsilon$, siendo $\epsilon$ un limite fijado de antemano. Por lo tanto se tiene que tanto los outliers, como las observaciones que poseen un buen ajuste (residuos pequeños), no tienen efecto en la ecuación de regresión. 
+
+En este contexto, para estimar los parámetros del modelo, SVR utiliza la función de perdida anteriormente definida, pero a su vez considerando un parámetro de penalización. En dicho método se busca obtener los coeficientes que minimizan la siguiente expresión:
+
+\begin{center}
+
+$C \displaystyle \sum_{i=1}^{n}L(|y-f(x,\beta)|_{\epsilon}) + \displaystyle \sum_{j=1}^{P} \beta^{2}_{j}$ (Kunh-Johnson, 2013) $(19)$
+
+
+\end{center}
+
+Donde en $(19)$ el parámetro $C$ es un parámetro de penalización, el cual generalmente se estima mediante cross-validation. En este contexto el parámetro $C$ cumple un rol de indicar la complejidad del modelo. Cuando este es "grande" el modelo obtiene mayor flexibilidad, en la medida que el efecto de los errores es aumentado. Por otro lado, al disminuir este parámetro el modelo se vuelve más rígido y con menor posibilidad de sobre ajustar a las observaciones.
+
+Luego, de forma análoga a como se explicitó para los problemas de clasificación, en este contexto se tiene que la función de regresión tiene la siguiente forma:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\rangle$ (Kunh-Johnson, 2013) $(20)$
+
+\end{center}
+
+
+Nuevamente, como se observó en $(12)$, se cuenta un número muy elevado de parámetros a estimar. Sin embargo, en SVR también se tiene la propiedad de que solo un subconjunto de los datos tiene un rol activo en la predicción de una nueva observación. Esto en la medida de que los parámetros $\alpha_{i}$ asociados a las observaciones de entrenamiento las cuales se encuentran a $\pm\ \epsilon$ de la recta de regresión (es decir se encuentran dentro del "intervalo" de longitud $2 \epsilon$ alrededor de la recta de regresión) son iguales a $0$. (Kunh-Johnson, 2013)
+
+A las observaciones las cuales determinan a la recta de regresión se les denomina support vectors. Además, en la medida de que en $(20)$ el predictor se encuentra sujeto al producto escalar entre la nueva observacion y las observaciones de entrenamiento (enrealidad solo aquellas que sean support vectors), se puede generalizar con el fin de captar relaciones no lineales entre las variables. 
+
+Para ello, de forma análoga a $(14)$, se puede agrandar el espacio original de las variables, con el fin de obtener relaciones lineales en un nuevo espacio. Esto nuevamente aplicado la función kernel y de esta forma el predictor queda expresado como:
+
+\begin{center}
+
+$f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} K(x^{*},x_{i})$ (Kunh-Johnson, 2013) $(21)$
+
+\end{center}
+
+A su vez, en la bibliografía se encuentran diferentes tipos de kernels. Sin embargo uno de los más recurrentes es el denominado radial kernel, el cual como se mencionó anteriormente tiene la forma $(16)$.
+
+Luego, se destacan dos aspectos de los modelos tanto para problemas de clasificación como regresión. En primer lugar, en el caso de que la frontera entre ambas clases sea "realmente" lineal (problemas de clasificación) o la relación entre las variables sea "realmente" lineal (problemas de regresión), se recomienda usar un linear kernel sobre un radial kernel. (Kunh-Johnson, 2013)
+ 
+A su vez, en la medida de que tanto en el clasificador como en la ecuación de regresión ($f(x)$) se expresa a través del producto escalar entre las observaciones, se recomienda estandarizar las mismas con el fin de tener una misma unidad de medida. (Kunh-Johnson, 2013)
+
+\section{Cross validation \label{sec:cv}}
+
+Por último, a la hora de evaluar la performance de los diferentes modelos planteados, se realizó un procedimiento de *cross-validation*, particularmente *k-folds*.
+El algoritmo consiste en dividir la muestra en $k$ submuestras de igual tamaño. Luego $k-1$ submuestras se usan como datos de entrenamiento y la muestra restante $k$ se usa para testear los datos.
+A continuación, se procede a ajustar los datos de esa muestra con el modelo construido con las $k-1$ muestras. Donde el proceso se repite $k$ veces, con cada una de las $k$ muestras. De tal forma que cada $k$ muestras es utilizada una sola vez como datos de testeo. 
+De esta forma, todas las observaciones se usan tanto para train como para test. A su vez, cada observación se usa para test una sola vez y para train $k-1$ veces. Los errores obtenidos en cada etapa se promedian para producir una sola estimación (error medio obtenido de los $k$ análisis realizados).
+Con el fin de medir el error de predicción del modelo en los modelos planteados anteriormente se consideró la siguiente medida:
+
+\begin{center}
+
+$RMSE= \displaystyle \frac{1}{k} \sum_{k=1}^{K} RMSE_{k}$
+
+\end{center}
+
+Donde $RMSE_{k}$ es la raiz del error cuadratico medio en la k-ésima muestra.
+
+\begin{center}
+
+$RMSE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (y_j - \hat{y}_j)^{2}}$
+
+\end{center}
+
+dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
+
+
+\chapter{Análisis exploratorio de  datos \label{cap:EDA}}
+
+El total de observaciones en la base de datos es de \Sexpr{paste(dim(aptos)[1])}, mientras que el total de variables es de \Sexpr{paste(dim(aptos)[2])}.
+
+El total de observaciones sin NA es de \Sexpr{paste(dim(drop_na(aptos))[1])}.
+Las proporciones de NA por variable son:
+
+
+<<nas>>=
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
+   rename(prop_na=".") %>% arrange(desc(prop_na))
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+
+<<results=tex>>=
+print(xtable(p_na %>% filter(p_na > 0)))
+@
+
+<<fig = TRUE, fig.cap = "Histograma del precio de oferta (en logaritmos)">>=
+aptos %>% ggplot(aes(x=log(price))) + 
+       geom_histogram(fill = 'navyblue', alpha = 0.9, bins = 40) +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) +
+      xlim(9,16) +
+      labs(x = 'Precio de oferta (en logaritmos)') +
+      scale_fill_manual(values = c('navyblue')) 
+@
+
+<<fig = TRUE, fig.cap = "Cantidad de dormitorios">>=
+niveles <- aptos %>% group_by(bedrooms) %>% summarise(n = n())
+colores <- data.frame(colores= c("gold1","darkviolet","green4", "dodgerblue2", "firebrick"))
+niveles <- niveles %>% arrange(n)
+niveles$id <- 1:nrow(niveles)
+colores$id <- 1:nrow(niveles)
+niveles <- left_join(niveles,colores,by="id")
+
+niveles <- niveles %>% arrange(bedrooms)
+
+aptos %>% ggplot() +
+  geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..), fill = bedrooms)) +
+  theme(axis.ticks.x = element_blank(),
+        legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(face = 'bold', size = 12),
+        axis.text.x = element_text(face = 'bold')) + 
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(aes(x = as.factor(bedrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
+                y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 4) + 
+  labs(x = 'Cantidad de dormitorios') +
+  scale_fill_manual(values = niveles$colores)
+@
+
+
+<<fig = TRUE, fig.cap = "Cantidad de baños completos">>=
+
+aptos %>% ggplot() +
+      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) + 
+      scale_y_continuous(labels = scales::percent) +
+      geom_text(aes(x = as.factor(full_bathrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+      labs(x = 'Cantidad de baños completos') +
+      scale_fill_manual(values = c('aquamarine3','pink3'))
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
+aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) + 
+       geom_histogram(bins = 30) +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) +
+      labs(x = 'Precio de oferta') +
+      scale_fill_manual(values = c('orangered2', 'springgreen4')) +
+      facet_wrap(~zona_avditalia)
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
+aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) + 
+       geom_boxplot() +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) +
+      labs(x = 'Precio de oferta') +
+      scale_fill_manual(values = c('orangered2', 'springgreen4')) +
+      facet_grid(zona_avditalia~full_bathrooms)
+@
+
+
+<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
+aptos %>% 
+      ggplot(aes(x=as.character(zona_avditalia), y=price,
+                 fill=as.character(zona_avditalia))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      scale_y_continuous(labels = comma) +
+       scale_fill_manual(values = c('orangered2', 'springgreen4'))
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación según distancia a la rambla por nivel de ingreso">>=
+aptos %>% 
+      ggplot(aes(x=dist_rambla, y=price, alpha = 1/3)) + 
+      geom_point(color = 'navyblue') +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Logaritmo del precio de publicación') +
+      xlab('Distancia a la rambla (en m2)') +
+      facet_wrap(~full_bathrooms)
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación según cantidad de baños completos">>=
+aptos %>%
+      filter(!is.na(full_bathrooms)) %>%
+      ggplot(aes(x=as.character(full_bathrooms), y=price, 
+                 fill=as.character(full_bathrooms))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      scale_y_continuous(labels = comma) +
+       scale_fill_manual(values = c('yellow4', 'palevioletred'))
+@
+
+<<fig = TRUE, fig.cap = "Gráfico de Violin del precio de publicación (en logaritmos) según distancia al shopping más cercano">>=
+aptos %>%
+      ggplot(aes(x=as.character(dist_shop), y = price, 
+                 fill=as.character(dist_shop))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      scale_fill_manual(values = c('royalblue2', 'indianred3', 'seagreen3'))+
+      scale_y_continuous(labels = comma)
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación según distancia a un shopping y zona avenida italia">>=
+aptos %>% 
+      ggplot(aes(x=as.character(dist_shop), y=price, 
+                 fill=as.character(dist_shop))) + 
+      geom_violin() +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 10, angle = 90),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('Precio de publicación (en logaritmos)') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
+      facet_wrap(~zona_avditalia)+
+      scale_fill_manual(values = c('royalblue2', 'indianred3', 'seagreen3')) +
+      scale_y_continuous(labels = comma)
+
+@
+
+<<fig = TRUE, fig.cap = "Precio de publicación y distancia a la rambla por cantidad de habitaciones">>=
+aptos %>%
+      ggplot(aes(x=dist_rambla, y = log(price))) + 
+      geom_point(color = 'firebrick') +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 14),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(face = 'bold', size = 12),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      xlab('Distancia a la rambla (m2)') +
+      ylab('Precio de publicación') +
+      facet_wrap(~bedrooms)
+@
+
+
+<<fig = TRUE, fig.cap = "Mapa de corr">>=
+aptos_cor <- aptos %>% select(price, maintenance_fee, dist_rambla, covered_area,
+                              total_area, no_covered_area) %>% mutate(logprice = log(price))
+
+corr<-round(cor(aptos_cor[,-1], use='pairwise.complete.obs') , 2)
+
+ggcorrplot(corr, method = c("square"),type=c("upper"), 
+           ggtheme = ggplot2::theme_gray,lab=TRUE)
+@
+
+\chapter{Modelos \label{cap:Modelos}}
+
+En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.1, y se procede en ésta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que el proceso generador de datos de éstos valores es un proceso aleatorio. Es decir, los datos faltantes son generados al azar.
+
+Posteriormente, se realiza imputación de valores faltantes utilizando Random Forest sobre las variable con NA.
+
+
+
+\section{Árbol de regresión \label{sec:arbol}}
+
+A continuación se presenta el Árbol. En el mismo se puede observar que la primera partición es realizada con la variable 
+
+<<Arbol_imputmedia, eval = FALSE>>=
+##### Arbol de regresion
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+set.seed(1234)
+arbol <- rpart(price~ . , data=train)
+
+# summary(arbol)
+
+# Proceso de poda
+
+#broom::tidy(arbol$cptable)
+
+# Grafico de la evolucion del error
+
+cp_error <- data.frame(arbol$cptable)
+
+#cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
+
+# Otra forma
+
+#plotcp(arbol) 
+
+# Obtengamos el cp
+
+cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
+
+# Arbol podado:
+
+arbol.prune <- rpart(price ~ . , data = train,method="anova",
+                     control=rpart.control(cp=cp_opt))
+
+# Grafico
+
+rpart.plot(arbol.prune,roundint = T,digits = 4)
+@
+
+
+\section{Random Forest \label{sec:randomforest}}
+
+<<RF_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE, eval = FALSE >>=
+############ RF 
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+rf <- ranger(price ~ ., data = train,
+             importance = 'impurity')
+
+ # Importancia de las variables
+
+importancia_rf <- data.frame(rf$variable.importance)
+
+colnames(importancia_rf) <- c("importance")
+
+importancia_rf$variables <- row.names(importancia_rf)
+
+#### Veamos imputación por missranger
+
+### Imputamos las variables anteriores por miss ranger
+ 
+
+aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),-price), 
+                       pmm.k = 3, num.trees = 100,seed=1234)
+
+aptos_mr$price <- aptos_sin_na$price
+
+set.seed(1234)
+ids <- sample(nrow(aptos_mr), 0.8*nrow(aptos_mr))
+
+train <- aptos_mr[ids,]
+test <- aptos_mr[-ids,]
+
+rf_mr <- ranger(price ~ ., data = train,
+             importance = 'impurity')
+
+# Importancia de las variables
+
+importancia_rf_mr <- data.frame(rf_mr$variable.importance)
+
+colnames(importancia_rf_mr) <- c("importance")
+
+importancia_rf_mr$variables <- row.names(importancia_rf_mr)
+
+p1 <- importancia_rf %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
+  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia") +
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_text(size = 8),
+            axis.title.y = element_blank())
+
+p2 <- importancia_rf_mr %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
+  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia")+
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.x = element_text(size = 8),
+            axis.title.y = element_blank())
+
+grid.arrange(p1, p2, ncol = 2)
+@
 
 
 
