@@ -118,7 +118,7 @@ tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,contro
   
   if(grilla == F){
   
-  RMSE <- rep(NA,k)
+  RMSE <- matrix(NA,nrow=1,ncol=k)
     
   } else {
     
