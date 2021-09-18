@@ -53,7 +53,9 @@ aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),-price),
 
 aptos_mr$price <- aptos_sin_na$price
 
+## Guardamos los datos
 
+write_csv(aptos_mr,path='aptos_mr.csv')
 
 ############################################
 
