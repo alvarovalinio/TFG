@@ -6,6 +6,11 @@ library(ranger)
 library(missRanger)
 
 
+# Funciones auxiliares
+
+source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
+
+
 #### DATOS
 
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
@@ -47,6 +52,11 @@ aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),-price),
                        pmm.k = 3, num.trees = 100,seed=1234)
 
 aptos_mr$price <- aptos_sin_na$price
+
+
+
+############################################
+
 
 
 
