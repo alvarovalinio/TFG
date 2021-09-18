@@ -85,7 +85,7 @@ options(scipen = 999)
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108", "aptos_202109")
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
       read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
@@ -111,7 +111,7 @@ aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.frame() %>% 
       rename(prop_na=".") %>% arrange(desc(prop_na))
 
-#### Definimos variables Sin na
+#### Definimos variables Sin na imputamos por la media
 
 aptos_sin_na <- imput_media(aptos,p=.1)
 @
@@ -527,38 +527,38 @@ $$f(x) = \mathbf{X'\beta} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta
 
 $\epsilon$ es el vector de errores del modelo, con $\epsilon_i$ independientes e identicamente distribuidos $N(0, \sigma^2)$.
 
-Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de parámetros de un modelo líneal clásico.
+Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas al bien y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de parámetros de un modelo líneal clásico.
 
 En particular, éste modelo puede aplicarse a los precios de los bienes inmuebles.
 Entre las características asociadas al bien pueden considerarse características que son propias del mismo así como también características asociadas a la geolocaliación, entre otras. (De Bruyne, K., Van Hove, J., 2013).
 
 Una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heteroscedasticidad, multicolinealidad, y variables omitidas.
 
-El modelo de precios hedónicos puede ser generalizado para el caso no lineal.
+El modelo de precios hedónicos puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
 
 
 \subsection{Árboles de regresión\label{subsec:arbol}}
 
-En primer lugar, se procedió a modelar mediante la implementación de un árbol de decisión. En la medida de que se cuenta con una variable de salida continua, se construyó un árbol de regresión.
+Luego de relizar la implemetación del modelo lineal de precios hedónicos, se procedió a modelar mediante un árbol de decisión. En la medida de que se cuenta con una variable de salida continua, se construyó un árbol de regresión.
 
 A pesar de que en la literatura existen diversos enfoques para la construcción de estos modelos, se trabajó con el método \textit{CART} el cual fue propuesto por \textit{Breiman}, \textit{Friedman}, \textit{Olshen} y \textit{Stone} en 1984.
 
-Este método, se caracteriza por la realización de particiones binarias recursivas del espacio de las variables de entrada. Mediante las mismas, se conforma una organización jerárquica en forma de árbol, donde en cada nodo interior se tiene una pregunta (dicotómica) sobre una variable de entrada y en cada nodo terminal (denominado "hoja") una decisión.
+Éste método se caracteriza por la realización de particiones binarias recursivas del espacio de las variables de entrada. Mediante las mismas, se conforma una organización jerárquica en forma de árbol, donde en cada nodo interior se tiene una pregunta (dicotómica) sobre una variable de entrada y en cada nodo terminal (denominado "hoja") una decisión.
 
-De está forma, se procede a dividir el conjunto de los valores posibles de $X_{1}\dots,X_{p}$ (variables de entrada) en $J$ regiones disjuntas $R_{1},\dots,R_{J}$. *(James, 2013)*
+De está forma, se procede a dividir el conjunto de los valores posibles de $X_{1}\dots,X_{p}$ (variables de entrada) en $J$ regiones disjuntas $R_{1},\dots,R_{J}$.(James, 2013)
 
 Luego para cada observación que se encuentra en la región $R_{j}$ se realiza la misma predicción. Siendo está, en el contexto de árboles de regresión, el promedio de la variable respuesta en dicha región.
 
-
 En el momento de la construcción de las regiones ($R_{1},\dots,R_{J}$) se realiza de tal forma que en cada subconjunto resultante (denominados como "nodos hijos") en cada iteración implique una disminución en la impureza de estos.
-Para ello, se construyen las regiones $R_{1]$, \dots, $R_{j]$ de forma tal que minimicen la suma de cuadrados de los residuos (o por sus silabas en ingles *RSS*).  
+Para ello, se construyen las regiones $R_{1]$, \dots, $R_{j]$ de forma tal que minimicen la suma de cuadrados de los residuos (o por sus silabas en ingles \textit{RSS}).  
 \begin{center}
 
 $\displaystyle \sum^{J}_{j=1} \sum_{i\  \in R_{j}} \left(y_{i} - \hat{y}_{R_{j}} \right) ^{2}$ (Hastie, 2001)
 
 \end{center}
+
 Siendo $\hat{y}_{R_{j}}$ el promedio de la variable respuesta en la j-ésima región.
-Para lograr este cometido se utiliza una separación recursiva binaria de la siguiente forma. Se selecciona la variable $X_{j}$ y el número $s$ dividendo el espacio en dos regiones $R_{1}(j,s) = \lbrace{ X : X_{j} < s \rbrace}$ y $R_{2}(j,s) = \lbrace{ X: X_{j} \geq s \rbrace}$  de forma tal que se haga mínimo 
+Para lograr este cometido se utiliza una separación recursiva binaria de la siguiente forma. Se selecciona la variable $X_{j}$ y el número $s$ dividiendo el espacio en dos regiones $R_{1}(j,s) = \lbrace{ X : X_{j} < s \rbrace}$ y $R_{2}(j,s) = \lbrace{ X: X_{j} \geq s \rbrace}$  de forma tal que se haga mínimo 
 
 \begin{center}
 
@@ -567,9 +567,12 @@ $\displaystyle \sum_{i:x_{i} \in R_{1}(j,s)} \left(y - \hat{y}_{R_{1}}\right)^{2
 \end{center}
 
 Una vez encontrada la mejor partición se separan los datos en las regiones resultantes y se repite el proceso en cada región. Es decir, se busca nuevamente la mejor variable y el mejor punto de corte de forma se incremente la disminución de la impureza en los nodos hijos.
-El proceso continúa hasta que se satisfaga algún criterio de parada (como por ejemplo que los nodos terminales tengan cierto número de observaciones).
-Luego de definido el criterio de construcción de las regiones, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de *costo-complejidad*. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (*overfitting*). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. *(Hastie, 2001)*
-El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de *cross-validation* aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de *costo-complejidad*.
+
+El proceso continúa hasta que se satisfaga algún criterio de parada. Un criterio de para puede ser por ejemplo que los nodos terminales tengan cierto número de observaciones.
+
+Luego de definido el criterio de construcción de las regiones y el criterio de parada, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de \textit{costo-complejidad}. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (\textit{overfitting}). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. (Hastie, 2001).
+
+El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de \textit{cross-validation} aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de \textit{costo-complejidad}.
 
 En dicho método se define a $T_{\alpha}$ como un subárbol obtenido al podar a $T_{0}$. De esta forma, para cada $\alpha$ se busca $T_{\alpha}$ que minimice la siguiente expresión:
 
@@ -581,32 +584,39 @@ $C_{\alpha}(T)=\displaystyle \sum^{|T|}_{m=1} N_{m} Q_{m}(T) + \alpha|T|$ (Hasti
 
 Donde se tiene que $|T|$ es igual número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste la medida de impureza.
 
-En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante *cross-validation*.
+En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante \textit{cross-validation}.
 
 \subsection{Bagging - Ranfom Forest\label{subsec:rf}}
 
 A pesar de que los árboles de regresión poseen un alto grado de interpretabilidad, estos poseen la gran limitante de ser inestables. Esto en el sentido de que pequeñas variaciones en el conjunto de entrenamiento y testeo generan grandes cambios en las estimaciones.
 Por lo tanto, se emplearon diferentes métodos alternativos buscando estabilidad en las predicciones.
 
-En primer lugar, se aplicó el método *Bagging* desarrollado por *Breiman* en 1994. Este método consiste en construir un estimador combinando distintas versiones de estimadores.
-En este contexto, estas nuevas versiones se construyen generando nuevos conjuntos de entrenamiento, mediante la técnica de remuestreo *bootstrap*. La cual consiste en la generación de varias muestras con reemplazo, del conjunto de datos de entrenamiento, donde a cada observación se le asigna el mismo peso ($\frac{1}{n}$, siendo $n$ el número de observaciones). Al número de muestras *bootstrap* se le suele denotar con la letra $B$.
-A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras *bootstrap*, donde a partir de cada una de ellas se construye un estimador. Luego, se le asigna a la observación el promedio de las respuestas de los estimadores construidos en cada muestra. 
+En primer lugar, se aplicó el método \textit{Bagging} desarrollado por \textit{Breiman} en 1994. Este método consiste en construir un estimador combinando distintas versiones de estimadores.
+En este contexto, estas nuevas versiones se construyen generando nuevos conjuntos de entrenamiento, mediante la técnica de remuestreo \textit{bootstrap}. Ésta técmica consiste en la generación de varias muestras con reemplazo, del conjunto de datos de entrenamiento, donde a cada observación se le asigna el mismo peso ($\frac{1}{n}$, siendo $n$ el número de observaciones). Al número de muestras \textit{bootstrap} se le suele denotar con la letra $B$.
+A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras \textit{bootstrap}, donde a partir de cada una de ellas se construye un estimador. Luego, se le asigna a la observación el promedio de las respuestas de los estimadores construidos en cada muestra. 
 
-Este método, en el contexto de árboles de regresión, consiste en la creación de $B$ árboles, cada uno mediante un nuevo conjunto de entrenamiento obtenido mediante una muestra *bootstrap*. Se destaca que a estos árboles no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma mejorando la precisión de la predicción.
-Luego, como una generalización del método *Bagging* aplicado a árboles de decisión, surge el segundo método empleado con el fin obtener un modelo estable a la hora de realizar predicciones. Este se denomina *Random Forest*, donde al igual que el método anterior, consiste en la creación de varios arboles de decisión (en este caso de regresión) mediante la generación de muestras *bootstrap*.
-Sin embargo, el método *Random Forest*, no considera en cada división el total de variables, sino un subconjunto de estas elegido de forma aleatoria. “A pesar de que a la hora de elegir el número de variables existen diferentes aproximaciones, en este informe se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. Esto en la medida de que es el número de variables que utiliza por defecto (en problemas de clasificación) la función *randomForest()* del paquete *randomForest*” CAMBIAR ESTO.
-Este método se destaca sobre el método *Bagging* principalmente cuando se tiene que una variable es muy influyente. Esto en la medida de que si se consideran todas las variables a la hora de construir los diferentes $B$ árboles, en la medida de que se tiene una variable muy influyente, posiblemente dichos árboles no difieran mucho entre sí. Esta limitante no se presenta en *Random Forest* en el sentido de que selecciona de forma aleatoria un subconjunto de los predictores en cada iteración.
+Este método, en el contexto de árboles de regresión, consiste en la creación de $B$ árboles, cada uno mediante un nuevo conjunto de entrenamiento obtenido mediante una muestra \textit{bootstrap}. Se destaca que a estos árboles no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma se mejora la precisión de la predicción.
+
+Luego, como una generalización del método \textit{Bagging} aplicado a árboles de decisión, surge el segundo método empleado con el fin obtener un modelo estable a la hora de realizar predicciones. Este se denomina \textit{Random Forest}, donde al igual que el método anterior, consiste en la creación de varios arboles de decisión (en este caso de regresión) mediante la generación de muestras \textit{bootstrap}.
+
+Sin embargo, el método \textit{Random Forest}, no considera en cada división el total de variables, sino un subconjunto de estas elegido de forma aleatoria. A pesar de que a la hora de elegir el número de variables existen diferentes aproximaciones, en este informe se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. Esto en la medida de que es el número de variables que utiliza por defecto (en problemas de clasificación) la función \textit{randomForest()} del paquete {randomForest} CAMBIAR ESTO.
+
+Este método se destaca sobre el método \textit{Bagging} principalmente cuando se tiene que una variable es muy influyente. Esto se debe a que si se consideran todas las variables a la hora de construir los diferentes $B$ árboles, en la medida de que se tiene una variable muy influyente, posiblemente dichos árboles no difieran mucho entre sí. Esta limitante no se presenta en \textit{Random Forest} en el sentido de que selecciona de forma aleatoria un subconjunto de los predictores en cada iteración.
+
 En los dos métodos anteriormente mencionados, se tiene que cada observación posee una probabilidad de aproximadamente $\frac{2}{3}$ de ser seleccionada en cada remuestra realizada. De esta forma, se cuenta con un conjunto de observaciones las cuales no son utilizadas para construir el estimador.
-Este conjunto de observaciones se denomina como *out of bag observations* (*OOB*). Por lo tanto, en cada iteración se procede a predecir dichas observaciones, mediante el estimador obtenido. Repitiendo este procedimiento para las $n$ observaciones, se calcula el *error OOB*. Dicha medida se procedió a utilizar como una primera aproximación en cuanto a la performance predictiva de ambos modelos.
+
+Este conjunto de observaciones se denomina como \textit{out of bag observations} (\textit{OOB}). Por lo tanto, en cada iteración se procede a predecir dichas observaciones, mediante el estimador obtenido. Repitiendo este procedimiento para las $n$ observaciones, se calcula el \textit{error OOB}. Dicha medida se procedió a utilizar como una primera aproximación en cuanto a la performance predictiva de ambos modelos.
+
 A pesar de que los métodos anteriormente mencionados logran solucionar el problema de la inestabilidad por parte de los árboles de decisión, estos métodos se caracterizan por presentar una baja interpretabilidad. 
-Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos *Bagging* y *Random Forest* se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
+
+Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos \textit{Bagging} y \textit{Random Forest} se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
 
 
 \subsection{Boosting\label{subsec:boosting}}
 
-Por otro lado, el tercer método empleado consiste en el procedimiento *Boosting* aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
+Por otro lado, el tercer método empleado consiste en el procedimiento \textit{Boosting} aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
 
-Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método *Boosting*, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
+Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método \textit{Boosting}, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
 
 Boosting tiene 3 tuning parameters:
 
@@ -620,6 +630,7 @@ Boosting tiene 3 tuning parameters:
 Algoritmo 
 
 1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el set de entrenamiento.
+
 2. Para cada $b = 1, 2, \cdots, B$ repite:
 
 a. Se ajusta un árbol $\hat{f}^b(x)$ con $d$ particiones (es decir, $d+1$ nodos terminales) en los datos de entrenamiento (X,r).
@@ -640,7 +651,7 @@ $$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
 \subsection{Support Vector Regression (SVR)\label{subsec:svr}}
 
 
-Support vector machines (SVM) son un conjunto de técnicas de aprendizaje estadístico utilizadas  para problemas de clasificación y de regresión. Originalmente, los SVM fueron creados para abordar problemas del primer tipo. Por lo tanto, en primer lugar se explicitará la metodología para los construcción de los mismos en problemas de clasificación y luego se generalizará para los problemas de regresión.
+\textit{Support vector machines} (SVM) son un conjunto de técnicas de aprendizaje estadístico utilizadas  para problemas de clasificación y de regresión. Originalmente, los SVM fueron creados para abordar problemas del primer tipo. Por lo tanto, en primer lugar se explicitará la metodología para los construcción de los mismos en problemas de clasificación y luego se generalizará para los problemas de regresión.
 
 Se destaca que a su vez estos fueron creados para problemas de clasificación donde la variable de salida es dicotómica. Sin embargo, existen algunas soluciones para lidear con esta limitante a la hora de trabajar con $K$ clases, siendo $K>2$.
 
@@ -674,7 +685,7 @@ Utilizando $(2)$ y $(3)$ se procede a clasificar una nueva observación en funci
 
 Sin embargo, en el caso de que el conjunto de datos de entrenamiento pueda ser efectivamente separado por la construcción de un hiperplano, entonces existen infinitos hiperplanos que cumplen esta propiedad. Por lo tanto, el método de \textit{Maximal Margin Classifier} consiste en construir el hiperplano que logre una mejor clasificación.
 
-En este se construye aquel hiperplano el cual se encuentre a la mayor distancia euclídea de cada observación en el conjunto de entrenamiento. Por lo tanto, se procede a calcular la distancia entre cada observación y el hiperplano, donde a la menor de estas se le denomina como el *margen*. Siendo este la menor distancia que se encuentra una observación del hiperplano.
+En este se construye aquel hiperplano el cual se encuentre a la mayor distancia euclídea de cada observación en el conjunto de entrenamiento. Por lo tanto, se procede a calcular la distancia entre cada observación y el hiperplano, donde a la menor de estas se le denomina como el\textit{margen}. Siendo este la menor distancia que se encuentra una observación del hiperplano.
 
 De esta forma, el método consiste en crear aquel hiperplano, en el cual el \textit{margen} sea lo más grande posible. Dicho de otra forma, el método busca construir el hiperplano en el cual se maximiza el mínimo de las distancias entre el mismo y cada observación en el conjunto de entrenamiento.
 
@@ -866,9 +877,9 @@ Luego, se destacan dos aspectos de los modelos tanto para problemas de clasifica
  
 A su vez, en la medida de que tanto en el clasificador como en la ecuación de regresión ($f(x)$) se expresa a través del producto escalar entre las observaciones, se recomienda estandarizar las mismas con el fin de tener una misma unidad de medida. (Kunh-Johnson, 2013)
 
-\section{Cross validation \label{sec:cv}}
+\section{Cross validation e Hyperparameter tuning \label{sec:cv}}
 
-Por último, a la hora de evaluar la performance de los diferentes modelos planteados, se realizó un procedimiento de *cross-validation*, particularmente *k-folds*.
+Por último, a la hora de evaluar la performance de los diferentes modelos planteados, se realizó un procedimiento de \textit{cross-validation}, particularmente \textit{k-folds}.
 El algoritmo consiste en dividir la muestra en $k$ submuestras de igual tamaño. Luego $k-1$ submuestras se usan como datos de entrenamiento y la muestra restante $k$ se usa para testear los datos.
 A continuación, se procede a ajustar los datos de esa muestra con el modelo construido con las $k-1$ muestras. Donde el proceso se repite $k$ veces, con cada una de las $k$ muestras. De tal forma que cada $k$ muestras es utilizada una sola vez como datos de testeo. 
 De esta forma, todas las observaciones se usan tanto para train como para test. A su vez, cada observación se usa para test una sola vez y para train $k-1$ veces. Los errores obtenidos en cada etapa se promedian para producir una sola estimación (error medio obtenido de los $k$ análisis realizados).
@@ -890,6 +901,12 @@ $RMSE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (y_j - \hat{y}_j)
 
 dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
 
+Con el fin de obtener el modelo con la mejor performance predictiva, se realizó un proceso de \textit{hyperparameter tuning}. El mismo consiste en obtener la mejor combinación de hiperparámetros posibles mediante una metodología de cross-validation.
+
+Un hyperparámetro es una valor necesario para ajustar un modelo el cual no se determina a partir 
+de los datos sino que, por el contrario, es necesario que sea especificado previamente a la realización del ajuste. Dependiendo del algoritmo con el que se trabaje, el rol de los mismos puede variar. Por ejemplo, como fue mencionado para el caso de Random Forest se tiene 2 hyperparámetros de gran importancia: la cantidad de variables que son seleccionadas para ajustar cada arbol y la cantidad de árboles. 
+
+\section{Interpretabilidad \label{sec:cv}}
 
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
@@ -1126,25 +1143,22 @@ ggcorrplot(corr, method = c("square"),type=c("upper"),
 
 En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.1, y se procede en ésta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que el proceso generador de datos de éstos valores es un proceso aleatorio. Es decir, los datos faltantes son generados al azar.
 
-Posteriormente, se realiza imputación de valores faltantes utilizando Random Forest sobre las variable con NA.
+Posteriormente, se realizó un proceso de imputación de valores faltantes mediante un análisis supervisado. Para ello se trabajó de la siguiente manera:
 
+1. Se ajustó un modelo tomando como variable de salida cada variable con datos faltantes.
+2. En cada uno de ellos, se consideró como variables de entrada todas aquellas que originalmente no presentan datos faltantes, pero excluyendo la variable precio.
+3. En cada variable, se sustituyó cada dato faltante por su predicción utilizando el modelo ajustado.
+
+En particular, el algoritmo utilizado para ajustar los modelos fue Random Forest, mediante el paquete missRanger. En lo que respecta a hyperparameter tuning, se destaca que debido al tiempo computacional que conlleva fueron utilizados en todos los casos los valores por defecto.
+
+A continuación se presentan los resultados de los modelos implementados.
 
 
 \section{Árbol de regresión \label{sec:arbol}}
 
-A continuación se presenta el Árbol. En el mismo se puede observar que la primera partición es realizada con la variable 
 
 <<Arbol_imputmedia, eval = FALSE>>=
 ##### Arbol de regresion
-
-set.seed(1234)
-ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
-
-train <- aptos_sin_na[ids,]
-test <- aptos_sin_na[-ids,]
-
-set.seed(1234)
-arbol <- rpart(price~ . , data=train)
 
 # summary(arbol)
 
@@ -1177,19 +1191,20 @@ rpart.plot(arbol.prune,roundint = T,digits = 4)
 @
 
 
+El error cuadrático medio es de:
+
+<<eval = FALSE>>=
+# RMSE
+
+RMSE_arbol <- sqrt(mean((test$price-predict(arbol.prune,test))^2))
+
+@
+
+
 \section{Random Forest \label{sec:randomforest}}
 
 <<RF_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE, eval = FALSE >>=
 ############ RF 
-
-set.seed(1234)
-ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
-
-train <- aptos_sin_na[ids,]
-test <- aptos_sin_na[-ids,]
-
-rf <- ranger(price ~ ., data = train,
-             importance = 'impurity')
 
  # Importancia de las variables
 
@@ -1200,23 +1215,6 @@ colnames(importancia_rf) <- c("importance")
 importancia_rf$variables <- row.names(importancia_rf)
 
 #### Veamos imputación por missranger
-
-### Imputamos las variables anteriores por miss ranger
- 
-
-aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),-price), 
-                       pmm.k = 3, num.trees = 100,seed=1234)
-
-aptos_mr$price <- aptos_sin_na$price
-
-set.seed(1234)
-ids <- sample(nrow(aptos_mr), 0.8*nrow(aptos_mr))
-
-train <- aptos_mr[ids,]
-test <- aptos_mr[-ids,]
-
-rf_mr <- ranger(price ~ ., data = train,
-             importance = 'impurity')
 
 # Importancia de las variables
 
