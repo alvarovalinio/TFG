@@ -114,6 +114,8 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 #### Definimos variables Sin na imputamos por la media
 
 aptos_sin_na <- imput_media(aptos,p=.1)
+
+aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv")) 
 @
 
 \pagenumbering{roman}
@@ -186,7 +188,7 @@ Con el fin de llevar a cabo este objetivo, fueron realizadas todas las etapas de
 
 Uno de los puntos muy importantes de éste trabajo es la obtención y procesamiento de los datos, los cuales fueron obtenidos través de la Interfaz para acceder a la página web (API) de Mercado Libre. Para ello fue necesario la creación de un código que permita una descarga automatizada de la información disponible.
 
-Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, *R*, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
+Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, \textit{R}, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
 
 En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en árboles de decisión.
 Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
@@ -1153,9 +1155,7 @@ En particular, el algoritmo utilizado para ajustar los modelos fue Random Forest
 
 A continuación se presentan los resultados de los modelos implementados.
 
-
 \section{Árbol de regresión \label{sec:arbol}}
-
 
 <<Arbol_imputmedia, eval = FALSE>>=
 ##### Arbol de regresion
@@ -1242,12 +1242,10 @@ grid.arrange(p1, p2, ncol = 2)
 @
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAFíA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \bibliographystyle{apa}
 \bibliography{TFGbiblo}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%% ANEXO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
