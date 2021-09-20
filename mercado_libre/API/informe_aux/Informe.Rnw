@@ -23,7 +23,7 @@
 %\usepackage{fancyvrb}
 \usepackage[authoryear]{natbib}
 \usepackage{booktabs}
-
+\usepackage{caption}
 \fancyhf{} 
 \fancyhead[LE]{\leftmark} 
 \fancyhead[RO]{\nouppercase{\rightmark}} 
@@ -70,6 +70,9 @@ library(missRanger)
 library(kableExtra)
 library(xtable)
 library(RColorBrewer)
+library(lmtest)
+library(nortest)
+library(glmnet)
 @
 
 
@@ -116,6 +119,17 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 aptos_sin_na <- imput_media(aptos,p=.1)
 
 aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv")) 
+
+############ train - test 
+
+set.seed(1234)
+ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
+
+train <- aptos_sin_na[ids,]
+test <- aptos_sin_na[-ids,]
+
+train_mr <- aptos_mr[ids,]
+test_mr <- aptos_mr[-ids,]
 @
 
 \pagenumbering{roman}
@@ -193,10 +207,11 @@ Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno 
 En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en árboles de decisión.
 Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
 
-
 Asimismo, con el fin de mejorar el desempeño predictivo de los modelos fue realizado un proceso de entraniento y validación de los resultados. 
 
-En la medida que existe un trade off entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques: un enfoque desd las técnicas clases y un enfoque desde técnicas alternativas. El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables. Por su parte, las metodologías como ser de árbol de regresión suelen tener un desempeño predictivo superior a expensas de la pérdida del grado de interpretabilidad.
+En la medida que existe un trade off entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques. En primer lugar, se trabajó con técnicas de estimación clásicas tales como el modelo lineal de precios hedónicos. Por otro lado, se implentaron técnicas de aprendizaje automático. El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables, pero supone la existencia de una relación lineal entre l variable de respuesta y las variables explicativas. No obstante, éste supuesto puede no ajustar a la realidad. Una de las ventajas de las técnicas de aprendizaje automático supervisado es que permiten captar relaciones no lineales. Por su parte, las metodologías como random forest suelen tener un desempeño predictivo superior pero a expensas de una pérdida en el grado de interpretabilidad. Debido a ésto, se suele denominar a éstos modelos como \textit{modelos de caja negra}.
+
+Sin embargo, con el fin de atenuar ésta limitante, se realizó un análisis de interpretabilidad de los modelos. Principalmente, mediante métodos globales modelo-agnósticos. Estos métodos permiten describir el comportamiento medio de los modelos de aprendizaje automático y son particularmente útiles cuando se quiere entender los mecanismos generales en los datos.
 
 Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
 
@@ -212,7 +227,7 @@ De ésta manera y como fue mencionado, una vez que se obtiene el token es posibl
 
 Ahora bien, para obtener la información sobre los apartamentos a la venta en el departamento de Montevideo, se consultó la API filtrando según categoría MLU1474 y además filtrando según el id (identificador) de cada uno de los barrios en Montevideo.
 
-Esto permitió obtener numerosos datos pero no fue suficiente. Para poder acceder a los atributos específicos de cada publicación (ítem) fue necesario realizar consultas filtrando específicamente en cada id de cada publicación. Es decir una vez btenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaicones y se realizaron consultas por publicación.
+Esto permitió obtener numerosos datos. No obstante, fue necesario acceder a los atributos específicos de cada publicación (ítem) filtrando específicamente en cada id de cada publicación. Es decir una vez btenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaciones y se realizaron consultas por publicación.
 
 De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
 
@@ -316,16 +331,16 @@ A continuación s presentan el mapa de Montevideo con la georreferencia de los s
 
 <<echo=FALSE>>=
 # Vectoria INE
-mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"))
+mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"), quiet = TRUE)
 mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
 #Puntos shoppings
-mall <- st_read(here("mercado_libre/API/scripts_aux/Mapas","puntos_googlemaps/shoppings"))
+mall <- st_read(here("mercado_libre/API/scripts_aux/Mapas","puntos_googlemaps/shoppings"), quiet = TRUE)
 mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 mall <- mall %>% select(Name, geometry)
 
 # Líneas avd_italia
-avd_italia <- st_read(here("mercado_libre/API/scripts_aux/Mapas","lineas_googlemaps/avditalia_18"))
+avd_italia <- st_read(here("mercado_libre/API/scripts_aux/Mapas","lineas_googlemaps/avditalia_18"), quiet = TRUE)
 avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 avd_italia <- avd_italia %>% select(Name, geometry)
 @
@@ -910,6 +925,10 @@ de los datos sino que, por el contrario, es necesario que sea especificado previ
 
 \section{Interpretabilidad \label{sec:cv}}
 
+\subsection{Partial Dependence Plot (PDP) \label{subsec:pdp}}
+
+\subsection{Accumulated Local Effects (ALE) Plot \label{subsec:aleplot}}
+
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
 El total de observaciones en la base de datos es de \Sexpr{paste(dim(aptos)[1])}, mientras que el total de variables es de \Sexpr{paste(dim(aptos)[2])}.
@@ -930,7 +949,11 @@ options(knitr.table.format = "latex")
 print(xtable(p_na %>% filter(p_na > 0)))
 @
 
-<<fig = TRUE, fig.cap = "Histograma del precio de oferta (en logaritmos)">>=
+
+Las variables con proporción de NA superior a 0.1 fueron dejadas fuera del análisis.
+
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>% ggplot(aes(x=log(price))) + 
        geom_histogram(fill = 'navyblue', alpha = 0.9, bins = 40) +
       theme(axis.ticks.x = element_blank(),
@@ -939,11 +962,15 @@ aptos %>% ggplot(aes(x=log(price))) +
             axis.title.x = element_text(face = 'bold', size = 12),
             axis.text.x = element_text(face = 'bold')) +
       xlim(9,16) +
-      labs(x = 'Precio de oferta (en logaritmos)') +
+      labs(x = 'Logaritmo del precio de oferta') +
       scale_fill_manual(values = c('navyblue')) 
 @
+\captionof{figure}{Histograma del precio de oferta en logaritmos}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Cantidad de dormitorios">>=
+
+\begin{figure}
+<<fig = TRUE>>=
 niveles <- aptos %>% group_by(bedrooms) %>% summarise(n = n())
 colores <- data.frame(colores= c("gold1","darkviolet","green4", "dodgerblue2", "firebrick"))
 niveles <- niveles %>% arrange(n)
@@ -966,10 +993,11 @@ aptos %>% ggplot() +
   labs(x = 'Cantidad de dormitorios') +
   scale_fill_manual(values = niveles$colores)
 @
+\captionof{figure}{Gráfico de barras de la cantidad de dormitorios}
+\end{figure}
 
-
+\begin{figure}
 <<fig = TRUE, fig.cap = "Cantidad de baños completos">>=
-
 aptos %>% ggplot() +
       geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
       theme(axis.ticks.x = element_blank(),
@@ -983,8 +1011,11 @@ aptos %>% ggplot() +
       labs(x = 'Cantidad de baños completos') +
       scale_fill_manual(values = c('aquamarine3','pink3'))
 @
+\captionof{figure}{Gráfico de barras de la cantidad de baños completos}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) + 
        geom_histogram(bins = 30) +
       theme(axis.ticks.x = element_blank(),
@@ -996,22 +1027,12 @@ aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) +
       scale_fill_manual(values = c('orangered2', 'springgreen4')) +
       facet_wrap(~zona_avditalia)
 @
-
-<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
-aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) + 
-       geom_boxplot() +
-      theme(axis.ticks.x = element_blank(),
-            legend.position = 'none',
-            axis.title.y = element_blank(),
-            axis.title.x = element_text(face = 'bold', size = 12),
-            axis.text.x = element_text(face = 'bold')) +
-      labs(x = 'Precio de oferta') +
-      scale_fill_manual(values = c('orangered2', 'springgreen4')) +
-      facet_grid(zona_avditalia~full_bathrooms)
-@
+\captionof{figure}{Histograma del precio de oferta según zona respecto a avenida italia. Es posible observar que en la zona Sur se encuentra una mayor proporción de apartamentos con precio superiores}
+\end{figure}
 
 
-<<fig = TRUE, fig.cap = "Precio de publicación según zona avenida italia">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>% 
       ggplot(aes(x=as.character(zona_avditalia), y=price,
                  fill=as.character(zona_avditalia))) + 
@@ -1030,8 +1051,28 @@ aptos %>%
       scale_y_continuous(labels = comma) +
        scale_fill_manual(values = c('orangered2', 'springgreen4'))
 @
+\captionof{figure}{Boxplot del precio de publicación según zona avenida italia. Como podemos observar, en promedio los apartamentos al sur de la calle avenida italia tienen un precio superior respecto a los ubicados al norte."}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Precio de publicación según distancia a la rambla por nivel de ingreso">>=
+\begin{figure}
+<<fig = TRUE>>=
+aptos %>% ggplot(aes(x=price, group = zona_avditalia, fill = zona_avditalia)) + 
+       geom_boxplot() +
+      theme(axis.ticks.x = element_blank(),
+            legend.position = 'none',
+            axis.title.y = element_blank(),
+            axis.title.x = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold')) +
+      labs(x = 'Precio de oferta') +
+      scale_fill_manual(values = c('orangered2', 'springgreen4')) +
+      facet_grid(zona_avditalia~full_bathrooms)
+@
+\captionof{figure}{Boxplot del precio de oferta según zona respecto a avenida italia y cantidad de baños completos}
+\end{figure}
+
+
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>% 
       ggplot(aes(x=dist_rambla, y=price, alpha = 1/3)) + 
       geom_point(color = 'navyblue') +
@@ -1048,8 +1089,11 @@ aptos %>%
       xlab('Distancia a la rambla (en m2)') +
       facet_wrap(~full_bathrooms)
 @
+\captionof{figure}{Gráfico de dispersión del precio de publicación según distancia a la rambla por nivel de ingreso}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Precio de publicación según cantidad de baños completos">>=
+\begin{figure}
+<<fig = TRUE, fig.cap = "">>=
 aptos %>%
       filter(!is.na(full_bathrooms)) %>%
       ggplot(aes(x=as.character(full_bathrooms), y=price, 
@@ -1064,13 +1108,16 @@ aptos %>%
             axis.text.y = element_text(face = 'bold', size = 12),
             legend.position = 'none') +
       scale_x_discrete() +
-      ylab('Precio de publicación (en logaritmos)') +
+      ylab('Precio de publicación') +
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
       scale_y_continuous(labels = comma) +
        scale_fill_manual(values = c('yellow4', 'palevioletred'))
 @
+\captionof{figure}{Gráfico de violin del precio de publicación según cantidad de baños completos}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Gráfico de Violin del precio de publicación (en logaritmos) según distancia al shopping más cercano">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>%
       ggplot(aes(x=as.character(dist_shop), y = price, 
                  fill=as.character(dist_shop))) + 
@@ -1089,8 +1136,11 @@ aptos %>%
       scale_fill_manual(values = c('royalblue2', 'indianred3', 'seagreen3'))+
       scale_y_continuous(labels = comma)
 @
+\captionof{figure}{Gráfico de Violin del precio de publicación según distancia al shopping más cercano}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Precio de publicación según distancia a un shopping y zona avenida italia">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>% 
       ggplot(aes(x=as.character(dist_shop), y=price, 
                  fill=as.character(dist_shop))) + 
@@ -1109,10 +1159,12 @@ aptos %>%
       facet_wrap(~zona_avditalia)+
       scale_fill_manual(values = c('royalblue2', 'indianred3', 'seagreen3')) +
       scale_y_continuous(labels = comma)
-
 @
+\captionof{figure}{Gráfico de Violin del precio de publicación según distancia al shopping más cercano y zona avenida italia}
+\end{figure}
 
-<<fig = TRUE, fig.cap = "Precio de publicación y distancia a la rambla por cantidad de habitaciones">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos %>%
       ggplot(aes(x=dist_rambla, y = log(price))) + 
       geom_point(color = 'firebrick') +
@@ -1129,9 +1181,11 @@ aptos %>%
       ylab('Precio de publicación') +
       facet_wrap(~bedrooms)
 @
+\captionof{figure}{Gráfico de dispersión del precio de publicación y distancia a la rambla por cantidad de habitaciones}
+\end{figure}
 
-
-<<fig = TRUE, fig.cap = "Mapa de corr">>=
+\begin{figure}
+<<fig = TRUE>>=
 aptos_cor <- aptos %>% select(price, maintenance_fee, dist_rambla, covered_area,
                               total_area, no_covered_area) %>% mutate(logprice = log(price))
 
@@ -1140,6 +1194,8 @@ corr<-round(cor(aptos_cor[,-1], use='pairwise.complete.obs') , 2)
 ggcorrplot(corr, method = c("square"),type=c("upper"), 
            ggtheme = ggplot2::theme_gray,lab=TRUE)
 @
+\captionof{figure}{Mapa de corr}
+\end{figure}
 
 \chapter{Modelos \label{cap:Modelos}}
 
@@ -1155,10 +1211,64 @@ En particular, el algoritmo utilizado para ajustar los modelos fue Random Forest
 
 A continuación se presentan los resultados de los modelos implementados.
 
+\section{Modelo lineal \label{sec:ml}}
+
+<<lm>>=
+lm <- lm(price ~ ., data = train)
+
+#Homoscedasticidad
+
+ggplot(as_tibble(lm$residuals) %>% 
+             mutate(id = seq(1, length(lm$residuals), 1))) + 
+      geom_point(aes(x = id, y = value), color = 'red', alpha = 1/5)
+
+bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
+# hay patrones que el modelo no longró captar -> no se cumple homoscedasicidad
+
+#Normalidad
+
+ggplot(as_tibble(lm$residuals)) + 
+      geom_density(aes(value), color = 'red')
+
+lillie.test(residuals(lm)) #se rechaza h0 de normalidad
+
+# Residuos
+
+RMSE_lm <- sqrt(mean((test$price - predict(lm,test))^2))
+@
+
+<<lasso>>=
+# Regresión penalizada - Lasso
+
+aptos_x_lasso <- model.matrix(price~.,train)
+aptos_y <- train$price
+
+aptos_x_lasso_test <- model.matrix(price~.,test)
+aptos_y_test <- test$price
+
+glmnet <- glmnet(aptos_x_lasso, aptos_y, family = 'gaussian')
+
+RMSE_glmnet <- sqrt(mean((test$price - predict.glmnet(glmnet,aptos_x_lasso_test))^2))
+@
+
+<<errorlm>>=
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+print(xtable(cbind(RMSE_lm, RMSE_glmnet)))
+@
+
+Eliminar lasso - no interesa resultado no aporta.
+
 \section{Árbol de regresión \label{sec:arbol}}
 
-<<Arbol_imputmedia, eval = FALSE>>=
+<<Arbol_imputmedia>>=
 ##### Arbol de regresion
+
+set.seed(1234)
+arbol <- rpart(price~ . , data=train)
 
 # summary(arbol)
 
@@ -1193,13 +1303,16 @@ rpart.plot(arbol.prune,roundint = T,digits = 4)
 
 El error cuadrático medio es de:
 
-<<eval = FALSE>>=
+<<>>=
 # RMSE
-
 RMSE_arbol <- sqrt(mean((test$price-predict(arbol.prune,test))^2))
-
+library(knitr)
+options(knitr.table.format = "latex")
 @
 
+<<results=tex>>=
+print(xtable(as.data.frame(RMSE_arbol)))
+@
 
 \section{Random Forest \label{sec:randomforest}}
 
