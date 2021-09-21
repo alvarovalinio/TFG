@@ -1,12 +1,12 @@
 # Script donde se ajusta :
-# 1) RF imputando por la media, p_na < .1
-# 2) RF imputando con MissRanger
+# 1) SVR utilizando Radial Kernel imputando por la media, p_na < .1
+# 2) SVR utlizando Radial Kernel imputando con MissRanger
 
 # Librerias
 
 library(tidyverse)
 library(here)
-library(ranger)
+library(kernlab)
 library(missRanger)
 
 options(scipen = 999)
@@ -54,7 +54,7 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 
 aptos_sin_na <- imput_media(aptos,p=.1)
 
-############ RF 
+############ SVR 
 
 set.seed(1234)
 ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
@@ -62,28 +62,32 @@ ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
 train <- aptos_sin_na[ids,]
 test <- aptos_sin_na[-ids,]
 
-rf <- ranger(price ~ ., data = train,
-             importance = 'impurity')
+# Variables de entrada
+ 
+SVR_train <-
+  kernlab::ksvm(
+    price ~ .,
+    data = train,
+    scaled = TRUE,
+    C = 1,
+    kernel = "rbfdot",
+    kpar = list(sigma = 1),
+    type = "eps-svr",
+    epsilon = 0.1
+  )
 
- # Importancia de las variables
 
-importancia_rf <- data.frame(rf$variable.importance)
+# Veamos el Error de prediccion 
 
-colnames(importancia_rf) <- c("importance")
+RMSE_svr <- sqrt(mean((test$price-predict(SVR_train,test))^2))
 
-importancia_rf$variables <- row.names(importancia_rf)
+RMSE_svr
 
-importancia_rf  %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia")
-
-
-# Veamos RMSE en el conjunto de testeo
-
-RMSE_rf <- sqrt(mean((test$price-predictions(predict(rf,test)))^2))
+################
 
 # Guardamos el modelo 
 
-save(file="RF_train.RDS",rf)
+save(file="SVR_train.RDS",SVR_train)
 
 
 #### Veamos imputación por missranger
@@ -106,27 +110,24 @@ test_mr <- aptos_mr[-ids,]
 
 set.seed(1234)
 
-rf_mr <- ranger(price ~ ., data = train_mr,
-             importance = 'impurity')
-
-# Importancia de las variables
-
-importancia_rf_mr <- data.frame(rf_mr$variable.importance)
-
-colnames(importancia_rf_mr) <- c("importance")
-
-importancia_rf_mr$variables <- row.names(importancia_rf_mr)
-
-importancia_rf_mr  %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+SVR_train_mr <-
+  kernlab::ksvm(
+    price ~ .,
+    data = train,
+    scaled = TRUE,
+    C = 1,
+    kernel = "rbfdot",
+    kpar = list(sigma = 1),
+    type = "eps-svr",
+    epsilon = 0.1
+  )
 
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_rf_mr <- sqrt(mean((test_mr$price-predictions(predict(rf_mr,test_mr)))^2))
+RMSE_svr_mr <- sqrt(mean((test_mr$price-predict(SVR_train_mr,test))^2))
 
 
 # Guardamos el modelo 
 
-save(file="RF_train_mr.RDS",rf_mr)
-
+save(file="SVR_train_mr.RDS",SVR_train_mr)
