@@ -63,7 +63,7 @@ ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
 train <- aptos_sin_na[ids,]
 test <- aptos_sin_na[-ids,]
 
-boosting <- gbm::gbm(
+boosting_train <- gbm::gbm(
   formula = price ~ .,
   data = train,
   distribution='gaussian',
@@ -77,16 +77,16 @@ boosting <- gbm::gbm(
 
 # Importancia de las variables
 
-summary(boosting)
+summary(boosting_train)
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_boosting <- sqrt(mean((test$price-predict(boosting,test))^2))
+RMSE_boosting <- sqrt(mean((test$price-predict(boosting_train,test))^2))
 
 
 # Guardamos el modelo 
 
-save(file="boosting_train.RDS",boosting)
+save(file="boosting_train.RDS",boosting_train)
 
 
 #### Veamos imputación por missranger
@@ -111,7 +111,7 @@ test_mr <- aptos_mr[-ids,]
 
 set.seed(1234)
 
-boosting_mr <- gbm::gbm(
+boosting_train_mr <- gbm::gbm(
   formula = price ~ .,
   data = train_mr,
   distribution='gaussian',
@@ -123,13 +123,13 @@ boosting_mr <- gbm::gbm(
 
 # Importancia de las variables
 
-summary(boosting_mr)
+summary(boosting_train_mr)
 
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_boosting_mr <- sqrt(mean((test_mr$price-predict(boosting_mr,test))^2))
+RMSE_boosting_mr <- sqrt(mean((test_mr$price-predict(boosting_train_mr,test))^2))
 
 # Guardamos el modelo 
 
-save(file="boosting_train_mr.RDS",boosting_mr)
+save(file="boosting_train_mr.RDS",boosting_train_mr)

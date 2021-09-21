@@ -77,6 +77,10 @@ SVR_train <-
   )
 
 
+# Vemos el numero de support vectors
+
+SVR_train
+
 # Veamos el Error de prediccion 
 
 RMSE_svr <- sqrt(mean((test$price-predict(SVR_train,test))^2))
@@ -113,7 +117,7 @@ set.seed(1234)
 SVR_train_mr <-
   kernlab::ksvm(
     price ~ .,
-    data = train,
+    data = train_mr,
     scaled = TRUE,
     C = 1,
     kernel = "rbfdot",
@@ -122,6 +126,10 @@ SVR_train_mr <-
     epsilon = 0.1
   )
 
+
+# Vemos el numero de support vectors
+
+SVR_train_mr
 
 # Veamos RMSE en el conjunto de testeo
 

@@ -62,12 +62,12 @@ ids <- sample(nrow(aptos_sin_na), 0.8*nrow(aptos_sin_na))
 train <- aptos_sin_na[ids,]
 test <- aptos_sin_na[-ids,]
 
-rf <- ranger(price ~ ., data = train,
+rf_train <- ranger(price ~ ., data = train,
              importance = 'impurity')
 
  # Importancia de las variables
 
-importancia_rf <- data.frame(rf$variable.importance)
+importancia_rf <- data.frame(rf_train$variable.importance)
 
 colnames(importancia_rf) <- c("importance")
 
@@ -79,11 +79,11 @@ importancia_rf  %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_rf <- sqrt(mean((test$price-predictions(predict(rf,test)))^2))
+RMSE_rf <- sqrt(mean((test$price-predictions(predict(rf_train,test)))^2))
 
 # Guardamos el modelo 
 
-save(file="RF_train.RDS",rf)
+save(file="RF_train.RDS",rf_train)
 
 
 #### Veamos imputación por missranger
@@ -106,12 +106,12 @@ test_mr <- aptos_mr[-ids,]
 
 set.seed(1234)
 
-rf_mr <- ranger(price ~ ., data = train_mr,
+rf_train_mr <- ranger(price ~ ., data = train_mr,
              importance = 'impurity')
 
 # Importancia de las variables
 
-importancia_rf_mr <- data.frame(rf_mr$variable.importance)
+importancia_rf_mr <- data.frame(rf_train_mr$variable.importance)
 
 colnames(importancia_rf_mr) <- c("importance")
 
@@ -123,10 +123,10 @@ importancia_rf_mr  %>% ggplot(aes(y=reorder(variables,importance),x=importance,f
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_rf_mr <- sqrt(mean((test_mr$price-predictions(predict(rf_mr,test_mr)))^2))
+RMSE_rf_mr <- sqrt(mean((test_mr$price-predictions(predict(rf_train_mr,test_mr)))^2))
 
 
 # Guardamos el modelo 
 
-save(file="RF_train_mr.RDS",rf_mr)
+save(file="RF_train_mr.RDS",rf_train_mr)
 

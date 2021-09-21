@@ -130,6 +130,35 @@ test <- aptos_sin_na[-ids,]
 
 train_mr <- aptos_mr[ids,]
 test_mr <- aptos_mr[-ids,]
+
+############## Cargamos los modelos
+
+#### Arbol
+
+arbol <- load(here("mercado_libre/modelos","arbol_train.RDS"))
+
+arbol.prune <- load(here("mercado_libre/modelos","arbol_prune_train.RDS"))
+
+#### RF
+
+rf_train <- load(here("mercado_libre/modelos","RF_train.RDS"))
+
+rf_train_mr <- load(here("mercado_libre/modelos","RF_train_mr.RDS"))
+
+
+#### Boosting
+
+boosting_train <- load(here("mercado_libre/modelos","boosting_train.RDS"))
+
+boosting_train_mr <- load(here("mercado_libre/modelos","boosting_train_mr.RDS"))
+
+#### SVR
+
+SVR_train <- load(here("mercado_libre/modelos","SVR_train.RDS"))
+
+SVR_train_mr <- load(here("mercado_libre/modelos","SVR_train_mr.RDS"))
+
+
 @
 
 \pagenumbering{roman}

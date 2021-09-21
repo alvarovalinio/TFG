@@ -26,7 +26,7 @@ source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_2018")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109")
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
       read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
@@ -98,5 +98,9 @@ rpart.plot(arbol.prune,roundint = T,digits = 4)
 
 
 
+## Guardamos los modelos
 
+save(file="arbol_train.RDS",arbol)
+
+save(file="arbol_prune_train.RDS",arbol.prune)
 
