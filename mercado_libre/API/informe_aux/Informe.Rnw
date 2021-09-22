@@ -135,28 +135,28 @@ test_mr <- aptos_mr[-ids,]
 
 #### Arbol
 
-arbol <- load(here("mercado_libre/modelos","arbol_train.RDS"))
+load(here("mercado_libre/modelos/ARBOL","arbol_train.RDS"))
 
-arbol.prune <- load(here("mercado_libre/modelos","arbol_prune_train.RDS"))
+load(here("mercado_libre/modelos/ARBOL","arbol_prune_train.RDS"))
 
 #### RF
 
-rf_train <- load(here("mercado_libre/modelos","RF_train.RDS"))
+load(here("mercado_libre/modelos/RF","RF_train.RDS"))
 
-rf_train_mr <- load(here("mercado_libre/modelos","RF_train_mr.RDS"))
+rf_train_mr <- load(here("mercado_libre/modelos/RF","RF_train_mr.RDS"))
 
 
 #### Boosting
 
-boosting_train <- load(here("mercado_libre/modelos","boosting_train.RDS"))
+boosting_train <- load(here("mercado_libre/modelos/BOOSTING","boosting_train.RDS"))
 
-boosting_train_mr <- load(here("mercado_libre/modelos","boosting_train_mr.RDS"))
+boosting_train_mr <- load(here("mercado_libre/modelos/BOOSTING","boosting_train_mr.RDS"))
 
 #### SVR
 
-SVR_train <- load(here("mercado_libre/modelos","SVR_train.RDS"))
+#SVR_train <- load(here("mercado_libre/modelos","SVR_train.RDS"))
 
-SVR_train_mr <- load(here("mercado_libre/modelos","SVR_train_mr.RDS"))
+#SVR_train_mr <- load(here("mercado_libre/modelos","SVR_train_mr.RDS"))
 
 
 @
@@ -1296,9 +1296,6 @@ Eliminar lasso - no interesa resultado no aporta.
 <<Arbol_imputmedia>>=
 ##### Arbol de regresion
 
-set.seed(1234)
-arbol <- rpart(price~ . , data=train)
-
 # summary(arbol)
 
 # Proceso de poda
@@ -1309,20 +1306,10 @@ arbol <- rpart(price~ . , data=train)
 
 cp_error <- data.frame(arbol$cptable)
 
-#cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
+cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
 
 # Otra forma
 
-#plotcp(arbol) 
-
-# Obtengamos el cp
-
-cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
-
-# Arbol podado:
-
-arbol.prune <- rpart(price ~ . , data = train,method="anova",
-                     control=rpart.control(cp=cp_opt))
 
 # Grafico
 
@@ -1345,7 +1332,7 @@ print(xtable(as.data.frame(RMSE_arbol)))
 
 \section{Random Forest \label{sec:randomforest}}
 
-<<RF_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE, eval = FALSE >>=
+<<RF_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
 ############ RF 
 
  # Importancia de las variables
