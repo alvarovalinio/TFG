@@ -65,6 +65,8 @@ test <- aptos_sin_na[-ids,]
 rf_train <- ranger(price ~ ., data = train,
              importance = 'impurity')
 
+rf_train # Vemos el OOB error entre otras caracteristicas relevantes
+
  # Importancia de las variables
 
 importancia_rf <- data.frame(rf_train$variable.importance)
@@ -108,6 +110,8 @@ set.seed(1234)
 
 rf_train_mr <- ranger(price ~ ., data = train_mr,
              importance = 'impurity')
+
+rf_train_mr # Vemos el OOB error entre otras caracteristicas relevantes
 
 # Importancia de las variables
 
