@@ -41,7 +41,7 @@
 \linespread{1.6}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE,cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "c", caption = TRUE, comment = FALSE, fig.pos = "H"}
+\SweaveOpts{concordance=TRUE,cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "c", caption = TRUE, comment = FALSE, fig.pos = "h"}
 
 <<echo=FALSE>>=
 options(scipen = 999, cache = TRUE)  
@@ -814,9 +814,36 @@ de los datos sino que, por el contrario, es necesario que sea especificado previ
 
 \section{Interpretabilidad \label{sec:cv}}
 
+Una vez implementados los diferentes algoritmos de aprendizaje automático y realizado el proceso de hiperparameter tunning, se procedió a obtener una medida de interpretabilidad de los mismos. Para ello, se trabajó con métodos globales modelo - agnosticos de interpretación, aplicados a aquel modelo con mejor performance predictiva y haciendo hincapié en el análisis gráfico.
+
+Estos métodos de interpretación para modelos de caja negra, consiste en describir el compartamiento promedio del modelo. Donde, los mismos generalmente se expresan mediante un valor esperado, basado en la distribución de los datos. (Molnar, 2021)
+
+A pesar de que en la literatura existen diferentes métodos para llevar a cabo el análsis, se trabajó mediante dos aproximaciones. Como primera aproximación, se realizó el análisis mediante los gráficos denominados \texit{Partial Dependece Plot} (PDP). Luego, con el fin de realizar un análisis con mayor profundidad y en la medida de que la metodología anterior presenta ciertas limitantes, se trabajó mediante el estudio de \texit{Accumulated local effect plots} (ALE).
+
+En las siguientes subsecciones se detallan los principales aspectos teóricos de ambas metodologías, al igual que sus ventajas y limitantes.
+
 \subsection{Partial Dependence Plot (PDP) \label{subsec:pdp}}
 
+Los gráficos denominados partial dependence plot (PDP) permiten observar el efecto marginal que una o dos variables tienen sobre la predicción de la variable de respuesta obtenida a través de un algoritmo de machine learning (Molnar, 2021). Estos gráficos pueden detectar cuando la relación entre la variable de respuesta y la variable predictora de interés es líneal, monótona, o bien cuando se trata de una forma funcional más compleja. 
+
+La función \textit{partial dependence function} para el caso de regresión se define como:
+
+$$\hat{f}_{x_S}(x_S)=E_{x_C}\left[\hat{f}(x_S,x_C)\right]=\int\hat{f}(x_S,x_C)d\mathbb{P}(x_C)$$
+
+En dónde $x_s$ son las variables para las cuales se quiere conocer el efecto sobre la predicción, mientras que $x_c$ corresponde al resto de las variables utilizadas en el algoritmo de machine learning $\hat{f}$.
+
+Ahora bien, la estimación para la función anterior se obtiene mediante la métodología Monte Carlo promediando sobre la muestra de entrenamiento:
+
+$$\hat{f}_{x_S}(x_S)=\frac{1}{n}\sum_{i=1}^n\hat{f}(x_S,x^{(i)}_{C})$$
+
+en dónde $x_c^{(i)}$ son los valores en la base de datos para las variables en las cuáles no estamos interesados, y $n$ el número de observaciones.
+
+Es importante mencionar que PDP es un método global que permite determinar de manera global la relación entre una o dos variables predictoras sobre la variable de respuesta. Asimismo, interesa destacar que uno de los supuestos de PDP es que las variables en $x_c$ y $x_s$ no están correlacionadas (Molnar, 2021).
+
+De manera similar se obtiene una estimación PDP para el caso de variables categóricas en dónde, para cada categoría, se realiza la estimación PDP forzando a que todas las observaciones tomen el valor correspondiente a dicha categoría.
+
 \subsection{Accumulated Local Effects (ALE) Plot \label{subsec:aleplot}}
+
 
 \subsection{Tratamiento de valores faltantes \label{subsec:nas}}
 
@@ -864,7 +891,8 @@ print(sum.table, include.rownames=FALSE, format.args = list(big.mark = ","))
 Luego, se presenta gráficamente la distribución de la variable mediante un histograma.
 
 \begin{figure}
-<<fig = TRUE, out.width = '70%', fig.align = 'c', fig.pos = 'h'>>=
+\centering
+<<fig = TRUE, out.width="0.3\\textwidth">>=
 aptos %>% ggplot(aes(x=price)) + 
        geom_histogram(fill = 'navyblue', alpha = 0.9, bins = 40) +
       theme(axis.ticks.x = element_blank(),
@@ -873,9 +901,13 @@ aptos %>% ggplot(aes(x=price)) +
             axis.title.x = element_text(face = 'bold', size = 12),
             axis.text.x = element_text(face = 'bold')) +
       labs(x = 'Precio de oferta') +
-      scale_fill_manual(values = c('navyblue')) 
+      scale_fill_manual(values = c('navyblue')) +
+      geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
+                 colour = 'firebrick') +
+      annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'firebrick') +
+      scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta de los apartamentos a la venta en Montevideo}
+\captionof{figure}{Histograma del precio de oferta ($price$) de los apartamentos a la venta en Montevideo. El precio promedio es de USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
 \end{figure}
 
 En lo que respecta a las variables de entrada, en primer lugar se presenta análisis de las variables cualítativas que se consideraron más relevantes. A continuación se presentan los gráficos de barras con el fin de observar la distribución de los niveles en los datos.
@@ -945,12 +977,14 @@ p4 <-aptos %>% ggplot() +
 @
 
 \begin{figure}
+\centering
 <<fig = TRUE, fig.pos = 'h'>>=
 grid.arrange(p1, p2, p3, p4, ncol = 2)
 @
-\captionof{figure}{Gráficos de barras para diferentes variables cualitativas. En panel superior se encuentran a la izquierda la variable bedrooms y a la derecha la variable full_bathrooms. Por otro lado, en el panel inferior a la izquierda se encuentra la variable zona_avditalia y a la derecha has_swimming_pool}
+\captionof{figure}{Gráficos de barras para diferentes variables cualitativas. En panel superior se encuentran a la izquierda la variable \text{bedrooms} y a la derecha la variable \text{full\_bathrooms}. Por otro lado, en el panel inferior a la izquierda se encuentra la variable \text{zona\_avditalia} y a la derecha \text{has\_swimming\_pool}}
 \end{figure}
 
+Con el fin de observar la distribución de algunas de las variables graficadas anteriormente a la vez que evaluar si las variables podrían ser candidatas a variables explicativas del modelo, se presentan a continuación algunos gráficos de violín y gráficos de caja.
 
 <<>>=
 p5 <- aptos %>% 
@@ -993,13 +1027,18 @@ p6 <- aptos %>%
 
 
 \begin{figure}
+\centering
 <<fig = TRUE>>=
 grid.arrange(p5, p6, ncol =3)
 @
-\captionof{figure}{bla}
+\captionof{figure}{Gráficos de violín y gráficos de caja. A la izquierda se encuentra el gráfico de price según \text{zona\_avditalia} mientras que a la derecha se encuentra el gráfico de price según \text{full\_bathrooms}. Es posible observar que los gráficos sugieren la existencia de una diferencia en media de price según \text{zona\_avditalia}, teniendo una media superior los apartamentos que se encuentran al Sur de avenida italia. A su vez, los apartamentos con dos o más baños completos tienen una media superior respecto a los apartamentos con 1 solo baño completo.}
 \end{figure}
 
+Ahora bien, con el objetivo de evaluar posibles interacciones sobre las variables anteriormente graficadas, se presenta el gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}.
+
+
 \begin{figure}
+\centering
 <<fig = TRUE, out.width = '70%', fig.pos = 'h'>>=
 aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) + 
        geom_boxplot() +
@@ -1013,11 +1052,12 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
       facet_grid(full_bathrooms~zona_avditalia) +
       scale_y_continuous(label = comma)
 @
-\captionof{figure}{Gráfico de caja de price según zona_avditalia y full_bathrooms}
+\captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en media observardas se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una media superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, el gráfico sugiere que los apartamentos al Sur poseen una media superior respecto a los ubicados al Norte, si bien la diferencia es menos en éste último caso.}
 \end{figure}
 
 \begin{figure}
-<<fig = TRUE, out.width = '70%', fig.pos = 'h'>>=
+\centering
+<<fig = TRUE>>=
 aptos %>% 
       ggplot(aes(y=price,x=dist_shop,fill=zona_avditalia)) + 
       geom_boxplot() +      
@@ -1029,37 +1069,36 @@ aptos %>%
       scale_fill_manual(values = c('orangered2', 'springgreen4'))  +
       scale_y_continuous(label = comma)      
 @
-\captionof{figure}{bla}
+\captionof{figure}{Gráfico de caja de \text{dist\_shop} segun \text{zona\_avditali}a. En todos los casos los apartementos ubicados al Sur tienen una media superior. Asimismo, el gráfico sugiere que entre los apartamentos ubicados al Norte, los apartamentos ubicados a menos de 1 km de un shopping tienen una media superior.}
 \end{figure}
 
 
 \begin{figure}
 <<fig = TRUE>>=
 aptos_cor <- aptos %>% select(price, maintenance_fee, dist_rambla, covered_area,
-                              total_area, no_covered_area) %>% mutate(logprice = log(price))
+                              total_area, no_covered_area) 
 
-corr<-round(cor(aptos_cor[,-1], use='pairwise.complete.obs') , 2)
+corr<-round(cor(aptos_cor, use='pairwise.complete.obs') , 2)
 
 ggcorrplot(corr, method = c("square"),type=c("upper"), 
            ggtheme = ggplot2::theme_gray,lab=TRUE)
 @
-\captionof{figure}{Mapa de corr}
+\captionof{figure}{Mapa de correlación. Como es de esperar, precio y distancia a la ramble éste de montevideo estan correlacionadas negativamente.}
 \end{figure}
 
+Por último, se presentan algunos gráficos que permiten observar la relación entre el precio de los apartamentos, el área cubierta, y la variable zona_avditalia.
+
 \begin{figure}
+\centering
 <<fig = TRUE>>=
 ggpairs(aptos, c(3,14), mapping = ggplot2::aes(color = zona_avditalia, alpha = 0.5), 
         diag = list(continuous = wrap("densityDiag")), 
         lower=list(continuous = wrap("points", alpha=0.5)))
 @
-\captionof{figure}{Mapa de corr}
+\captionof{figure}{Gráficos de price según \text{covered\_area}. En el panel superior izquierdo se encuentra la densidad de price segú \text{convered\_area}. En el panel superior derecho se encuentra la correlación total entre price y \text{covered\_area} y la correlación por grupos según \text{zona\_avditalia}. En el panel inferior izquierdo se encuentra el gráfico de dispersión de price según \text{covered\_area} por \text{zona\_avditalia}, mientras que en el panel inferior derecho se encuentra la densidad de \text{covered\_area} según \text{zona\_avditalia}.}
 \end{figure}
 
-
-
-
 \chapter{Modelos \label{cap:Modelos}}
-
 
 A continuación se presentan los resultados de los modelos implementados.
 
