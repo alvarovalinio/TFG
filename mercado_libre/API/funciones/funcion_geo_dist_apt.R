@@ -229,10 +229,10 @@ dist_barrios <- function(datos_entrada){
   
   
   
-  datos_entrada <- datos_entrada %>% mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
-                                                                         dist_shop < 5000 ~ 'Entre 1 km y 5 km',
-                                                                         TRUE ~ 'Más de 5 km')))
-  
+  # datos_entrada <- datos_entrada %>% mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
+  #                                                                        dist_shop < 5000 ~ 'Entre 1 km y 5 km',
+  #                                                                        TRUE ~ 'Más de 5 km')))
+  # 
   
   
   
