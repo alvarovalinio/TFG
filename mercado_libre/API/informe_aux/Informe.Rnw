@@ -293,27 +293,21 @@ Por mayor información respecto a los criterios de limpieza seleccionados para c
 
 \section{Variables geoespaciales\label{sec:geo}}
 
-La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, distancia a la Rambla.
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, y distancia a la Rambla Este de Montevideo.
+
+La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función distm del paquete geosphere. En el anexo x se encuentra el detalle de cálculo. 
 
 \subsection{Zona respecto a avenida italia \label{subsec:zona}}
 
-Toma valor Norte o Sur según el centroide del barrio en el cuál se encuentra disponible el apartamento se encuentra al Norte o al Sur de la calle avenida italia o 18 de Julio. 
+Toma valor Norte o Sur según el apartamento encuentre al Norte o al Sur de la calle avenida italia o 18 de Julio. Para ello, se fueron comparando las georreferencia de cada apartamento con respecto a la georreferencia del punto más cercano en el mapa de líneas de avenida italia en continuación con 18 de Julio. El mapa de líneas de avenida italia en continuación con 18 de julio fue construido en base a elaboración propia. 
 
 \subsection{Distancia al shopping más cercano \label{subsec:shop}}
 
-Fue contruida calculando la distancia en metros cuadrados entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
-
-Luego se decidió realizar la siguiente recodificación: 
-  
-\begin{itemize}    
-\item Menos de 1 km: distancia menor o igual de 1 km,
-\item Entre 1 km y 5 km: distancia superior a 1 km e inferior 5 km, 
-\item Más de 5 km: distancia superior a 5 km.
-\end{itemize}
+Fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
 
 \subsection{Distancia a la rambla \label{subsec:rambla}}
 
-Fue construida utilizando la distancia (en m2) entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
+Fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
 
 
 \section{Encuesta contínua de hogares\label{sec:ech}}
@@ -1055,10 +1049,21 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
 \captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en media observardas se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una media superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, el gráfico sugiere que los apartamentos al Sur poseen una media superior respecto a los ubicados al Norte, si bien la diferencia es menos en éste último caso.}
 \end{figure}
 
+En lo que respecta a \text{dist_shop},se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
+
+- Menos de 1 km: para volores inferiores a 1000
+- Entre 1 km y 5 km para valores en el intervalo [1000, 5000)
+- Mayor a 5 km para valores mayores a 5000
+
+a continuación se presentá el gráfico de cajas del precio de oferta según \text{dist_shop} por \text{zona_avditalia} utilizando la discretización mencionada.
+
 \begin{figure}
 \centering
 <<fig = TRUE>>=
 aptos %>% 
+      mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
+      dist_shop < 5000 ~ 'Entre 1 km y 5 km',
+      TRUE ~ 'Más de 5 km'))) %>%
       ggplot(aes(y=price,x=dist_shop,fill=zona_avditalia)) + 
       geom_boxplot() +      
       theme(axis.ticks.x = element_blank(),
@@ -1075,7 +1080,7 @@ aptos %>%
 
 \begin{figure}
 <<fig = TRUE>>=
-aptos_cor <- aptos %>% select(price, maintenance_fee, dist_rambla, covered_area,
+aptos_cor <- aptos %>% select(price, dist_shop, dist_rambla, covered_area,
                               total_area, no_covered_area) 
 
 corr<-round(cor(aptos_cor, use='pairwise.complete.obs') , 2)
@@ -1194,7 +1199,7 @@ print(xtable(as.data.frame(RMSE_arbol)))
 
 \section{Random Forest \label{sec:randomforest}}
 
-<<RF_imputmedia, echo=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
+<<RF_imputmedia, eval=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
 ############ RF 
 
  # Importancia de las variables
@@ -1296,6 +1301,14 @@ options(knitr.table.format = "latex")
 print(xtable(p_na %>% filter(p_na > 0)))
 @
 
+
+Fórmula de Haversine para el cálculo de distancias
+
+La fórmula de Haversine tiene la siguiente expresión:
+
+$$d = 2 \, r \, \text{sen}^{-1} \bigg(\sqrt{ \text{sen}^{2} \, \frac{\phi_2 - \phi_1}{2} + \text{cos} (\phi_1) \, \text{cos}(\phi_2) \, \text{sen}^{2} \,  \frac{\psi_2 - \psi_1}{2}} \bigg)$$ (PONER AUTOR, Y FECHA) 
+
+dónde d es la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1)$ y $(\psi_2, \phi_2)$ respectivamente, y r el radio de la tierra.
 
 
 \section{siete \label{ane:ind}}
