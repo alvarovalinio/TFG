@@ -4,7 +4,7 @@ library(tidyverse)
 library(here)
 library(ranger)
 library(missRanger)
-
+library(data.table)
 
 # Funciones auxiliares
 
@@ -46,16 +46,16 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 
 aptos_sin_na <- imput_media(aptos,p=.1)
 
-### Imputamos las variables anteriores por miss ranger
+### Imputamos las variables anteriores y item_condition por miss ranger
 
-aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),-price), 
-                       pmm.k = 3, num.trees = 100,seed=1234)
+aptos_mr <- missRanger(aptos %>% select(names(aptos_sin_na),item_condition,-price), 
+                       pmm.k = 3, num.trees = 500,seed=1234)
 
 aptos_mr$price <- aptos_sin_na$price
 
 ## Guardamos los datos
 
-write_csv(aptos_mr,path='aptos_mr.csv')
+fwrite(aptos_mr,file='aptos_mr.csv')
 
 ############################################
 
