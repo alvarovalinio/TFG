@@ -19,6 +19,8 @@
 %\usepackage{multirow}
 %\usepackage{multicol}
 \usepackage{verbatim}
+\usepackage{float}
+\floatplacement{figure}{H}
 \usepackage{hyperref}
 %\usepackage{fancyvrb}
 \usepackage[authoryear]{natbib}
@@ -44,7 +46,7 @@
 \SweaveOpts{concordance=TRUE,cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "c", caption = TRUE, comment = FALSE, fig.pos = "h"}
 
 <<echo=FALSE>>=
-options(scipen = 999, cache = TRUE)  
+options(scipen = 999, cache = TRUE, fig.pos = "h")  
 @
 
 <<librerias>>=
@@ -74,6 +76,8 @@ library(lmtest)
 library(nortest)
 library(glmnet)
 library(GGally)
+library(latex2exp)
+library(gbm)
 @
 
 
@@ -136,30 +140,28 @@ test_mr <- aptos_mr[-ids,]
 
 #### Arbol
 
-load(here("mercado_libre/modelos/ARBOL","arbol_train.RDS"))
+load(here("mercado_libre/modelos/ARBOL","arbol_train.RDS")) #levanta objeto con nombre arbol
 
-load(here("mercado_libre/modelos/ARBOL","arbol_prune_train.RDS"))
+load(here("mercado_libre/modelos/ARBOL","arbol_prune_train.RDS")) #arbol.p
 
 #### RF
 
-load(here("mercado_libre/modelos/RF","RF_train.RDS"))
+load(here("mercado_libre/modelos/RF","RF_train.RDS")) # rf_TRAIN
 
-rf_train_mr <- load(here("mercado_libre/modelos/RF","RF_train_mr.RDS"))
+load(here("mercado_libre/modelos/RF","RF_train_mr.RDS")) # rf_train_mr
 
 
 #### Boosting
 
-boosting_train <- load(here("mercado_libre/modelos/BOOSTING","boosting_train.RDS"))
+load(here("mercado_libre/modelos/BOOSTING","boosting_train.RDS")) 
 
-boosting_train_mr <- load(here("mercado_libre/modelos/BOOSTING","boosting_train_mr.RDS"))
+load(here("mercado_libre/modelos/BOOSTING","boosting_train_mr.RDS")) 
 
 #### SVR
 
-#SVR_train <- load(here("mercado_libre/modelos","SVR_train.RDS"))
+load(here("mercado_libre/modelos/SVR","SVR_train.RDS"))
 
-#SVR_train_mr <- load(here("mercado_libre/modelos","SVR_train_mr.RDS"))
-
-
+load(here("mercado_libre/modelos/SVR","SVR_train_mr.RDS"))
 @
 
 \pagenumbering{roman}
@@ -822,21 +824,74 @@ Los gráficos denominados partial dependence plot (PDP) permiten observar el efe
 
 La función \textit{partial dependence function} para el caso de regresión se define como:
 
-$$\hat{f}_{x_S}(x_S)=E_{x_C}\left[\hat{f}(x_S,x_C)\right]=\int\hat{f}(x_S,x_C)d\mathbb{P}(x_C)$$
+$$\begin{align*}\hat{f}_{x_S,PDP}(x_S)&=E_{X_C}\left[\hat{f}(x_S,X_C)\right]\\&=\int_{x_C}\hat{f}(x_S,x_C)\mathbb{P}(x_C)d{}x_C\end{align*}$$
 
-En dónde $x_s$ son las variables para las cuales se quiere conocer el efecto sobre la predicción, mientras que $x_c$ corresponde al resto de las variables utilizadas en el algoritmo de machine learning $\hat{f}$.
+
+En dónde $X_s$ son las variables para las cuales se quiere conocer el efecto sobre la predicción, mientras que $X_C$ corresponde al resto de las variables utilizadas en el algoritmo de machine learning $\hat{f}$.
 
 Ahora bien, la estimación para la función anterior se obtiene mediante la métodología Monte Carlo promediando sobre la muestra de entrenamiento:
 
-$$\hat{f}_{x_S}(x_S)=\frac{1}{n}\sum_{i=1}^n\hat{f}(x_S,x^{(i)}_{C})$$
+$$\hat{f}_{x_S, PDP}(x_S)=\frac{1}{n}\sum_{i=1}^n\hat{f}(x_S,x^{(i)}_{C})$$
 
-en dónde $x_c^{(i)}$ son los valores en la base de datos para las variables en las cuáles no estamos interesados, y $n$ el número de observaciones.
+en dónde $X_C^{(i)}$ son los valores en la base de datos para las variables en las cuáles no estamos interesados, y $n$ el número de observaciones.
 
-Es importante mencionar que PDP es un método global que permite determinar de manera global la relación entre una o dos variables predictoras sobre la variable de respuesta. Asimismo, interesa destacar que uno de los supuestos de PDP es que las variables en $x_c$ y $x_s$ no están correlacionadas (Molnar, 2021).
+Es importante mencionar que PDP es un método que permite determinar de manera global la relación entre una o dos variables predictoras sobre la variable de respuesta. Asimismo, interesa destacar que uno de los supuestos de PDP es que las variables en $X_C$ y $X_S$ no están correlacionadas (Molnar, 2021).
 
 De manera similar se obtiene una estimación PDP para el caso de variables categóricas en dónde, para cada categoría, se realiza la estimación PDP forzando a que todas las observaciones tomen el valor correspondiente a dicha categoría.
 
+Una de las ventajas principales de PDP es que es un método intuitivo y en el caso de variables incorrelacionadas, tiene una interpretación clara. El gráfico PDP permite observar cómo cambia la predicción promedio cuando la h-ésima variable predictora cambia. No obstante éste resultado no es tan claro en el caso de correlación entre las variables con las que se construye el gráfico, ya que se construyen conbinaciones de las variables que son irreales o con probabilidad muy baja. Esto ocurrre ya que la función PDP en un punto en particular se obtiene forzando a que todos las observaciones tomen dicho valor en particular, lo cual puede no tener sentido en algunos casos. 
+
+Una solución a éste problema es a través de la utilización de los denominados Accumulated Local Effect plots (ALE plots) que trabajan con distribuciones condicionales en lugar de con distribuciones marginales como es el caso de PDP. 
+
 \subsection{Accumulated Local Effects (ALE) Plot \label{subsec:aleplot}}
+
+Como fue mencionado en la sección anterior, una forma de evitar el cálculo de una predicción promedio en base a casos irreales o de baja probabilidad, es trabajar con distribuciones condicionales en lugar de distribuciones marginales. Es el caso de los conocidos M-Plots (Marginal Plots). 
+
+La estimación de la predicción promedio para el caso de M-Plots se realiza de la siguiente manera:
+
+$$\begin{align*}\hat{f}_{x_S,M}(x_S)&=E_{X_C|X_S}\left[\hat{f}(X_S,X_C)|X_S=x_s\right]\\&=\int_{x_C}\hat{f}(x_S,x_C)\mathbb{P}(x_C|x_S)d{}x_C\end{align*}$$
+
+
+M-plots logra superar el problema de los casos irreales o de baja probabilidad en la medida que se promedian predicciones solamente para observaciones que tienen valores cercanos al valor particular de la variable para el cual se está midiendo el efecto.
+
+No obstante, no resuelve el problema en el caso de variables correlacionadas ya que igualmente se está estimando el efecto combinado de las variables correlacionadas.
+
+ALE plots resuelve el problema promediando al igual que M-Plot sobre distribuciones marginales pero calculando diferencias en la predicción en lugar de promedios. 
+
+La forma matemática es como sigue:
+
+$$\begin{align*}\hat{f}_{x_S,ALE}(x_S)=&\int_{z_{0,1}}^{x_S}E_{X_C|X_S}\left[\hat{f}^S(X_s,X_c)|X_S=z_S\right]dz_S-\text{constant}\\=&\int_{z_{0,1}}^{x_S}\int_{x_C}\hat{f}^S(z_s,x_c)\mathbb{P}(x_C|z_S)d{}x_C{}dz_S-\text{constant}\end{align*}$$
+
+Dónde $\hat{f}^S(z_s,x_c)$ representa el cambio en la predicción lo cuál se define como la derivada parcial:
+
+$$\hat{f}^S(x_s,x_c)=\frac{\partial\hat{f}(x_S,x_C)}{\partial{}x_S}$$
+
+Esto permite aislar el efecto de la variable de interés sobre las predicciones.
+
+Luego, se resta uns constante lo cual centra el gráfico de tal manera que el efecto sobre los datos sea cero. Mas adelante se hará énfasis en éste punto.
+
+Ahora bien, a pesar de que no todos los modelos trabajan con gradientes, esto no es un problema dado que la metodología de computación de ALE plots utiliza intervalos en lugar de gradientes.
+
+\subsubsection{Estimación \label{subsubsec:est}}
+
+ALE plots, al igual que PDP y M-plots, puede ser estimado para una o dos variables de interés. En éste apartado se presenta el caso de una sola variable.
+
+Para estimar los efectos locales de la variable $z_j$, se divide el recorrido de la misma en diferentes intervalos, y se calcula la diferencia en las predicciones en cada uno de dichos intervalos. Este procedimiento por lo tanto, funciona para el caso de modelos que no tienen derivadas parciales.
+
+El primer paso es estimar el efecto como sigue:
+
+$$\hat{\tilde{f}}_{j,ALE}(x)=\sum_{k=1}^{k_j(x)}\frac{1}{n_j(k)}\sum_{i:x_{j}^{(i)}\in{}N_j(k)}\left[f(z_{k,j},x^{(i)}_{\setminus{}j})-f(z_{k-1,j},x^{(i)}_{\setminus{}j})\right]$$
+
+Dónde $N_j(k)$ corresponde al k-ésimo intervalo de la variable de interés $z_j$.
+
+Luego, el efecto calculado anteriormente se centra de manera que el efecto medio tome valor 0:
+
+$$\hat{f}_{j,ALE}(x)=\hat{\tilde{f}}_{j,ALE}(x)-\frac{1}{n}\sum_{i=1}^{n}\hat{\tilde{f}}_{j,ALE}(x^{(i)}_{j})$$
+
+Esto se realiza para poder tener una medida del efecto de la variable de interés en un determinado punto en comparación a la predicción promedio.
+
+En lo que respecta a los intervalos, los mismos son definidos utilizando los cuantiles de la distribución de la variable de interés, lo cual asegura que cada intervalo va a contener el mismo número de observaciones. La desventaja principal de utilizar los cuantiles para definir los intervalos es que los mismos pueden tener longitud muy diferente, haciendo que el gráfico sea muy irregular.
+
 
 
 \subsection{Tratamiento de valores faltantes \label{subsec:nas}}
@@ -877,23 +932,22 @@ options(knitr.table.format = "latex")
 
 
 <<results=tex>>=
-sum.table <- xtable(sum.table)
-align(sum.table) <- rep("l", ncol(sum.table)+1)
-print(sum.table, include.rownames=FALSE, format.args = list(big.mark = ","))
+kable(sum.table, caption = 'Medidas de resumen de la variable de salida price', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 
 Luego, se presenta gráficamente la distribución de la variable mediante un histograma.
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
-<<fig = TRUE, out.width="0.3\\textwidth">>=
+<<fig = TRUE>>=
 aptos %>% ggplot(aes(x=price)) + 
        geom_histogram(fill = 'navyblue', alpha = 0.9, bins = 40) +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
             axis.title.x = element_text(face = 'bold', size = 12),
-            axis.text.x = element_text(face = 'bold')) +
+            axis.text.x = element_text(face = 'bold', size = 12),
+            axis.text.y = element_text(size = 12)) +
       labs(x = 'Precio de oferta') +
       scale_fill_manual(values = c('navyblue')) +
       geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
@@ -901,7 +955,7 @@ aptos %>% ggplot(aes(x=price)) +
       annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'firebrick') +
       scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta ($price$) de los apartamentos a la venta en Montevideo. El precio promedio es de USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
+\captionof{figure}{Histograma del precio de oferta (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
 \end{figure}
 
 En lo que respecta a las variables de entrada, en primer lugar se presenta análisis de las variables cualítativas que se consideraron más relevantes. A continuación se presentan los gráficos de barras con el fin de observar la distribución de los niveles en los datos.
@@ -970,7 +1024,7 @@ p4 <-aptos %>% ggplot() +
 
 @
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
 <<fig = TRUE, fig.pos = 'h'>>=
 grid.arrange(p1, p2, p3, p4, ncol = 2)
@@ -986,12 +1040,12 @@ p5 <- aptos %>%
                  fill=as.character(zona_avditalia))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 14),
+            axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
             plot.title = element_blank(),
             legend.title = element_blank(),
-            axis.text.x = element_text(face = 'bold', size = 12),
-            axis.text.y = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold', size = 10),
+            axis.text.y = element_text(face = 'bold', size = 10),
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('Precio de publicación') +
@@ -1005,24 +1059,24 @@ p6 <- aptos %>%
                  fill=as.character(full_bathrooms))) + 
       geom_violin() +
       theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 14),
+            axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
             plot.title = element_blank(),
             legend.title = element_blank(),
-            axis.text.x = element_text(face = 'bold', size = 12),
-            axis.text.y = element_text(face = 'bold', size = 12),
+            axis.text.x = element_text(face = 'bold', size = 10),
+            axis.text.y = element_text(face = 'bold', size = 10),
             legend.position = 'none') +
       scale_x_discrete() +
-      ylab('Precio de publicación') +
+      ylab('') +
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
       scale_y_continuous(labels = comma) +
        scale_fill_manual(values = c('yellow4', 'palevioletred'))
 @
 
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
-<<fig = TRUE>>=
+<<fig = TRUE, width = 6, height=3>>=
 grid.arrange(p5, p6, ncol =3)
 @
 \captionof{figure}{Gráficos de violín y gráficos de caja. A la izquierda se encuentra el gráfico de price según \text{zona\_avditalia} mientras que a la derecha se encuentra el gráfico de price según \text{full\_bathrooms}. Es posible observar que los gráficos sugieren la existencia de una diferencia en media de price según \text{zona\_avditalia}, teniendo una media superior los apartamentos que se encuentran al Sur de avenida italia. A su vez, los apartamentos con dos o más baños completos tienen una media superior respecto a los apartamentos con 1 solo baño completo.}
@@ -1031,9 +1085,9 @@ grid.arrange(p5, p6, ncol =3)
 Ahora bien, con el objetivo de evaluar posibles interacciones sobre las variables anteriormente graficadas, se presenta el gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}.
 
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
-<<fig = TRUE, out.width = '70%', fig.pos = 'h'>>=
+<<fig = TRUE,width = 6, height=3>>=
 aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) + 
        geom_boxplot() +
       theme(axis.ticks.x = element_blank(),
@@ -1049,17 +1103,17 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
 \captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en media observardas se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una media superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, el gráfico sugiere que los apartamentos al Sur poseen una media superior respecto a los ubicados al Norte, si bien la diferencia es menos en éste último caso.}
 \end{figure}
 
-En lo que respecta a \text{dist_shop},se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
+En lo que respecta a la variables \text{dist\_shop},se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
 
 - Menos de 1 km: para volores inferiores a 1000
 - Entre 1 km y 5 km para valores en el intervalo [1000, 5000)
 - Mayor a 5 km para valores mayores a 5000
 
-a continuación se presentá el gráfico de cajas del precio de oferta según \text{dist_shop} por \text{zona_avditalia} utilizando la discretización mencionada.
+a continuación se presentá el gráfico de cajas del precio de oferta según \text{dist\_shop} por \text{zona\_avditalia} utilizando la discretización mencionada.
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
-<<fig = TRUE>>=
+<<fig = TRUE, width = 6, height=3>>=
 aptos %>% 
       mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
       dist_shop < 5000 ~ 'Entre 1 km y 5 km',
@@ -1078,7 +1132,8 @@ aptos %>%
 \end{figure}
 
 
-\begin{figure}
+\begin{figure}[h!]
+\centering
 <<fig = TRUE>>=
 aptos_cor <- aptos %>% select(price, dist_shop, dist_rambla, covered_area,
                               total_area, no_covered_area) 
@@ -1093,7 +1148,7 @@ ggcorrplot(corr, method = c("square"),type=c("upper"),
 
 Por último, se presentan algunos gráficos que permiten observar la relación entre el precio de los apartamentos, el área cubierta, y la variable zona_avditalia.
 
-\begin{figure}
+\begin{figure}[h!]
 \centering
 <<fig = TRUE>>=
 ggpairs(aptos, c(3,14), mapping = ggplot2::aes(color = zona_avditalia, alpha = 0.5), 
@@ -1109,58 +1164,57 @@ A continuación se presentan los resultados de los modelos implementados.
 
 \section{Modelo lineal \label{sec:ml}}
 
-<<lm>>=
+
+<<>>=
 lm <- lm(price ~ ., data = train)
 
-#Homoscedasticidad
-
-ggplot(as_tibble(lm$residuals) %>% 
-             mutate(id = seq(1, length(lm$residuals), 1))) + 
-      geom_point(aes(x = id, y = value), color = 'red', alpha = 1/5)
-
-bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
-# hay patrones que el modelo no longró captar -> no se cumple homoscedasicidad
-
-#Normalidad
-
-ggplot(as_tibble(lm$residuals)) + 
-      geom_density(aes(value), color = 'red')
-
-lillie.test(residuals(lm)) #se rechaza h0 de normalidad
-
-# Residuos
-
 RMSE_lm <- sqrt(mean((test$price - predict(lm,test))^2))
-@
-
-<<lasso>>=
-# Regresión penalizada - Lasso
-
-aptos_x_lasso <- model.matrix(price~.,train)
-aptos_y <- train$price
-
-aptos_x_lasso_test <- model.matrix(price~.,test)
-aptos_y_test <- test$price
-
-glmnet <- glmnet(aptos_x_lasso, aptos_y, family = 'gaussian')
-
-RMSE_glmnet <- sqrt(mean((test$price - predict.glmnet(glmnet,aptos_x_lasso_test))^2))
-@
-
-<<errorlm>>=
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-print(xtable(cbind(RMSE_lm, RMSE_glmnet)))
+print(xtable(as.data.frame(RMSE_lm)))
 @
 
-Eliminar lasso - no interesa resultado no aporta.
+\begin{figure}[h!]
+\centering
+<<fig = TRUE, width=6, height=3>>=
+lm1 <- ggplot(as_tibble(lm$residuals) %>% 
+             mutate(id = seq(1, length(lm$residuals), 1))) + 
+      geom_point(aes(x = id, y = value), color = 'red', alpha = 1/5) +
+      theme(axis.title.y = element_text(face = 'bold', size = 14),
+            axis.title.x = element_text(),
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
+      labs(x = 'Id.', y = TeX("$\\hat{\\epsilon}$"))
+
+lm2 <- ggplot(as_tibble(lm$residuals)) + 
+      geom_density(aes(value), color = 'red') +
+      theme(axis.title = element_text(face = 'bold', size = 14),
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
+      labs(y = TeX("$\\hat{f}_{\\epsilon}$"), x = TeX("$\\hat{\\epsilon}$"))
+
+grid.arrange(lm1, lm2, ncol = 2)
+@
+\captionof{figure}{Residuos del modelo líneal. En el panel izquiero se encuentra el gráfico de dispersión mientras que en el pane izquierdo se encuentra la densidad estimada.}
+\end{figure}
+
+
+<<eval = FALSE>>=
+bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
+# hay patrones que el modelo no longró captar -> no se cumple homoscedasicidad
+
+lillie.test(residuals(lm)) #se rechaza h0 de normalidad
+@
+
 
 \section{Árbol de regresión \label{sec:arbol}}
 
-<<Arbol_imputmedia>>=
+A continuación se presentan los resultados del árbol de regresión ajustado sobre la variable price. En primer lugar se presenta el gráfico del modelo, luego de realizar el proceso de poda.
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE>>=
 ##### Arbol de regresion
 
 # summary(arbol)
@@ -1173,18 +1227,17 @@ Eliminar lasso - no interesa resultado no aporta.
 
 cp_error <- data.frame(arbol$cptable)
 
-cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
+#cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
 
 # Otra forma
 
 
 # Grafico
 
-rpart.plot(arbol.prune,roundint = T,digits = 4)
+rpart.plot(arbol.prune,roundint = T,digits = -3)
 @
-
-
-El error cuadrático medio es de:
+\captionof{figure}{Árbol de regression sobre la variable \text{price}. La primera partición es realizada con la variable \text{full\_bathrooms}. Las variables \text{dist\_rambla}, \text{total\_area}, \text{bedrooms} e \text{ingresomedio\_ech} son utilizadas en las siguientes particiones.}
+\end{figure}
 
 <<>>=
 # RMSE
@@ -1193,18 +1246,47 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<results=tex>>=
+<<eval=FALSE>>=
 print(xtable(as.data.frame(RMSE_arbol)))
 @
 
+
+El modelo tiene un error cuadrático medio de \Sexpr{round(RMSE_arbol)}.
+
 \section{Random Forest \label{sec:randomforest}}
 
-<<RF_imputmedia, eval=FALSE, message=FALSE, warning=FALSE, fig = TRUE>>=
+En éste sección se presentan los resultados del modelo de Random Forest ajustado. Como fue mencionado anteriormente, en primer lugar se realizó el ajuste sobre los datos dónde las variables cuantitativas con proporción de datos faltantes inferior a 0.1 fueron estimadas por la media. Posteriormente, se ajustó el modelo utilizando un procesi de imputación mediante Random Forest. 
+
+A continuación se presenta la tabla con los errores cuadráticos medios de los modelos mencionados. No se observa una diferencia entre los valores lo cual puede deberse a que las variables imputadas fueron seleccionadas con un bajo porcentaje de valores faltantes.
+
+<<>>=
+# RMSE test
+RMSE_rf <- sqrt(mean((test$price-predictions(predict(rf_train,test)))^2))
+RMSE_rf_mr <- sqrt(mean((test_mr$price-predictions(predict(rf_train_mr,test_mr)))^2))
+
+rmse_rf <- tribble(
+  ~Imput, ~ECM,
+  "Media",   round(RMSE_rf),
+  "Miss Ranger", round(RMSE_rf_mr)
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+
+\begin{figure}[h!]
+\centering
+<<fig=TRUE, width=6, height=3>>=
 ############ RF 
 
- # Importancia de las variables
+# Importancia de las variables
 
-importancia_rf <- data.frame(rf$variable.importance)
+importancia_rf <- data.frame(rf_train$variable.importance)
 
 colnames(importancia_rf) <- c("importance")
 
@@ -1214,28 +1296,87 @@ importancia_rf$variables <- row.names(importancia_rf)
 
 # Importancia de las variables
 
-importancia_rf_mr <- data.frame(rf_mr$variable.importance)
+importancia_rf_mr <- data.frame(rf_train_mr$variable.importance)
 
 colnames(importancia_rf_mr) <- c("importance")
 
 importancia_rf_mr$variables <- row.names(importancia_rf_mr)
 
 p1 <- importancia_rf %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia") +
+  geom_col()+theme(legend.position="none")+labs(y="",x="") +
       theme(axis.text.x = element_blank(),
+            axis.text.y = element_text(face = 'bold'),
             axis.ticks.x = element_blank(),
-            axis.title.x = element_text(size = 8),
-            axis.title.y = element_blank())
+            axis.title.x = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      scale_fill_manual(values = c('navy', 'orangered3', 'darkgreen', 'slateblue3', 'brown3', 'gold3', 'springgreen3', 'pink3', 'royalblue4', 'firebrick'))
 
 p2 <- importancia_rf_mr %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="Variables",x="Importancia")+
+  geom_col()+theme(legend.position="none")+labs(y="",x="")+
       theme(axis.text.x = element_blank(),
+            axis.text.y = element_text(face = 'bold'),
             axis.ticks.x = element_blank(),
-            axis.title.x = element_text(size = 8),
-            axis.title.y = element_blank())
+            axis.title.x = element_text(size = 12),
+            axis.title.y = element_blank()) +
+      scale_fill_manual(values = c('navy', 'orangered3', 'darkgreen', 'slateblue3', 'brown3', 'gold3', 'springgreen3', 'pink3', 'royalblue4', 'firebrick'))
 
 grid.arrange(p1, p2, ncol = 2)
 @
+\captionof{figure}{Importancia de las variables en los modelos de random forest ajustados. Se observa que \text{total\_area} es la variable con mayor importancia en ambos modelos. A su vez, todas las variables geoespacialesconstruidas aparecen entre las más importantes de ambos modelos.}
+\end{figure}
+
+\vspace{3cm}
+
+\section{Boosting \label{sec:boosting}}
+
+<<eval=TRUE>>=
+RMSE_boosting <- RMSE(predict.gbm(boosting_train, test), test$price)
+RMSE_boosting_mr <- RMSE(predict.gbm(boosting_train, test_mr), test_mr$price)
+
+rmse_boost <- tribble(
+  ~Imput, ~ECM,
+  "Media",   round(RMSE_boosting),
+  "Miss Ranger", round(RMSE_boosting_mr)
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex, eval = TRUE>>=
+kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+
+\section{Support vector regression \label{sec:svr}}
+
+
+<<eval=FALSE>>=
+RMSE_svr <- RMSE(predict(SVR_train, test), test$price)
+RMSE_svr_mr <- RMSE(predict.gbm(boosting_train, test_mr), test_mr$price)
+
+
+rmse_svr <- tribble(
+  ~Imput, ~ECM,
+  "Media",   round(RMSE_svr),
+  "Miss Ranger", round(RMSE_svr_mr)
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex, eval = FALSE>>=
+kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+
+\section{Interpretabilidad \label{sec:cv}}
+
+
+\section{Selección del mejor modelo e interpretabilidad \label{sec:cv}}
+
+A continuación se presenta la tabla con los errores cuadráticos medios de los modelos implementados.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAFíA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1251,43 +1392,19 @@ grid.arrange(p1, p2, ncol = 2)
 
 <<>>=
 vars <- readxl::read_excel(here('mercado_libre/Api', 'criterios_de_limpieza.xlsx'),
-                                sheet = 'anexo_vars')
+                                sheet = 'anexo_vars') %>% arrange(Fuente)
+n <- vars %>% group_by(Fuente) %>% summarise(conteo = n())
+
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-vars.table <- xtable(as.data.frame(vars)[1:26,], include.rownames=FALSE)
-align(vars.table) <- rep("l", ncol(vars)+1)
-print(vars.table, size = "\\fontsize{3pt}{3pt}\\setlength{\\tabcolsep}{5pt}", include.rownames=FALSE)
+kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
+      pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
+      pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
 @
 
-<<>>=
-library(knitr)
-options(knitr.table.format = "latex")
-@
-
-<<results=tex>>=
-vars.table <- xtable(as.data.frame(vars)[27:52,], include.rownames=FALSE)
-align(vars.table) <- rep("l", ncol(vars)+1)
-print(vars.table, size = "\\fontsize{3pt}{3pt}\\setlength{\\tabcolsep}{5pt}", include.rownames=FALSE)
-@
-
-
-<<>>=
-library(knitr)
-options(knitr.table.format = "latex")
-@
-
-<<results=tex>>=
-vars.table <- xtable(as.data.frame(vars)[53:nrow(vars),], include.rownames=FALSE)
-align(vars.table) <- rep("l", ncol(vars)+1)
-print(vars.table, size = "\\fontsize{3pt}{3pt}\\setlength{\\tabcolsep}{5pt}", include.rownames=FALSE)
-@
-
-
-El total de observaciones sin NA es de \Sexpr{paste(dim(drop_na(aptos))[1])}.
-Las proporciones de NA por variable son:
 
 <<nas>>=
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
@@ -1298,7 +1415,7 @@ options(knitr.table.format = "latex")
 
 
 <<results=tex>>=
-print(xtable(p_na %>% filter(p_na > 0)))
+kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 
 
