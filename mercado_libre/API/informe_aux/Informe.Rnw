@@ -78,6 +78,7 @@ library(glmnet)
 library(GGally)
 library(latex2exp)
 library(gbm)
+library(kernlab)
 @
 
 
@@ -124,6 +125,7 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 aptos_sin_na <- imput_media(aptos,p=.1)
 
 aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv")) 
+aptos_mr <- aptos_mr %>% mutate_if(is.character, as.factor)
 
 ############ train - test 
 
@@ -558,7 +560,7 @@ En el primer caso, se asumió la forma funcional de $f$ y se procedió a estimar
 
 \subsection{Modelo lineal de precios hedónicos\label{subsec:ml}}
 
-El modelo lineal de precios hedónicos parte del supuesto de que los precios observados de los productos se pueden desglosar en una suma de cantidades específicas de determinadas características asociadas al bien lo cual define un set implícito de precios, también conocidos como precios hedónicos.
+El modelo lineal de precios hedónicos parte del supuesto de que los precios observados de los productos se pueden desglosar en una suma de cantidades específicas de determinadas características asociadas al bien. De esta manera se define un set implícito de precios, también conocidos como \textit{precios hedónicos}.
 
 De ésta forma, el precio del bien es regresado sobre las características del mismo, y utilizando técnicas clásicas de estimación se obtienen los anteriormente mencionados precios hedónicos.
 
@@ -579,8 +581,7 @@ Entre las características asociadas al bien pueden considerarse característica
 
 Una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heteroscedasticidad, multicolinealidad, y variables omitidas.
 
-El modelo de precios hedónicos puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
-
+Por otra parte, el modelo de precios hedónicos puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
 
 \subsection{Árboles de regresión\label{subsec:arbol}}
 
@@ -654,26 +655,19 @@ Este conjunto de observaciones se denomina como \textit{out of bag observations}
 
 A pesar de que el método anteriormente mencionado logra solucionar el problema de la inestabilidad por parte de los árboles de decisión, este método se caracteriza por presentar una baja interpretabilidad. 
 
-Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos \textit{Bagging} y \textit{Random Forest} se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es "grande" la variable se considera "importante".
+Sin embargo, en la medida de que se construyen varios árboles, es posible obtener cierta medida de la importancia de cada predictor. En los algoritmos \textit{Bagging} y \textit{Random Forest} se calcula la reducción de la medida de impureza en las divisiones de una variable dada promediando en todos los árboles obtenidos. De esta forma, si la reducción es  "grande" la variable se considera "importante".
 
 \subsection{Boosting\label{subsec:boosting}}
 
-Por otro lado, el tercer método empleado consiste en el procedimiento \textit{Boosting} aplicado, nuevamente a árboles de decisión. Este método, al igual que los anteriores, consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
+Como segunda alternativa para obtener un modelo de predicción estable, se trabajo con el procedimiento \textit{Boosting} aplicado nuevamente a árboles de decisión. Este método, al igual que los anteriores (\textit{Random Forest} y \textit{Bagging}), consiste en la combinación de la salida de varios estimadores con el fin de producir un estimador más preciso.
 
-Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. En el método \textit{Boosting}, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior.
+Sin embargo, el mismo difiere con los métodos anteriores en la forma de realizar este proceso. Mientras que en \textit{Random Forest} (\textit{Bagging}) se procede a construir varios árboles mediante diferentes conjuntos de entrenamiento y combinando la predicción de cada uno, en \textit{Boosting} se trabaja mediante un enfoque secuencial. 
 
-Boosting tiene 3 tuning parameters:
+En este método, se construye una sucesión de estimadores, los cuales surgen de forma iterativa usando una modificación del conjunto de datos realizada a partir de la performance del estimador en el paso anterior. De esta forma, en cada iteración, se toma como variable de salida los residuos del modelo anterior y no a la variable de respuesta original ($Y$). Esto último, con el fin de realizar un proceso de actualización de los residuos del modelo y por lo tanto mejorando la predicción del estimador en áreas donde el mismo no realiza un buen ajuste. (Hastie, 2001)
 
+Generalmente, en \textit{Boosting} cada arbol suele estar conformado por pocas particiones, por lo que el procedimiento de aprendizaje suele ser "lento". De forma resumida, el álgoritmo consiste en aplicar los siguientes pasos de forma iterativa:
 
-1. El número de árboles $B$. A diferencia de bagging y random forest, boosting puede generar sobreajuste a los datos en caso que $B$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. Se utiliza validación cruzada para estimar a $B$.
-
-2. El parámetro $\lambda$ que controla la tasa a la que aprende el algoritmo. $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. La selección correcta de éste parámetro depende del problema específico. Por lo general, cuánto menor el valor de $\lambda$, mayor el $B$ necesario.
-
-3. El número de particiones en cada árbol $d$ que controla la complejidad de cada estimador. Usualmente un valor de $d=1$ funciona bien. Esto implica que cada árbol tenga solamente una partición. En éste caso lo que se tiene entonces es un modelo aditivo ya que cada término involucra una sola variable. $d$ puede ser intepretado también como el parámetro que controla el orden de interacción (interaction depth) entre los modelos, ya que las $d$ particiones pueden involucrar a los sumo $d$ variables.
-
-Algoritmo 
-
-1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el set de entrenamiento.
+1. Se establece $\hat{f}(x) = 0$ y $r_i = y_i$ en el conjunto de entrenamiento.
 
 2. Para cada $b = 1, 2, \cdots, B$ repite:
 
@@ -687,10 +681,18 @@ c. Se actualizan los residuos
 
 $$r_i \leftarrow r_i - \lambda \hat{f}^b(x_i) $$
 
-3. Se general el modelo
+3. Se genera el modelo
 
 $$\hat{f}(x) =  \displaystyle \sum_{b = 1}^B \lambda \hat{f}^b(x)$$
+Donde, la letra $B$ denota el número de árboles utilizados en el algortimo. Se destaca que, a diferencia de \textit{Random Forest}, \textit{Boosting} puede generar un sobreajuste a los datos en caso que $B$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. 
 
+Por otro lado, el parámetro $\lambda$ controla la tasa a la que aprende el algoritmo. Donde $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. A su vez, se tiene que generalemente, cuánto menor el valor de $\lambda$, mayor el número de arboles ($B$) necesarios. (Hastie, 2001)
+
+Por último, la letra $d$ denota el número de particiones en cada árbol, el cual dicho parámetro controla la complejidad de cada estimador. Se observa que en el caso $d=1$ implica que cada árbol tenga solamente una partición y de esta forma se cuenta con un modelo aditivo (cada término involucra una sola variable). 
+
+A su vez, el parámetro $d$ puede ser intepretado también como el parámetro que controla el orden de interacción entre los modelos, ya que las $d$ particiones pueden involucrar a los sumo $d$ variables. (Hastie, 2001)
+
+Dichos parámetros ($B$, $\lambda$ y $d$) se estiman mediante una metodologia de validación cruzada.
 
 \subsection{Support Vector Regression (SVR)\label{subsec:svr}}
 
@@ -1329,9 +1331,9 @@ grid.arrange(p1, p2, ncol = 2)
 
 \section{Boosting \label{sec:boosting}}
 
-<<eval=TRUE>>=
-RMSE_boosting <- RMSE(predict.gbm(boosting_train, test), test$price)
-RMSE_boosting_mr <- RMSE(predict.gbm(boosting_train, test_mr), test_mr$price)
+<<>>=
+RMSE_boosting <- RMSE(kernlab::predict(boosting_train, test), test$price)
+RMSE_boosting_mr <- RMSE(kernlab::predict(boosting_train, test_mr), test_mr$price)
 
 rmse_boost <- tribble(
   ~Imput, ~ECM,
@@ -1343,7 +1345,7 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<results=tex, eval = TRUE>>=
+<<results=tex>>=
 kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
@@ -1351,9 +1353,9 @@ kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados po
 \section{Support vector regression \label{sec:svr}}
 
 
-<<eval=FALSE>>=
-RMSE_svr <- RMSE(predict(SVR_train, test), test$price)
-RMSE_svr_mr <- RMSE(predict.gbm(boosting_train, test_mr), test_mr$price)
+<<>>=
+RMSE_svr <- RMSE(kernlab::predict(SVR_train, test), test$price)
+RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr), test_mr$price)
 
 
 rmse_svr <- tribble(
@@ -1366,8 +1368,8 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<results=tex, eval = FALSE>>=
-kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+<<results=tex>>=
+kable(rmse_svr, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1394,6 +1396,11 @@ A continuación se presenta la tabla con los errores cuadráticos medios de los 
 vars <- readxl::read_excel(here('mercado_libre/Api', 'criterios_de_limpieza.xlsx'),
                                 sheet = 'anexo_vars') %>% arrange(Fuente)
 n <- vars %>% group_by(Fuente) %>% summarise(conteo = n())
+
+
+aux <- as_tibble(matrix(rep(" ",4), ncol = 4, nrow = 1))
+colnames(aux) <- colnames(vars)
+vars <- bind_rows(aux, vars)
 
 library(knitr)
 options(knitr.table.format = "latex")
