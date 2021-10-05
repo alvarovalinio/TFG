@@ -488,28 +488,52 @@ Boosting_caret_tunning_mr$tunning
 # Caso 1: imputamos solo variables cuantitativas con % NA < 0.1 #
 #################################################################
 
-#### Definimos variables Sin na
+# 1er - SVR
 
-aptos_sin_na <- imput_media(aptos,p=.1)
+no_cores <- detectCores(logical = FALSE)
 
-# Create custom indices: myFolds
+cl <- makePSOCKcluster(no_cores)
 
-aptos_y <- aptos_sin_na$price
+registerDoParallel(cl)
 
-set.seed(12345)
+clusterSetRNGStream(cl, iseed=12345)
 
-myFolds <- createFolds(aptos_y, k = 5)
+pracma::tic()
 
-# Create reusable trainControl object: myControl
-myControl <- trainControl(
-   verboseIter = TRUE,
-   savePredictions = TRUE,
-   index = myFolds
+
+SVR_caret<- train(
+   price ~ .,
+   data = aptos_sin_na,
+   method = 'svmRadial',
+   trControl = myControl
 )
 
-# Definimos la martiz x de variables regresoras
-aptos_x <- aptos_sin_na %>% select(-price)
 
+
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
+# Resultados del modelo
+
+SVR_caret
+
+# Vemos graficamente el comportamiento de los hiperparametros
+plot(SVR_caret)
+
+
+# Definimos grilla segun lo que vemos
+
+tuneGrid <- expand.grid(
+   .sigma = c(.03085),
+   .C = c(1,2,3)
+)
+
+
+# Hacemos ajuste de los hiperparametros con parallel
 
 # Proceso de paralelo
 
@@ -524,12 +548,42 @@ clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
 
 pracma::tic()
 
-SVR_caret<- train(
-   price ~ .,
-   data = aptos_sin_na,
+SVR_caret_tunning <- train(
+   x = aptos_x, 
+   y = aptos_y,
+   tuneGrid = tuneGrid,
    method = 'svmRadial',
-   trControl = myControl,
-   preProcess = c("nzv")
+   trControl = myControl
+)
+
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
+########################################
+# Caso 2: imputamos usando Miss Ranger #
+########################################
+
+# 1er - SVR
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+pracma::tic()
+
+SVR_caret_mr <- train(
+   x = aptos_x_mr, 
+   y = aptos_y_mr,
+   method = 'svmRadial',
+   trControl = myControl_mr
 )
 
 
@@ -540,11 +594,14 @@ registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
 
+# Resultados del modelo
 
-plot(SVR_caret)
+SVR_caret_mr
 
-######### Hyperparameter tuning
+# Vemos graficamente el comportamiento de los hiperparametros
+plot(SVR_caret_mr)
 
+# Definimos grilla segun lo que vemos
 
 tuneGrid <- expand.grid(
    .sigma = c(.03085),
@@ -552,6 +609,9 @@ tuneGrid <- expand.grid(
 )
 
 
+# Hacemos ajuste de los hiperparametros con parallel
+
+# Proceso de paralelo
 
 # Calculate the number of cores
 no_cores <- detectCores(logical = FALSE)
@@ -564,16 +624,14 @@ clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
 
 pracma::tic()
 
-SVR_caret_tunning<- train(
-   price ~ .,
-   data = aptos_sin_na,
+SVR_caret_tunning_mr <- train(
+   x = aptos_x_mr, 
+   y = aptos_y_mr,
    tuneGrid = tuneGrid,
    method = 'svmRadial',
-   trControl = myControl,
+   trControl = myControl_mr,
    preProcess = c("nzv")
 )
-
-
 
 ## When you are done:
 stopCluster(cl)
@@ -582,18 +640,4 @@ registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
 
-
-
-#################
-
-getModelInfo("svmRadial")$svmRadial$parameters
-
-
-SVM_train_simulado_1 <- train(
-   Y ~ ., 
-   data = simulado_1,
-   method = "svmRadial",               
-   trControl = trainControl(method = "cv", number = 10),
-   tuneLength = 30
-)
-
+############################################################

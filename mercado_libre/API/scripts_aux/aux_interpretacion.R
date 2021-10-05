@@ -9,6 +9,8 @@ library(doParallel)
 #library(future)
 #library(future.callr)
 library(pdp) # PDP plots
+library(ALEPlot) #ALE plots
+library(gridExtra)
 
 # Cargamos modelo (con mejor performance predictiva)
 
@@ -62,7 +64,9 @@ aptos_sin_na <- aptos_sin_na %>% as.data.table()
 #COMENTAR ESTA LINEAL UNA VEZ QUE TENGAMOS LOS MODELOS CON MEJOR AJUSTE
 best_model <- ranger(price ~ ., data = aptos_sin_na)
 
-## Primer metodo PDP
+##########################################################
+####################### Primer metodo PDP#################
+##########################################################
 
 # Primera forma con el paquete pdp
 
@@ -94,9 +98,43 @@ registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
 
+##########################################################
+####################### Segundo metodo ALE#################
+##########################################################
+
+## Mediante ALEplot
+
+# Definimos funcion para hacer predicciones
+yhat <- function(X.model, newdata) as.numeric(ranger::predictions(predict(X.model, newdata)))
+
+## OBS, definir diferente yhat si best_modelo != RF (sacar ranger::predictions)
+
+## Definimos data.frame con las variables de entrada
+
+X <- aptos_sin_na[,-c("price")]
+
+### Graficos 
+
+ale_covered_area <- ALEPlot(X,best_model,yhat,J=2,NA.plot=T)
+
+ale_dist_shop <- ALEPlot(X,best_model,yhat,J=22,NA.plot=T)
+
+ale_dist_rambla <- ALEPlot(X,best_model,yhat,J=23,NA.plot=T)
+
+
+g_covered_area <- cbind(ale_covered_area$x.values,ale_coverd_area$f.values) %>% data.frame() %>% 
+  ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="covered_area",y="ALE",title="ALE covered_area")
+
+
+g_dist_shop <- cbind(ale_dist_shop$x.values,ale_coverd_area$f.values) %>% data.frame() %>% 
+  ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="dist_shop",y="ALE",title="ALE dist_shop")
+
+g_dist_rambla <- cbind(ale_covered_area$x.values,ale_dist_rambla$f.values) %>% data.frame() %>% 
+  ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="dist_rambla",y="ALE",title="ALE dist_rambla")
 
 
 
+######## Vemos graficamente ambos metodos
 
 #######################################################################
 # Definimos matriz de variables de entrada
