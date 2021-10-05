@@ -136,6 +136,9 @@ g_dist_rambla <- cbind(ale_covered_area$x.values,ale_dist_rambla$f.values) %>% d
 
 ######## Vemos graficamente ambos metodos
 
+grid.arrange(pdp_coverd_area,g_covered_area,pdp_dist_rambla,g_dist_rambla,
+             pdp_dist_shop,g_dist_shop,ncol=2,nrow=3)
+
 #######################################################################
 # Definimos matriz de variables de entrada
 
