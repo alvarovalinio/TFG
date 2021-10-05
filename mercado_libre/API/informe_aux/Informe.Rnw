@@ -166,6 +166,82 @@ load(here("mercado_libre/modelos/SVR","SVR_train.RDS"))
 load(here("mercado_libre/modelos/SVR","SVR_train_mr.RDS"))
 @
 
+
+<<mapas>>=
+# Vectoria INE
+mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"), quiet = TRUE)
+mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+#Puntos shoppings
+mall <- st_read(here("mercado_libre/API/scripts_aux/Mapas","puntos_googlemaps/shoppings"), quiet = TRUE)
+mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+mall <- mall %>% select(Name, geometry)
+
+# Líneas avd_italia
+avd_italia <- st_read(here("mercado_libre/API/scripts_aux/Mapas","lineas_googlemaps/avditalia_18"), quiet = TRUE)
+avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+avd_italia <- avd_italia %>% select(Name, geometry)
+
+# Rambla Este - MVD
+rambla <- st_read(here("mercado_libre/API/scripts_aux/Mapas/lineas_googlemaps", "ramblaeste_MVD"), quiet = TRUE)
+rambla <- st_transform(rambla, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+rambla <- rambla %>% select(Name, geometry)
+@
+
+
+<<>>=
+# Centroide barrios
+
+#devuleve geometría con el centroide de cada barrios
+centroide_barrios <- st_centroid(mapa_barrio)
+
+# Extrae coordenadas (longitud y latitud) degeometría del centroide
+centroide_barrios <- centroide_barrios %>%
+      mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
+             lat_barrio = st_coordinates(centroide_barrios$geometry)[,2])
+
+# Pasa latitud y longitud del centroide a objeto sf
+centroide_barrios_sf <- centroide_barrios %>% 
+      st_as_sf(coords = c("lat_barrio","lon_barrio"), crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+# Tranforma coordenadas a formato long lat
+centroide_barrios_sf_t <- st_transform(centroide_barrios_sf,crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+centroide_barrios <- centroide_barrios %>% 
+      mutate(aux_lon = NA,
+             zona_avditalia = NA)
+
+# Extrae latitud y longitud de puntos en avd_italia (geometria)
+
+puntos_avditalia <- st_coordinates(avd_italia)
+
+puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
+      rename('lon_avditalia' = 'X',
+             'lat_avditalia' = 'Y')
+
+# Avd italia se conforma en total de 60 puntos
+# Para cada barrios tomamos el punto en avd.italia con menor diferencia de longitud
+# min {longitud centroide - longitud avd_italia }
+# luego comparamos las latitudes del centroide y el punto de avd italia con mínima diferencia en cuanto a longitud
+# si latitud avd italia < lat centroide barrio -> NORTE 
+# si latitud avd italia >= lat centroide barrio -> NORTE 
+
+for (i in 1:nrow(centroide_barrios)) {
+      centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
+                                                          puntos_avditalia$lon_avditalia))
+      centroide_barrios$zona_avditalia[i] <- ifelse(
+            puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
+                  centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
+}
+
+
+centroide_barrios <- centroide_barrios %>% 
+      data.frame() %>% 
+      select(NOMBBARR, zona_avditalia)
+
+mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR')
+@
+
 \pagenumbering{roman}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% CARATULA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -230,22 +306,27 @@ Trabajo final de grado
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introducción \label{cap:Intro}}
 
-El presente trabajo tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas, mediante las cuáles poder realizar predicciones de una variable de interés.
+El presente trabajo tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas, mediante las cuáles poder realizar predicciones de una variable de interés. En particular, se trbajó con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay.
 
-Con el fin de llevar a cabo este objetivo, fueron realizadas todas las etapas de un análisis estadístico, desde la obtención de los datos, limpieza y pre-procesamiento, hasta la generación de nuevas variable (ETL y data engeenering).
+Con el fin de llevar a cabo éste objetivo, fueron realizadas todas las etapas necesarias para realizar un análisis estadístico, desde la obtención de los datos, limpieza y pre-procesamiento, hasta la generación de nuevas variable y modelado. 
 
-Uno de los puntos muy importantes de éste trabajo es la obtención y procesamiento de los datos, los cuales fueron obtenidos través de la Interfaz para acceder a la página web (API) de Mercado Libre. Para ello fue necesario la creación de un código que permita una descarga automatizada de la información disponible.
+De ésta manera, uno de los puntos de gran importancia de éste trabajo es la obtención y procesamiento de los datos. Gran parte de los datos fueron obtenidos través de la Interfaz para acceder a la página web (API) de Mercado Libre. Para ello fue necesario la creación de un código que permita una descarga automatizada de la información disponible. Asimismo, a partir de los datos obtenidos fueron construídas variables adicionales que se consideraron de interés para el problema planteado.
 
-Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, \textit{R}, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
-
-En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en árboles de decisión.
-Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
+En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en \textit{árboles de decisión}. Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
 
 Asimismo, con el fin de mejorar el desempeño predictivo de los modelos fue realizado un proceso de entraniento y validación de los resultados. 
 
-En la medida que existe un trade off entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques. En primer lugar, se trabajó con técnicas de estimación clásicas tales como el modelo lineal de precios hedónicos. Por otro lado, se implentaron técnicas de aprendizaje automático. El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables, pero supone la existencia de una relación lineal entre l variable de respuesta y las variables explicativas. No obstante, éste supuesto puede no ajustar a la realidad. Una de las ventajas de las técnicas de aprendizaje automático supervisado es que permiten captar relaciones no lineales. Por su parte, las metodologías como random forest suelen tener un desempeño predictivo superior pero a expensas de una pérdida en el grado de interpretabilidad. Debido a ésto, se suele denominar a éstos modelos como \textit{modelos de caja negra}.
+En la medida que existe un \textit{trade off} entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques. 
+
+En primer lugar, se trabajó con técnicas de estimación clásicas tales como el modelo lineal de precios hedónicos. Por otro lado, se implentaron técnicas de aprendizaje automático. 
+
+El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables, pero supone la existencia de una relación lineal entre l variable de respuesta y las variables explicativas, el cuál es un supuesto que puede no ajustar a la realidad. 
+
+Una de las ventajas de las técnicas de aprendizaje automático supervisado es que permiten captar relaciones no lineales. Por su parte, las metodologías como \textit{random forest} suelen tener un desempeño predictivo superior pero a expensas de una pérdida en el grado de interpretabilidad. Debido a ésto, se suele denominar a éstos modelos como \textit{modelos de caja negra}.
 
 Sin embargo, con el fin de atenuar ésta limitante, se realizó un análisis de interpretabilidad de los modelos. Principalmente, mediante métodos globales modelo-agnósticos. Estos métodos permiten describir el comportamiento medio de los modelos de aprendizaje automático y son particularmente útiles cuando se quiere entender los mecanismos generales en los datos.
+
+Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, \textit{R}, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
 
 Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
 
@@ -255,27 +336,29 @@ Todas las etapas fueron realizando preservando la reproducibilidad de todos los 
 
 \section{Obtención \label{sec:obtencion}}
 
-Los datos de precio de oferta de los apartamentos a la venta en Montevideo y todas las covariables utilizadas para modelizar fueron obtenidas a través de la Interfaz para acceder a la página web (API) de Mercado Libre \url{https://www.mercadolibre.com.uy/}. Para ello, es necesario registrarse en la web \url{https://developers.mercadolibre.com.uy/} y desde allí crear una aplicación. Una vez realizado este paso es posible obtener una clave (token) válida por 6 hs que mercado libre proporciona para la conexión a su API.
+Los datos de precio de oferta de los apartamentos a la venta en Montevideo y gran parte de las variables utilizadas para modelizar fueron obtenidas a través de la Interfaz para acceder a la página web (API) de Mercado Libre \url{https://www.mercadolibre.com.uy/}. Para ello, es necesario registrarse en la web \url{https://developers.mercadolibre.com.uy/} y desde allí crear una aplicación. Una vez realizado este paso es posible obtener una clave (token) válida por un determinado lapso de tiempo que mercado libre proporciona para la conexión a su API.
 
 De ésta manera y como fue mencionado, una vez que se obtiene el token es posible consultar la API. Para obtener la información de todos los inmuebles tanto a la venta como para el alquier en Uruguay es necesario realizar la consulta filtrando la categoría MLU1459. Sobre esta categoría existen distintas subcategorías. A los efectos del interés del presente trabajo fue consultada la API filtrando según la categoría MLU1474 que corresponde a todos los apartamentos a la venta en Uruguay.
 
 Ahora bien, para obtener la información sobre los apartamentos a la venta en el departamento de Montevideo, se consultó la API filtrando según categoría MLU1474 y además filtrando según el id (identificador) de cada uno de los barrios en Montevideo.
 
-Esto permitió obtener numerosos datos. No obstante, fue necesario acceder a los atributos específicos de cada publicación (ítem) filtrando específicamente en cada id de cada publicación. Es decir una vez btenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaciones y se realizaron consultas por publicación.
+Esto permitió obtener numerosos datos. No obstante, fue necesario acceder a los atributos específicos de cada publicación (ítem) filtrando específicamente en cada id de cada publicación. Es decir una vez obtenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaciones y se realizaron consultas por publicación.
 
-De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
+De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre y considerada de interés, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
 
 Para mayor información es posible consultar el código del script funcion api barrios. Disponible en el repositotio público en Github en el siguiebte link: \url{https://github.com/alvarovalinio/TFG/tree/main/mercado_libre/API/funciones}.
 
 
 \section{Procesamiento y criterios de limpieza\label{sec:procesamiento}}
 
-La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
+La obtención y limpieza de los datos fue también una parte muy importante de éste trabajo.
 En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
 
-En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. También se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos.
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. 
 
-De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma.
+Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. 
+
+Asimismo se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma.
 
 En lo que respecta a las variables área total (totalarea) y área cubierta (coveredarea) se decidió asignar NA a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
 
@@ -283,23 +366,23 @@ Existe un conjunto de variables que toman valor Si, No, NA. Para todas ellas se 
 
 Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo (latitudes inferiores a -35 y superiores a -34.7 , y longitudes inferiores a -56.5 y superiores a -56 ) son considerados datos erróneos. De esta forma se optó por recodificarlos imputando la coordenada del centroide del barrio donde está ubicado el apartamento. 
 
-Más aun, se pudo detectar la existencia de georreferencias incorrectas ya que en algunos casos la misma no se encontraba dentro del polígono del barrio dónde se ubica el apartamento. Para estos casos, asumimos que el dato correcto es el nombre del barrio y no la georreferencia específica.
+Más aún, se pudo detectar la existencia de georreferencias incorrectas ya que en algunos casos la misma no se encontraba dentro del polígono del barrio dónde se ubica el apartamento. Para estos casos, asumimos que el dato correcto es el nombre del barrio y no la georreferencia específica, y se le imputa el valor de latitud y longitud correspondiente al centroide del barrio.
 
-Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avd italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a avenida italia y 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
+Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avenida italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a avenida italia y 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
 
-Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parkinglots), unidad (unirfloors), piso (floor), condición nuevo o usado (itemcondition), property age, entre otras.
+Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parkinglots), unidad (unirfloors), piso (floor), condición nuevo o usado (itemcondition), antiguedad de la propiedad (property age), entre otras.
 
 En lo que respecta al tipo de cambio, los valores del precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio de fecha de bajada de los datos. La obtención del valor del tipo de cambio se realiza de manera automatizada haciendo web scrapping sobre la págine del \textit{Instituto Nacional de Estadistica} (INE).
 
 De manera similar, los gastos comunes expresados en dólares estadounidenses fueron convertidos a pesos uruguayos.
 
-Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de daros se recomienda dirigirse al Anexo X.
+Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de datos se recomienda dirigirse al Anexo X.
 
-\section{Variables geoespaciales\label{sec:geo}}
+\section{Construcción de variables a partir de las georreferencias \label{sec:geo}}
 
-La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, y distancia a la Rambla Este de Montevideo.
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, y distancia a la Rambla éste de Montevideo.
 
-La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función distm del paquete geosphere. En el anexo x se encuentra el detalle de cálculo. 
+La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo x se encuentra el detalle de cálculo. 
 
 \subsection{Zona respecto a avenida italia \label{subsec:zona}}
 
@@ -307,25 +390,7 @@ Toma valor Norte o Sur según el apartamento encuentre al Norte o al Sur de la c
 
 \subsection{Distancia al shopping más cercano \label{subsec:shop}}
 
-Fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
-
-\subsection{Distancia a la rambla \label{subsec:rambla}}
-
-Fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
-
-
-\section{Encuesta contínua de hogares\label{sec:ech}}
-
-La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable HT11: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
-
-\section{Fuentes externas de información\label{sec:fuentes}}
-
-
-Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio ECH fue utilizada también la encuesta contínua de hogares 2020. 
-
-La herramienta utilizada para construir los archivos .kml que permite georreferenciar los shoppings en Montevideo y la calle avenida italia en continuación con 18 de julio fue Google My Maps, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. fuente wikipedia \url{https://es.wikipedia.org/wiki/Google_My_Maps}.
-
-De ésta forma, fueron construidos los archivos .kml que contienen las georreferencias de los shoppings de montevideo y de la calle avenida italia en contrinuación con 18 de julio.
+Fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
 
 Los shoppings georreferenciados son:
 
@@ -337,50 +402,20 @@ Los shoppings georreferenciados son:
 \item Portones shopping
 \end{itemize}      
 
-Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica SIG).
+\subsection{Distancia a la rambla \label{subsec:rambla}}
 
-De manera similar fueron construidos los archivos que guardan la información necesaria para la construcción de la variable avenida italia en constinuación con 18 de Julio.
+Fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
 
-\subsection{Formato ESRI Shapefila\label{subsec:shapefile}}
+A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con las variables creadas.
 
-El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
-
-Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
-      
-\begin{itemize}       
-\item  shp es el archivo que almacena las entidades geométricas de los objetos.
-\item  shx es el archivo que almacena el índice de las entidades geométricas.
-\item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
-\end{itemize}       
-
-(Fuete wikipedia https://es.wikipedia.org/wiki/Shapefile)
-
-A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
-
-
-<<echo=FALSE>>=
-# Vectoria INE
-mapa_barrio <- st_read(here("mercado_libre/API/scripts_aux/Mapas", "vectorial_INE_barrios/ine_barrios"), quiet = TRUE)
-mapa_barrio <- st_transform(mapa_barrio, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-
-#Puntos shoppings
-mall <- st_read(here("mercado_libre/API/scripts_aux/Mapas","puntos_googlemaps/shoppings"), quiet = TRUE)
-mall <- st_transform(mall, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-mall <- mall %>% select(Name, geometry)
-
-# Líneas avd_italia
-avd_italia <- st_read(here("mercado_libre/API/scripts_aux/Mapas","lineas_googlemaps/avditalia_18"), quiet = TRUE)
-avd_italia <- st_transform(avd_italia, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-avd_italia <- avd_italia %>% select(Name, geometry)
-@
-
-Mapa del departamento de Montevideo, Uruguay, y georreferencia de los shoppings y calle avenida italia en continuación con 18 de julio
-
-<<echo=FALSE, fig=TRUE>>=
+\begin{figure}
+\centering
+<<fig=TRUE>>=
 ggplot(mapa_barrio)+
-      geom_sf() +
+      geom_sf(aes(fill = zona_avditalia )) +
       geom_sf(data = mall) +
-      geom_sf(data = avd_italia, color = 'yellow', size = 0.5) +
+      geom_sf(data = avd_italia, color = 'red', size = 0.5) +
+      geom_sf(data = rambla, color = 'yellow2', size = 0.5) +
       theme(axis.text.x = element_text(angle = 45),
             text = element_text(),
             panel.grid.major = element_line(
@@ -396,70 +431,13 @@ ggplot(mapa_barrio)+
       colour = "black", segment.colour = "black",
       size = 3, alpha = 0.8) +
       xlab('Longitud') +
-      ylab('Latitud') 
+      ylab('Latitud') +
+      scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 @
+\captionof{figure}{Mapa de Montevideo, Uruguay con la georreferencia de los shoppings, calle avenida italia en continuación con la calle avenida 18 de julio y rambla éste de Montevideo . La línea roja indica a la calle avenida italia en continuación con la calle avenida 18 de julio mientras que la línea amarilla a la rambla éste de Montevideo.}
+\end{figure}
 
-
-A continuación se presenta el mapa según zona avditalia asignada a cada barrio.
-
-
-
-<<echo=FALSE>>=
-# Centroide barrios
-
-#devuleve geometría con el centroide de cada barrios
-centroide_barrios <- st_centroid(mapa_barrio)
-
-# Extrae coordenadas (longitud y latitud) degeometría del centroide
-centroide_barrios <- centroide_barrios %>%
-      mutate(lon_barrio = st_coordinates(centroide_barrios$geometry)[,1],
-             lat_barrio = st_coordinates(centroide_barrios$geometry)[,2])
-
-# Pasa latitud y longitud del centroide a objeto sf
-centroide_barrios_sf <- centroide_barrios %>% 
-      st_as_sf(coords = c("lat_barrio","lon_barrio"), crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-
-# Tranforma coordenadas a formato long lat
-centroide_barrios_sf_t <- st_transform(centroide_barrios_sf,crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
-
-centroide_barrios <- centroide_barrios %>% 
-      mutate(aux_lon = NA,
-             zona_avditalia = NA)
-
-# Extrae latitud y longitud de puntos en avd_italia (geometria)
-
-puntos_avditalia <- st_coordinates(avd_italia)
-
-puntos_avditalia <- as_tibble(puntos_avditalia) %>% select(-Z, -L1) %>%
-      rename('lon_avditalia' = 'X',
-             'lat_avditalia' = 'Y')
-
-# Avd italia se conforma en total de 60 puntos
-# Para cada barrios tomamos el punto en avd.italia con menor diferencia de longitud
-# min {longitud centroide - longitud avd_italia }
-# luego comparamos las latitudes del centroide y el punto de avd italia con mínima diferencia en cuanto a longitud
-# si latitud avd italia < lat centroide barrio -> NORTE 
-# si latitud avd italia >= lat centroide barrio -> NORTE 
-
-for (i in 1:nrow(centroide_barrios)) {
-      centroide_barrios$aux_lon[i] <- which.min(abs(centroide_barrios$lon_barrio[i] - 
-                                                          puntos_avditalia$lon_avditalia))
-      centroide_barrios$zona_avditalia[i] <- ifelse(
-            puntos_avditalia$lat_avditalia[centroide_barrios$aux_lon[i]] < 
-                  centroide_barrios$lat_barrio[i], 'Norte', 'Sur')
-}
-
-
-centroide_barrios <- centroide_barrios %>% 
-      data.frame() %>% 
-      select(NOMBBARR, zona_avditalia)
-
-mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR')
-@
-
-Mapa del departamento de Montevideo según zona respecto la callle avenida italia en constinuación con 18 de julio
-
-<<echo=FALSE, fig=TRUE>>=
+<<echo=FALSE, eval=FALSE>>=
 ggplot(mapa_barrio)+
             geom_sf(aes(fill = zona_avditalia )) +
       geom_sf(data = mall) +
@@ -482,11 +460,13 @@ ggplot(mapa_barrio)+
       scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 @
 
+\section{Encuesta contínua de hogares\label{sec:ech}}
 
-<<echo=FALSE>>=
+La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable \textit{HT11}: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
+
+<<>>=
 
 load(here("mercado_libre/API/ECH/RDATA_junio2021/HyP_2020_Terceros.RData"))
-
 
 f <- f %>% select(numero, nper, hogar, nombarrio, HT11, ht13, YHOG, YSVL, lp_06, pobre_06,
              i228, i174, i259, i175, h155, h155_1, h156, h156_1, pesomen) %>%
@@ -512,9 +492,11 @@ f$NOMBBARR <- recode(as.factor(f$NOMBBARR),
 mapa_barrio <- mapa_barrio %>% left_join(f, by = 'NOMBBARR')
 @
 
-Mapa del ingreso promedio de los hogares por barrio de Montevideo
+A continuación se presenta el mapa del ingreso promedio de los hogares por barrio de Montevideo.
 
-<<echo=FALSE, fig=TRUE>>=
+\begin{figure}
+\centering
+<<fig=TRUE>>=
 ggplot(mapa_barrio)+
             geom_sf(aes(fill = media_ingbarr/1000 )) +
       theme(axis.text.x = element_text(angle = 45),
@@ -530,8 +512,36 @@ ggplot(mapa_barrio)+
       xlab('Longitud') + ylab('Latitud') +
       scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Ingreso promedio \n por mil ECH",labels = comma)
 @
+\captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020.}
+\end{figure}
 
-El anexo X contiene la tabla con el detalle de las variables en la base de datos.
+\section{Fuentes externas de información\label{sec:fuentes}}
+
+Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio ECH fue utilizada también la encuesta contínua de hogares 2020. 
+
+La herramienta utilizada para construir los archivos .kml que permite georreferenciar los shoppings en Montevideo, la calle avenida italia en continuación con 18 de julio, y la ramla éste de Montevideo, fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (Wikipedia, \url{https://es.wikipedia.org/wiki/Google_My_Maps}).
+
+De ésta forma, fueron construidos los archivos .kml que contienen las georreferencias de los shoppings de montevideo y de la calle avenida italia en contrinuación con 18 de julio.
+
+Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica SIG).
+
+De manera similar fueron construidos los archivos que guardan la información necesaria para la construcción de la variable avenida italia en constinuación con 18 de Julio.
+
+\subsection{Formato ESRI Shapefile \label{subsec:shapefile}}
+
+El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
+
+Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
+      
+\begin{itemize}       
+\item  shp es el archivo que almacena las entidades geométricas de los objetos.
+\item  shx es el archivo que almacena el índice de las entidades geométricas.
+\item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
+\end{itemize}       
+
+(Wikipedia, https://es.wikipedia.org/wiki/Shapefile)
+
+A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
 
 \chapter{Antecedentes \label{cap:Antec}}
