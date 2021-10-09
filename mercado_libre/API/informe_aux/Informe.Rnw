@@ -32,6 +32,8 @@
 %\fancyfoot[LE,RO]{\thepage} 
 \rfoot{\thepage} 
 \pagestyle{fancy} 
+\usepackage{caption}
+\captionsetup[table]{position=bottom} 
 
 \topmargin 2mm
 \oddsidemargin 2mm
@@ -94,7 +96,7 @@ options(scipen = 999)
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108", "aptos_202109")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108", "aptos_202109", "aptos_202110" )
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
       read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
@@ -124,7 +126,7 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 
 aptos_sin_na <- imput_media(aptos,p=.1)
 
-aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv")) 
+aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt/aptos_mr","aptos_mr.csv")) 
 aptos_mr <- aptos_mr %>% mutate_if(is.character, as.factor)
 
 ############ train - test 
@@ -145,6 +147,9 @@ test_mr <- aptos_mr[-ids,]
 load(here("mercado_libre/modelos/ARBOL","arbol_train.RDS")) #levanta objeto con nombre arbol
 
 load(here("mercado_libre/modelos/ARBOL","arbol_prune_train.RDS")) #arbol.p
+
+load(here("mercado_libre/modelos/ARBOL","arbol_train_mr.RDS")) #levanta objeto con nombre arbol
+load(here("mercado_libre/modelos/ARBOL","arbol_prune_train_mr.RDS")) #arbol.p
 
 #### RF
 
@@ -330,7 +335,7 @@ Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno 
 
 Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
 
-\chapter{Datos \label{cap:Antec}}
+\chapter{Datos \label{cap:datos}}
 
 \section{Descripción de los datos utilizados \label{sec:desc}}
 
@@ -351,16 +356,16 @@ Para mayor información es posible consultar el código del script funcion api b
 
 \section{Procesamiento y criterios de limpieza\label{sec:procesamiento}}
 
-La obtención y limpieza de los datos fue también una parte muy importante de éste trabajo.
-En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variable en la base de datos.
+La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
+En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variables en la base de datos.
 
-En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), gastos comunes (maintainance fee), áera cubierta (covered area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. 
+En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), áera cubierta (area\_total), áera cubierta (covered\_area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. 
 
-Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y en el caso de la variable precio de oferta del inmueble la observación completa es eliminada, mientras que en el caso de gastos comunes se le imputa NA. 
+Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo. Para el caso de la variable price la observación completa es eliminada, para todos los otros casos se imputa NA. 
 
 Asimismo se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma.
 
-En lo que respecta a las variables área total (totalarea) y área cubierta (coveredarea) se decidió asignar NA a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
+En lo que respecta a las variables total\_area y covered\_area se decidió asignar NA a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
 
 Existe un conjunto de variables que toman valor Si, No, NA. Para todas ellas se asume que los NA son No y se realiza la recodificación correspondiente en función de ello.
 
@@ -370,7 +375,7 @@ Más aún, se pudo detectar la existencia de georreferencias incorrectas ya que 
 
 Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avenida italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a avenida italia y 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
 
-Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parkinglots), unidad (unirfloors), piso (floor), condición nuevo o usado (itemcondition), antiguedad de la propiedad (property age), entre otras.
+Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parking\_lots), unidad (unit\_floors), piso (floor), condición nuevo o usado (item\_condition), antiguedad de la propiedad (property age), entre otras.
 
 En lo que respecta al tipo de cambio, los valores del precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio de fecha de bajada de los datos. La obtención del valor del tipo de cambio se realiza de manera automatizada haciendo web scrapping sobre la págine del \textit{Instituto Nacional de Estadistica} (INE).
 
@@ -378,11 +383,13 @@ De manera similar, los gastos comunes expresados en dólares estadounidenses fue
 
 Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de datos se recomienda dirigirse al Anexo X.
 
+En el anexo \ref{varsA} se encuentra el detalle de las variables disponibles en la base de datos construida.
+
 \section{Construcción de variables a partir de las georreferencias \label{sec:geo}}
 
 La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, y distancia a la Rambla éste de Montevideo.
 
-La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo x se encuentra el detalle de cálculo. 
+La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo \ref{harvesineA} se encuentra el detalle de cálculo. 
 
 \subsection{Zona respecto a avenida italia \label{subsec:zona}}
 
@@ -543,7 +550,6 @@ Un shapefile es un formato vectorial de almacenamiento digital donde se guarda l
 
 A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
-
 \chapter{Antecedentes \label{cap:Antec}}
 
 \chapter{Marco teórico y metodología\label{cap:MT}}
@@ -568,7 +574,7 @@ Se destaca que al ajustar los diferentes modelos se tomó como conjunto de entre
 
 En el primer caso, se asumió la forma funcional de $f$ y se procedió a estimar sus respectivos parámetros. Por otro lado, en los métodos no paramétricos, no se asumió la forma funcional de $f$.
 
-\subsection{Modelo lineal de precios hedónicos\label{subsec:ml}}
+\subsection{Modelo lineal de precios hedónicos \label{subsec:mlMT}}
 
 El modelo lineal de precios hedónicos parte del supuesto de que los precios observados de los productos se pueden desglosar en una suma de cantidades específicas de determinadas características asociadas al bien. De esta manera se define un set implícito de precios, también conocidos como \textit{precios hedónicos}.
 
@@ -592,6 +598,14 @@ Entre las características asociadas al bien pueden considerarse característica
 Una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heteroscedasticidad, multicolinealidad, y variables omitidas.
 
 Por otra parte, el modelo de precios hedónicos puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
+
+Con el fin de testear los supuestos de normalidad y homocedasticidad de los residuos del modelo existen diferentes pruebas. 
+
+En partiruclar, en este trabajose realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo.Ésta prueba utiliza el estadístico kolmogorov-smirnov para el caso en que la media y la varianza poblacional son desconocidos. Para ésto, se utilizó la función \textit{lillie.test} del paquete \textit{nortest}.
+
+Por otro lado, se aplicó la prueba de heteroscedasticidad de Breush-Pagan sobre los residuos del modelo, utilizando la función textit{bptest} del paquete \textit{lmtest}.
+
+La prueba de hetoroscedasticidad de Breush-Pagan consiste en ajustar un modelo líneal para los residuos del modelo de regresión líneal y rechaza la hipótesis nula de heteroscedasticidad en el caso que mucha varianza sea explicada por las variables explicativas. Por defecto, se utilizan todas las variables explicativas del modelo inicial.(Breush-Pagan 1979)
 
 \subsection{Árboles de regresión\label{subsec:arbol}}
 
@@ -924,7 +938,7 @@ Como fue mencionado anteriormente el criterio genérico para seleccionar las var
 
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
-En esta sección se presentan las principales características de los datos con los cuales se trabajó. La base de datos se conforma por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables de las cuales, una vez realizado el proceso de tratamiento de datos faltantes se cuenta con un total de 24 variables en el caso de imputación por la media, y 25 en el caso de imputación por Random Forest. En la tabla bla del anexo bla se detalla la proporción de observaciones con datos faltantes por variables.
+En esta sección se presentan las principales características de los datos con los cuales se trabajó. La base de datos se conforma por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables de las cuales, una vez realizado el proceso de tratamiento de datos faltantes se cuenta con un total de 24 variables en el caso de imputación por la media, y 25 en el caso de imputación por Random Forest. En la tabla bla del  \ref{nasA} bla se detalla la proporción de observaciones con datos faltantes por variables.|
 
 En primer lugar se procedió a analizar el comportamiento de la variable de salida (precio). En forma de resumen se presenta a continuación la tabla con las principales medidas de resumen: 
 
@@ -1170,24 +1184,48 @@ ggpairs(aptos, c(3,14), mapping = ggplot2::aes(color = zona_avditalia, alpha = 0
 \captionof{figure}{Gráficos de price según \text{covered\_area}. En el panel superior izquierdo se encuentra la densidad de price segú \text{convered\_area}. En el panel superior derecho se encuentra la correlación total entre price y \text{covered\_area} y la correlación por grupos según \text{zona\_avditalia}. En el panel inferior izquierdo se encuentra el gráfico de dispersión de price según \text{covered\_area} por \text{zona\_avditalia}, mientras que en el panel inferior derecho se encuentra la densidad de \text{covered\_area} según \text{zona\_avditalia}.}
 \end{figure}
 
-\chapter{Modelos \label{cap:Modelos}}
+\chapter{Resultados \label{cap:Resultados}}
 
-A continuación se presentan los resultados de los modelos implementados.
+En ésta sección se presentan los principales resultados obtenidos en el presente trabajo.
+Como se menciona en la sección marco metodológico, en primer lugar se presentan los resultados del modelo lineal, seguido por las siguientes técnicas de aprendizaje estadístico: random forest, boosting, y support vector regression. Para estas últimas, a su vez se presentan los resultados obtenidos en el proceso de hyperparameter tuning.
+
+Por último, en forma de resumen, se presenta un análisis comparativo de los diferentes modelos en función de su performance predictiva. A partir del mismo se selecciona el mejor modelo y a éste se le realiza un análisis gráfico de interpretabilidad.
+
+Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección marco metodológico.
 
 \section{Modelo lineal \label{sec:ml}}
 
+A continuación se presentan los principales resultados del modelo de regresión lineal, con la variable price como variable explicada.
 
 <<>>=
 lm <- lm(price ~ ., data = train)
-
 RMSE_lm <- sqrt(mean((test$price - predict(lm,test))^2))
+
+lm_mr <- lm(price ~ ., data = train_mr)
+RMSE_lm_mr <- sqrt(mean((test_mr$price - predict(lm,test_mr))^2))
+
+lmt <- rbind(broom::glance(lm), broom::glance(lm))
+lmt <- lmt %>% select(-"sigma" , - "AIC", - "BIC",
+                  - "deviance", -"df.residual", -"nobs", -"df", -"logLik")
+
+met <- tribble(
+  ~Imput, ~RMSE,
+  "Media", round(RMSE_lm), 
+  "Miss Ranger",  round(RMSE_lm_mr)
+)
+
+lmt <- cbind(met, lmt)
+
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-print(xtable(as.data.frame(RMSE_lm)))
+kable(lmt, caption = c("Principales resultados de los modelos lineales ajustados según el método de imputación utilizados"), escape = F, booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "hold_position") %>% row_spec(0,bold=TRUE)
 @
+
+
+No se observa que el método de imputación genere diferencias sustanciales en término de RMSE. Por lo tanto se realiza el diagnóstico sobre los residuos del modelo solamente para el caso de imputación por la media.
 
 \begin{figure}[h!]
 \centering
@@ -1200,6 +1238,9 @@ lm1 <- ggplot(as_tibble(lm$residuals) %>%
             plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
       labs(x = 'Id.', y = TeX("$\\hat{\\epsilon}$"))
 
+mediana_reslm <- quantile(lm$residuals, probs = 0.5)
+media_reslm <- mean(lm$residuals)
+
 lm2 <- ggplot(as_tibble(lm$residuals)) + 
       geom_density(aes(value), color = 'red') +
       theme(axis.title = element_text(face = 'bold', size = 14),
@@ -1211,18 +1252,19 @@ grid.arrange(lm1, lm2, ncol = 2)
 \captionof{figure}{Residuos del modelo líneal. En el panel izquiero se encuentra el gráfico de dispersión mientras que en el pane izquierdo se encuentra la densidad estimada.}
 \end{figure}
 
+Como fue mencionado en la sección \ref{mlMT} en primer lugar se realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo. El p-valor de la prueba para los residuos del modelo lineal es menor a 0.5 con lo cual se rechaza la hipótesis nula de normalidad.
 
-<<eval = FALSE>>=
-bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
-# hay patrones que el modelo no longró captar -> no se cumple homoscedasicidad
+Por otro lado, en lo que respecta a la prueba de hetoroscedasticidad de Breuch-Pagan también se rechaza la hipótes nula de homoscedasticidad.
 
-lillie.test(residuals(lm)) #se rechaza h0 de normalidad
-@
+Estos resultados se mantienen incambiados según se utilice imputación de valores faltantes por la media o por Random Forest.
 
+En el anexo \ref{mlA} se encuentran las tablas con los resultados de las pruebas aplicadas.
 
 \section{Árbol de regresión \label{sec:arbol}}
 
-A continuación se presentan los resultados del árbol de regresión ajustado sobre la variable price. En primer lugar se presenta el gráfico del modelo, luego de realizar el proceso de poda.
+A continuación se presentan los resultados del árbol de regresión ajustado sobre la variable price utilizando las metodologías de imputación mencionadas en la sección marco metodológico. 
+
+En primer lugar se presenta, para cada modelo ajustado, el gráfico luego de realizar el proceso de poda. Respecto a éste punto, en el \ref{arbolA} se presenta la tabla con los diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, al igual que el tamaño del árbol que dicho valor del parámetro implica y otras métricas de interés.
 
 \begin{figure}[h!]
 \centering
@@ -1239,27 +1281,48 @@ A continuación se presentan los resultados del árbol de regresión ajustado so
 
 cp_error <- data.frame(arbol$cptable)
 
+# Obtengamos el cp
+
+cp_opt <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
+
+npart <- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"nsplit"]
+
 #cp_error %>% ggplot(aes(x=CP,y=xerror))+geom_point(color="red")+geom_line()
 
 # Otra forma
-
 
 # Grafico
 
 rpart.plot(arbol.prune,roundint = T,digits = -3)
 @
-\captionof{figure}{Árbol de regression sobre la variable \text{price}. La primera partición es realizada con la variable \text{full\_bathrooms}. Las variables \text{dist\_rambla}, \text{total\_area}, \text{bedrooms} e \text{ingresomedio\_ech} son utilizadas en las siguientes particiones.}
+\captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre,  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt}. El método de imputación sobre valores faltantes es en éste caso imputación por la media. El árbol se conforma por \Sexpr{npart+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart} particiones.}
 \end{figure}
 
+En función a lo observado en la figura, se tiene que la primera variable en realizar una partición binaria es la variable \text{full\_bathrooms}. Las variables \text{dist\_rambla}, \text{total\_area}, \text{bedrooms} e \text{ingresomedio\_ech} son utilizadas en las siguientes particiones.
+
+El gráfico de árbol realizando imputación de valores faltantes por random forest se encuentra en el anezo debido a que no presenta diferencias sustanciales con el árbol realizando imputación por la media presentado e la figura anterior.
+
+Una vez observada las principales características de los modelos, se procedió a obtener cierta medida de la performance predictiva de los mismos. Para ello, se calculó la raíz error cuadrático medio (RMSE). 
+
+A continuación se presenta la tabla con los resultados para las metodologías de imputación utilizadas.
+
 <<>>=
-# RMSE
+# RMSE test
 RMSE_arbol <- sqrt(mean((test$price-predict(arbol.prune,test))^2))
+RMSE_arbol_mr <- sqrt(mean((test_mr$price-predict(arbol.prune.mr,test_mr))^2))
+
+rmse_arbol <- tribble(
+  ~Imput, ~RMSE,
+  "Media",   round(RMSE_arbol),
+  "Miss Ranger", round(RMSE_arbol_mr)
+)
+
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<eval=FALSE>>=
-print(xtable(as.data.frame(RMSE_arbol)))
+<<results=tex>>=
+kable(rmse_arbol, caption = 'Error cuadrático medio de los modelos ajustados por Árbol de regresión', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1287,7 +1350,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1356,7 +1419,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1402,6 +1465,8 @@ A continuación se presenta la tabla con los errores cuadráticos medios de los 
 
 \chapter{Anexo} 
 
+\section{Variables \label{varsA}} 
+
 <<>>=
 vars <- readxl::read_excel(here('mercado_libre/Api', 'criterios_de_limpieza.xlsx'),
                                 sheet = 'anexo_vars') %>% arrange(Fuente)
@@ -1416,27 +1481,8 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<results=tex>>=
-kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
-      pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
-      pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
-@
 
-
-<<nas>>=
-p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
-   rename(prop_na=".") %>% arrange(desc(prop_na))
-library(knitr)
-options(knitr.table.format = "latex")
-@
-
-
-<<results=tex>>=
-kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
-@
-
-
-Fórmula de Haversine para el cálculo de distancias
+\section{Fórmula de Haversine para el cálculo de distancias \label{harvesineA}}
 
 La fórmula de Haversine tiene la siguiente expresión:
 
@@ -1444,11 +1490,127 @@ $$d = 2 \, r \, \text{sen}^{-1} \bigg(\sqrt{ \text{sen}^{2} \, \frac{\phi_2 - \p
 
 dónde d es la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1)$ y $(\psi_2, \phi_2)$ respectivamente, y r el radio de la tierra.
 
+\section{Proporción de valores faltantes por variable \label{nasA}} 
+
+<<results=tex>>=
+kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
+      pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
+      pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
+@
+
+<<>>=
+p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
+   rename(prop_na=".") %>% arrange(desc(prop_na))
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+@
+
+\section{Modelo lineal \label{mlA}} 
+
+A continuación se presentan los resultados de las pruebas de normalidad y de homocedasticidad mencionadas en la sección \ref{ml}. Esto considerando ambos métodos de imputación de valores faltantes.
+
+<<>>=
+bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
+
+bp_mr <- lmtest::bptest(lm_mr) # se rechaza h0 de varianza constante 
+
+bp_t <- tribble(
+  ~Metodo, ~Pvalor, ~Decision,
+  "Media",   "< 2.2e-16", "Se rechaza H0",
+  "Miss Ranger", "< 2.2e-16",  "Se rechaza H0"
+)
+
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(bp_t, caption = 'Resultados de la prueba de Breush-Pagam para el análisis de homoscedasticidad de los residuos', booktabs = T, col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+@
+
+
+<<>>=
+lt <- lillie.test(residuals(lm)) #se rechaza h0 de normalidad
+
+lt_mr <- lillie.test(residuals(lm_mr)) #se rechaza h0 de normalidad
+
+lt_t <- tribble(
+  ~Metodo, ~Pvalor, ~Decision,
+  "Media", "< 2.2e-16", "Se rechaza H0",
+  "Miss Ranger", "< 2.2e-16",  "Se rechaza H0"
+)
+
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(lt_t, caption = 'Resultados de la prueba de Llliefors para el análisis de normalidad de los residuos', booktabs = T, col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+@
+\section{Arbol de regressión \label{arbolA}} 
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE>>=
+##### Arbol de regresion
+
+# Grafico de la evolucion del error
+
+cp_error_mr <- data.frame(arbol_mr$cptable)
+
+# Obtengamos el cp
+
+cp_opt_mr <- arbol_mr$cptable[which.min(arbol_mr$cptable[,"xerror"]),"CP"]
+
+npart_mr <- arbol_mr$cptable[which.min(arbol_mr$cptable[,"xerror"]),"nsplit"]
+
+# Grafico
+
+rpart.plot(arbol.prune.mr,roundint = T,digits = -3)
+@
+\captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre,  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt_mr}. El método de imputación sobre valores faltantes es en éste caso imputación por Random Forest. El árbol se conforma por \Sexpr{npart_mr+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart_mr} particiones.}
+\end{figure}
+
+
+A continuación, a modo de resumen se presenta la tabla de los modelos mencionados en la sección \ref{arbol}. La misma contiene diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, y el tamaño del árbol que dicho valor del parámetro implica.
+
+Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro
+de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.
+
+<<>>=
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(cp_error %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.   La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por la media.', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+<<>>=
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(cp_error_mr %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation. La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por Random Forest.', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+
+
 
 \section{siete \label{ane:ind}}
 
 
 \section{ocho \label{ane:var}}
+
 
 \end{appendix}
 
