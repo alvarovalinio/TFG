@@ -9,17 +9,37 @@ library(rpart.utils)
 library(here)
 library(tidyverse)
 
-# Cargamos los datos limpios
+### DATOS
 
-aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), pattern = "*.csv", full.names = T)
+aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
+                              pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107')
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109","aptos_202110")
+
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
   read_csv(file=yearmonth)}, simplify=FALSE) %>% bind_rows()
 
 
-# Datos 
+aptos <- aptos %>% group_by(id) %>% 
+  arrange(desc(fecha_bajada)) %>%
+  slice(1) %>% ungroup()
+
+aptos <- aptos %>% mutate_if(is.character, as.factor)
+
+
+# Filtramos por el criterio en price:
+
+aptos_todos <- aptos
+
+aptos <- aptos %>% filter(price <= quantile(aptos$price,.95))
+
+# Perdemos esta cantidad de registros
+
+nrow(aptos_todos) - nrow(aptos)
+
+
+## Obtenemos los datos para el arbol
 
 aptos_lat_lon <- aptos  %>% select(id,city_name,price,latitude,longitude) %>% 
   filter(!is.na(latitude),!is.na(longitude))
@@ -51,13 +71,16 @@ cp_opt<- arbol$cptable[which.min(arbol$cptable[,"xerror"]),"CP"]
 
 # Arbol podado:
 
-arbol.prune <- rpart(price ~ . , data= aptos_lat_lon[,-c(1,2)],method="anova",
+arbol.prune.lat.lon <- rpart(price ~ . , data= aptos_lat_lon[,-c(1,2)],method="anova",
                      control=rpart.control(cp=cp_opt))
 
+## Guardamos el modelo
+
+save(file="arbol_prune_lat_lon.RDS",arbol.prune.lat.lon)
 
 # Grafico
 
-rpart.plot(arbol.prune,roundint = FALSE,digits = 4)
+rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
 
 # Reglas en las particiones binarias
 
@@ -75,5 +98,5 @@ rule_df <- rpart.rules.table(arbol.prune) %>%
 aptos_lat_lon <- aptos_lat_lon %>%
   mutate(Rule = row.names(arbol.prune$frame)[arbol.prune$where]) %>%
   left_join(rule_df, by="Rule")
-head(df)
+head(aptos_lat_lon)
 
