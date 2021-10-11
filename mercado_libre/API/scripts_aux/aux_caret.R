@@ -1,6 +1,9 @@
 ## Script donde se realiza el proceso de hiper parameter tunning para 
 # RF , BOOSTING y SVR
 
+# A su vez se realiza K-folds en un modelo lineal para tener punto 
+# de comparacion
+
 # Librerias
 
 library(tidyverse)
@@ -19,7 +22,7 @@ source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109","aptos_202110")
 
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
@@ -83,7 +86,7 @@ myControl <- trainControl(
 
 # Cargamos los datos
 
-aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv"))
+aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt/aptos_mr","aptos_mr.csv"))
 
 aptos_mr <- aptos_mr %>% mutate_if(is.character, as.factor)
 
@@ -106,6 +109,92 @@ myControl_mr <- trainControl(
    savePredictions = TRUE,
    index = myFolds_mr
 )
+
+##################################################################
+############################## LM ################################
+##################################################################
+
+#################################################################
+# Caso 1: imputamos solo variables cuantitativas con % NA < 0.1 #
+#################################################################
+
+# 1er - Regrsion Lineal Multiple
+
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+pracma::tic()
+
+
+LM_caret <- train(
+   x = aptos_x, 
+   y = aptos_y,
+   method = 'lm',
+   trControl = myControl
+)
+
+
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
+## Resultados del modelo
+
+LM_caret
+
+# Guardamos el modelo 
+
+save(file="LM_caret.RDS",LM_caret)
+
+
+########################################
+# Caso 2: imputamos usando Miss Ranger #
+########################################
+
+# 1er - Regresion linal Multiple
+
+no_cores <- detectCores(logical = FALSE)
+
+cl <- makePSOCKcluster(no_cores)
+
+registerDoParallel(cl)
+
+clusterSetRNGStream(cl, iseed=12345)
+
+pracma::tic()
+
+LM_caret_mr <- train(
+   x = aptos_x_mr, 
+   y = aptos_y_mr,
+   method = 'lm',
+   trControl = myControl_mr
+)
+
+
+## When you are done:
+stopCluster(cl)
+
+registerDoSEQ() # Para volver a "modo secuencial"
+
+pracma::toc()
+
+# Resultados del modelo
+
+LM_caret_mr
+
+# Guardamos el modelo 
+
+save(file="LM_caret_mr.RDS",LM_caret_mr)
+
 
 ##################################################################
 ############################## RF ################################
@@ -150,6 +239,10 @@ RF_caret
 # Vemos graficamente el comportamiento de los hiperparametros
 plot(RF_caret)
 
+# Guardamos el modelo 
+
+save(file="RF_caret.RDS",RF_caret)
+
 # Definimos grilla segun lo que vemos
 
 tuneGrid <- data.frame(
@@ -179,8 +272,7 @@ RF_caret_tunning <- train(
    y = aptos_y,
    tuneGrid = tuneGrid,
    method = 'ranger',
-   trControl = myControl,
-   preProcess = c("nzv")
+   trControl = myControl
 )
 
 ## When you are done:
@@ -189,6 +281,11 @@ stopCluster(cl)
 registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
+
+# Guardamos el modelo 
+
+save(file="RF_caret_tunning.RDS",RF_caret_tunning)
+
 
 ########################################
 # Caso 2: imputamos usando Miss Ranger #
@@ -228,6 +325,10 @@ RF_caret_mr
 # Vemos graficamente el comportamiento de los hiperparametros
 plot(RF_caret_mr)
 
+# Guardamos el modelo 
+
+save(file="RF_caret_mr.RDS",RF_caret_mr)
+
 # Definimos grilla segun lo que vemos
 
 tuneGrid <- data.frame(
@@ -257,8 +358,7 @@ RF_caret_tunning_mr <- train(
    y = aptos_y_mr,
    tuneGrid = tuneGrid,
    method = 'ranger',
-   trControl = myControl_mr,
-   preProcess = c("nzv")
+   trControl = myControl_mr
 )
 
 ## When you are done:
@@ -268,7 +368,9 @@ registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
 
+# Guardamos el modelo 
 
+save(file="RF_caret_tunning_mr.RDS",RF_caret_tunning_mr)
 
 #########################################################################
 ############################ Boosting ###################################
@@ -332,17 +434,18 @@ Boosting_caret$tunning %>% mutate(max_tree_depth = factor(interaction.depth)) %>
    geom_point()+ geom_line()
 
 
-# Busqueda orientada en el espacio de los hiperparametros
-# (adaptive resampling)
+# Guardamos el modelo
+
+save(file="Boosting_caret.RDS",Boosting_caret)
 
 # Definimos grilla segun lo que vemos
 
 # Define the tuning grid: tuneGrid
 
 tuneGrid <- expand.grid(
-   interaction.depth = c(3,4),
+   interaction.depth = c(3,5,10),
    n.trees = c(500,1500,2000,5000), 
-   shrinkage = c(0.1),
+   shrinkage = c(0.01,0.1),
    n.minobsinnode = 10
 )
 
@@ -379,6 +482,10 @@ pracma::toc()
 ## Resultados
 
 Boosting_caret_tunning$tunning
+
+# Guardamos el modelo
+
+save(file="Boosting_caret_tunning.RDS",Boosting_caret_tunning)
 
 
 ########################################
@@ -434,14 +541,19 @@ Boosting_caret_mr$tunning %>% mutate(max_tree_depth = factor(interaction.depth))
    geom_point()+ geom_line()
 
 
+# Guardamos el modelo
+
+save(file="Boosting_caret_mr.RDS",Boosting_caret_mr)
+
+
 # Definimos grilla segun lo que vemos
 
 # Define the tuning grid: tuneGrid
 
 tuneGrid <- expand.grid(
-   interaction.depth = c(3,4),
+   interaction.depth = c(3,5,10),
    n.trees = c(500,1500,2000,5000), 
-   shrinkage = c(0.1),
+   shrinkage = c(0.001,0.1),
    n.minobsinnode = 10
 )
 
@@ -478,6 +590,11 @@ pracma::toc()
 ## Resultados
 
 Boosting_caret_tunning_mr$tunning
+
+
+# Guardamos el modelo
+
+save(file="Boosting_caret_tunning_mr.RDS",Boosting_caret_tunning_mr)
 
 
 

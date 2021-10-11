@@ -20,7 +20,7 @@ source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109","aptos_202110")
 
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
@@ -100,7 +100,7 @@ save(file="SVR_train.RDS",SVR_train)
 
 # Cargamos los datos que estan imputados con missRanger 
 
-aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt","aptos_mr.csv"))
+aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt/aptos_mr","aptos_mr.csv"))
 
 aptos_mr <- aptos_mr %>% mutate_if(is.character, as.factor)
 
@@ -133,7 +133,7 @@ SVR_train_mr
 
 # Veamos RMSE en el conjunto de testeo
 
-RMSE_svr_mr <- sqrt(mean((test_mr$price-predict(SVR_train_mr,test))^2))
+RMSE_svr_mr <- sqrt(mean((test_mr$price-predict(SVR_train_mr,test_mr))^2))
 
 
 # Guardamos el modelo 

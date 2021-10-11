@@ -114,15 +114,23 @@ tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,contro
 }
   
   
- ################ Creamos objeto para almacenar el RMSE
+ ################ Creamos objeto para almacenar el RMSE, Rsquared  y MAE 
   
   if(grilla == F){
   
   RMSE <- matrix(NA,nrow=1,ncol=k)
+  
+  Rsquared <- matrix(NA,nrow=1,ncol=k)
+  
+  MAE <-  matrix(NA,nrow=1,ncol=k)
     
   } else {
     
     RMSE <- matrix(NA,nrow = nrow(grilla),ncol=k)
+    
+    Rsquared <- matrix(NA,nrow = nrow(grilla),ncol=k)
+    
+    MAE <- matrix(NA,nrow = nrow(grilla),ncol=k)
     
     
   }
@@ -150,6 +158,8 @@ if(control[[1]] == F) {
       
     } else {
       
+      print("Comenzo proceso de parallel")
+      
       # Calculate the number of cores
       no_cores <- detectCores(logical = FALSE)
       
@@ -160,7 +170,8 @@ if(control[[1]] == F) {
       clusterSetRNGStream(cl, iseed=seed) # Para lograr reproducibilidad
     }
     
-   ######## Calculamos el RMSE para cada Fold y posible combinacion de parametros
+   ######## Calculamos el RMSE, Rsquared y MAE 
+   # para cada Fold y posible combinacion de parametros
     
     for(r in 1:nrow(RMSE)){  
       
@@ -182,7 +193,13 @@ if(control[[1]] == F) {
         
         RMSE[r,c] <- sqrt(mean((datos_test$price-predict(modelo_train,datos_test))^2))
 
+        Rsquared[r,c] <- sum((predict(modelo_train,datos_test)-
+                                mean(datos_test$price))^2) /
+                        sum((datos_test$price - mean(datos_test$price))^2)
+          
+          sqrt(mean((datos_test$price-predict(modelo_train,datos_test))^2))
         
+        MAE[r,c] <- mean(abs((datos_test$price-predict(modelo_train,datos_test))))
         
       }
         
@@ -198,15 +215,23 @@ if(control[[1]] == F) {
      stopCluster(cl)
      
      registerDoSEQ() # Para volver a "modo secuencial"
-   }  
+   
+     print("Termino proceso de parallel")
+     
+     }  
     
-   ########## Obtenemos el RMSE promedio para combinacion de parametros
+   ########## Obtenemos el RMSE, Rsquared y MAE promedio para combinacion de parametros
    
    grilla$RMSE <- rowMeans(RMSE)
    
-   ######### Ordenamos segun RMSE
+   grilla$Rsquared <- rowMeans(Rsquared)
    
-   grilla <- grilla %>% arrange(RMSE)
+   grilla$MAE <- rowMeans(MAE)
+   
+   
+   ######### Ordenamos segun RMSE, Rsquared y MAE
+   
+   grilla <- grilla %>% arrange(RMSE,Rsquared,MAE)
    
    ########### Ajustamos el mejor modelo
    
