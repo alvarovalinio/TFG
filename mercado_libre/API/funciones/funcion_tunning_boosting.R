@@ -193,9 +193,9 @@ if(control[[1]] == F) {
         
         RMSE[r,c] <- sqrt(mean((datos_test$price-predict(modelo_train,datos_test))^2))
 
-        Rsquared[r,c] <- sum((predict(modelo_train,datos_train)-
-                                mean(datos_train$price))^2) /
-                        sum((datos_train$price - mean(datos_train$price))^2)
+        Rsquared[r,c] <- sum((predict(modelo_train,datos_test)-
+                                mean(datos_test$price))^2) /
+                        sum((datos_test$price - mean(datos_test$price))^2)
           
         MAE[r,c] <- mean(abs((datos_test$price-predict(modelo_train,datos_test))))
         
