@@ -151,6 +151,11 @@ load(here("mercado_libre/modelos/ARBOL","arbol_prune_train.RDS")) #arbol.p
 load(here("mercado_libre/modelos/ARBOL","arbol_train_mr.RDS")) #levanta objeto con nombre arbol
 load(here("mercado_libre/modelos/ARBOL","arbol_prune_train_mr.RDS")) #arbol.p
 
+# Arbol para dist rambla
+
+load(here("mercado_libre/modelos/ARBOL","arbol_prune_lat_lon.RDS")) 
+
+
 #### RF
 
 load(here("mercado_libre/modelos/RF","RF_train.RDS")) # rf_TRAIN
@@ -169,6 +174,28 @@ load(here("mercado_libre/modelos/BOOSTING","boosting_train_mr.RDS"))
 load(here("mercado_libre/modelos/SVR","SVR_train.RDS"))
 
 load(here("mercado_libre/modelos/SVR","SVR_train_mr.RDS"))
+
+#### Caret
+
+#### RF
+
+load(here("mercado_libre/modelos/RF/Caret","RF_caret.RDS")) 
+
+load(here("mercado_libre/modelos/RF/Caret","RF_caret_mr.RDS")) 
+
+load(here("mercado_libre/modelos/RF/Caret","RF_caret_tunning.RDS")) 
+
+load(here("mercado_libre/modelos/RF/Caret","RF_caret_tunning_mr.RDS")) 
+
+#### Boosting
+
+load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret.RDS")) 
+
+load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_mr.RDS")) 
+
+load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_tunning.RDS")) 
+
+load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_tunning_mr.RDS")) 
 @
 
 
@@ -373,7 +400,9 @@ Valores de latitud y longitud en las georreferencias de los inmuebles que no cor
 
 Más aún, se pudo detectar la existencia de georreferencias incorrectas ya que en algunos casos la misma no se encontraba dentro del polígono del barrio dónde se ubica el apartamento. Para estos casos, asumimos que el dato correcto es el nombre del barrio y no la georreferencia específica, y se le imputa el valor de latitud y longitud correspondiente al centroide del barrio.
 
-Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avenida italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a avenida italia y 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
+Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avenida italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a la calle avenida italia en continuación con la calle 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
+
+Los anterior fue realizado utilizando las variables geoespaciales construidas, que se detallan en la sección \ref{varselab}.
 
 Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parking\_lots), unidad (unit\_floors), piso (floor), condición nuevo o usado (item\_condition), antiguedad de la propiedad (property age), entre otras.
 
@@ -385,35 +414,53 @@ Por mayor información respecto a los criterios de limpieza seleccionados para c
 
 En el anexo \ref{varsA} se encuentra el detalle de las variables disponibles en la base de datos construida.
 
-\section{Construcción de variables a partir de las georreferencias \label{sec:geo}}
+\section{Fuentes externas de información\label{sec:fuentesext}}
 
-La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales como distancia al shopping más cercano, ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio, y distancia a la Rambla éste de Montevideo.
+La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales.
 
-La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo \ref{harvesineA} se encuentra el detalle de cálculo. 
+La herramienta utilizada para construir los archivos .kml que permite obtener georreferencias y construir mapas  fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (Wikipedia, \url{https://es.wikipedia.org/wiki/Google_My_Maps}).
 
-\subsection{Zona respecto a avenida italia \label{subsec:zona}}
+Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica (SIG).
 
-Toma valor Norte o Sur según el apartamento encuentre al Norte o al Sur de la calle avenida italia o 18 de Julio. Para ello, se fueron comparando las georreferencia de cada apartamento con respecto a la georreferencia del punto más cercano en el mapa de líneas de avenida italia en continuación con 18 de Julio. El mapa de líneas de avenida italia en continuación con 18 de julio fue construido en base a elaboración propia. 
+En lo que respecta a la geometría del departamento de Montevideo fue obtenida a partir de los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
-\subsection{Distancia al shopping más cercano \label{subsec:shop}}
+A continuación se detallan los componentes de un archivo de tipo ESRI Shapefile.
 
-Fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los shoppings ubicados en montevideo y elaboración propia del archivo shapefile, la cual se detalle en la sección Fuentes externas de información.
+\subsection{Formato ESRI Shapefile \label{subsec:shapefile}}
 
-Los shoppings georreferenciados son:
+El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
 
-\begin{itemize}      
-\item Montevideo shopping center
-\item Punta Carretas shopping
-\item Tres cruces shopping
-\item Nuevocentro shopping
-\item Portones shopping
-\end{itemize}      
+Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
+      
+\begin{itemize}       
+\item  shp es el archivo que almacena las entidades geométricas de los objetos.
+\item  shx es el archivo que almacena el índice de las entidades geométricas.
+\item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
+\end{itemize}       
 
-\subsection{Distancia a la rambla \label{subsec:rambla}}
+(Wikipedia, https://es.wikipedia.org/wiki/Shapefile)
 
-Fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Para selccionar qué zona de la rambla es la adecuada para diferenciar precio fue llevado a cabo un análisis de árbol de regresión.
+Por otra parte, se utilizó también información de la encuesta contínua de hogares 2020 para la construcción de variables que consideren el nivel de ingreso por barrio.
 
-A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con las variables creadas.
+\section{Variables construidas \label{sec:varselab}}
+
+Como se menciona en la sección \ref{fuentesext}, tener la georreferencia específica en la base de datos obtenidamotivó la elaboración de variables geoespaciales. En particular, las variables construídas fueron: ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio \textit{(zona\_avd)}, distancia a la Rambla Este de Montevideo \textit{(dist\_rambla)}, y distancia al shopping más cercano \textit{(dist\_shop)}.
+
+La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo \ref{harvesineA} se especifican los detalles sobre el cálculo. 
+
+En lo que respecta a la variable \textit{(zona\_avd)}, la misma toma valor Norte o Sur según el apartamento se encuentre al Norte o al Sur de la calle avenida italia en continuación con la calle 18 de Julio. Para ello, se tomó el punto más cercano a la ubicación del apartamento en el mapa de líneas que compone avenida italia en continuación con 18 de Julio. En particular, se toma la diferencia mínima en términos de longitud entre el apartamento y los puntos que componen el mapa. Una vez obtenido el mínimo, se comparan las latitudes. En caso que la latitud del apartamento sea mayor que la del punto más cercano seleccionado, se asigna Sur, y en otro caso se asigna Norte.
+
+Por otra parte, la variable \textit{(dist\_shop)} fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los shoppings ubicados en Montevideo.
+
+Los shoppings georreferenciados son Montevideo shopping center, Punta Carretas shopping, Tres cruces shopping, Nuevocentro shopping y Portones shopping.
+
+Por último, la variable \textit{(dist\_rambla)} fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Con el fin de seleccionar la zona de la rambla que permita diferenciar el precio de los apartamentos se implementó un análisis de árbol de regresión. En función de los resultados del mismo, se definió de manera cualitativa la zona a incluir.
+
+En la sección \ref{arbollatlonA} el gráfico del árbol ajustado.
+
+Cabe destacar que tanto los mapas de líneas de las variables \textit{(zona\_avd)} y \textit{(dist\_rambla)} así como el mapa de puntos de la variable \textit{(dist\_shop)} fueron construidos en base a elaboración propia, según detallado en la sección \ref{fuentesext}. 
+
+A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con las variables construidas.
 
 \begin{figure}
 \centering
@@ -466,10 +513,10 @@ ggplot(mapa_barrio)+
       xlab('Longitud') + ylab('Latitud') +
       scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 @
+ 
+Por otra parte, la variable ingresomedio\_ECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable \textit{HT11}: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
 
-\section{Encuesta contínua de hogares\label{sec:ech}}
-
-La variable ingresomedioECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable \textit{HT11}: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
+A continuación se presenta el mapa del ingreso promedio de los hogares por barrio de Montevideo.
 
 <<>>=
 
@@ -499,7 +546,6 @@ f$NOMBBARR <- recode(as.factor(f$NOMBBARR),
 mapa_barrio <- mapa_barrio %>% left_join(f, by = 'NOMBBARR')
 @
 
-A continuación se presenta el mapa del ingreso promedio de los hogares por barrio de Montevideo.
 
 \begin{figure}
 \centering
@@ -522,33 +568,6 @@ ggplot(mapa_barrio)+
 \captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020.}
 \end{figure}
 
-\section{Fuentes externas de información\label{sec:fuentes}}
-
-Para la construcción de las variables geoespaciales fue necesario recurrir a fuentes externas de información. Asímismo y como fue mencionado, en la construcción de la variable ingresomedio ECH fue utilizada también la encuesta contínua de hogares 2020. 
-
-La herramienta utilizada para construir los archivos .kml que permite georreferenciar los shoppings en Montevideo, la calle avenida italia en continuación con 18 de julio, y la ramla éste de Montevideo, fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (Wikipedia, \url{https://es.wikipedia.org/wiki/Google_My_Maps}).
-
-De ésta forma, fueron construidos los archivos .kml que contienen las georreferencias de los shoppings de montevideo y de la calle avenida italia en contrinuación con 18 de julio.
-
-Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica SIG).
-
-De manera similar fueron construidos los archivos que guardan la información necesaria para la construcción de la variable avenida italia en constinuación con 18 de Julio.
-
-\subsection{Formato ESRI Shapefile \label{subsec:shapefile}}
-
-El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
-
-Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
-      
-\begin{itemize}       
-\item  shp es el archivo que almacena las entidades geométricas de los objetos.
-\item  shx es el archivo que almacena el índice de las entidades geométricas.
-\item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
-\end{itemize}       
-
-(Wikipedia, https://es.wikipedia.org/wiki/Shapefile)
-
-A continuación s presentan el mapa de Montevideo con la georreferencia de los shoppings y de la calle avenida italia en continuación con 18 de julio. Es importente mencionar que la geometría del departamento de Montevideo fue construida con los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
 \chapter{Antecedentes \label{cap:Antec}}
 
@@ -586,11 +605,60 @@ $$y = f(x) + \epsilon$$
 
 dónde 
 
-$$f(x) = \mathbf{X'\beta} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p$$
+$$f(x) = \mathbf{X'}\boldsymbol{\beta}$$
 
-$\epsilon$ es el vector de errores del modelo, con $\epsilon_i$ independientes e identicamente distribuidos $N(0, \sigma^2)$.
+$$\mathbf{X'}\boldsymbol{\beta} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_k X_k$$
 
-Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas al bien y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de parámetros de un modelo líneal clásico.
+$\epsilon$ es el vector de errores del modelo, con $\epsilon_i$ independientes e identicamente distribuidos $N(0, \sigma^2)$. (Carmona, 2003).
+
+Siendo $(X_1, \cdots, X_k)$ el vector de las $k$ características asociadas al bien y $(\beta_1, \cdots, \beta_k)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de parámetros de un modelo líneal clásico.
+
+La estimación de los parámetros $\boldsymbol{\beta} = (\beta_1, \cdots, \beta_k)$ se realiza por el método de los mínimos cuadrados. Para ello, se intenta hallar los valores $\boldsymbol{\hat{\beta}} = (\hat{\beta_1}, \cdots, \hat{\beta_k})$ que minimicen la suma de cuadrados de los residuos $\boldsymbol{\epsilon'\epsilon} = \boldsymbol{(Y - X'\beta)'(Y - X'\beta)}$.
+
+De ésta manera, se obtiene que la estimación del vector  $\mathbf{\beta}$ que minimiza la suma de los cuadrados de los residuos es solución de la siguiente ecuación:
+
+$$\mathbf{X'X\beta=X'Y} (Carmona)$$
+
+Y luego
+
+$$\hat{y} = \hat{f(x)} =  \boldsymbol{X'\hat{\beta}}$$
+
+En lo que respecta a la bondad de ajuste del modelo, se utilizan el coeficiente de determinación ($R^2$) y coeficiente de determinación ajustado ($R^2_a$).
+
+Se define al coeficiente de determinación ($R^2$) como sigue:
+
+$$R^2 = 1 - \frac{SCR}{SCT}$$
+
+en dónde:
+
+\begin{itemize}
+\item $SCR = \sum_{i=1}^n (y_i - \hat{y_i})^2$
+\item $SCT = \sum_{i=1}^n (y_i - \bar{y})^2$
+\item $n$ el número de observaciones.
+\end{itemize}
+
+Por otro lado, se define el coeficiente de determinación ajustado como sigue:
+
+$$R^2_a = 1 - \big(\frac{n-1}{n-k-1}\big)(1-R^2)$$
+
+en dónde
+
+\begin{itemize}
+\item n es el número de observaciones
+\item k es el número de variables explicativas del modelo
+\item $R^2$ es el coeficiente de determinación.
+\end{itemize}
+
+
+En lo que respecta a la significación global del modelo, se utiliza la prueba \textit{F de Fischer} (Prueba F) en dónde la hipotesis nula implica la no significación global del modelo. La misma se rechaza cuando $F > F_{k, n-k-1}$ Siendo $F$ el estadístico de prueba (Carmona).
+
+Con el fin de testear los supuestos de normalidad y homocedasticidad de los residuos del modelo existen diferentes pruebas. 
+
+En partircular, en este trabajo se realizó la prueba de normalidad de \textit{Lilliefors} (1976) sobre los residuos del modelo. Ésta prueba utiliza el estadístico kolmogorov-smirnov para el caso en que la media y la varianza poblacional son desconocidos. Para ésto, se utilizó la función \textit{lillie.test} del paquete \textit{nortest}.
+
+Por otro lado, se aplicó la prueba de heteroscedasticidad de \textit{Breush-Pagan} sobre los residuos del modelo, utilizando la función textit{bptest} del paquete \textit{lmtest}.Ésta prueba consiste en ajustar un modelo líneal para los residuos del modelo de regresión líneal. Se rechaza la hipótesis nula de heteroscedasticidad en el caso en que mucha varianza sea explicada por las variables explicativas. 
+
+Por defecto, se utilizan todas las variables explicativas del modelo inicial.(Breush-Pagan 1979).
 
 En particular, éste modelo puede aplicarse a los precios de los bienes inmuebles.
 Entre las características asociadas al bien pueden considerarse características que son propias del mismo así como también características asociadas a la geolocaliación, entre otras. (De Bruyne, K., Van Hove, J., 2013).
@@ -598,14 +666,6 @@ Entre las características asociadas al bien pueden considerarse característica
 Una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heteroscedasticidad, multicolinealidad, y variables omitidas.
 
 Por otra parte, el modelo de precios hedónicos puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
-
-Con el fin de testear los supuestos de normalidad y homocedasticidad de los residuos del modelo existen diferentes pruebas. 
-
-En partiruclar, en este trabajose realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo.Ésta prueba utiliza el estadístico kolmogorov-smirnov para el caso en que la media y la varianza poblacional son desconocidos. Para ésto, se utilizó la función \textit{lillie.test} del paquete \textit{nortest}.
-
-Por otro lado, se aplicó la prueba de heteroscedasticidad de Breush-Pagan sobre los residuos del modelo, utilizando la función textit{bptest} del paquete \textit{lmtest}.
-
-La prueba de hetoroscedasticidad de Breush-Pagan consiste en ajustar un modelo líneal para los residuos del modelo de regresión líneal y rechaza la hipótesis nula de heteroscedasticidad en el caso que mucha varianza sea explicada por las variables explicativas. Por defecto, se utilizan todas las variables explicativas del modelo inicial.(Breush-Pagan 1979)
 
 \subsection{Árboles de regresión\label{subsec:arbol}}
 
@@ -829,6 +889,24 @@ $RMSE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (y_j - \hat{y}_j)
 
 dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
 
+Asimismo, como medida de la performance predictiva se utilizó también el error absoluto medio:
+
+\begin{center}
+
+$MAE= \displaystyle \frac{1}{k} \sum_{k=1}^{K} MAE_{k}$
+
+\end{center}
+
+Donde $MAE_{k}$ es el error absoluto medio en la k-ésima muestra.
+
+\begin{center}
+
+$MAE_k= \displaystyle \sqrt{ \frac{1}{n_k} \sum_{j = 1}^{n_k} (|y_j - \hat{y}_j|)}$
+
+\end{center}
+
+dónde $n_k$ es la cantidad de observaciones en la k-ésima muestra. 
+
 Con el fin de obtener el modelo con la mejor performance predictiva, se realizó un proceso de \textit{hyperparameter tuning}. El mismo consiste en obtener la mejor combinación de hiperparámetros posibles mediante una metodología de cross-validation.
 
 Un hyperparámetro es una valor necesario para ajustar un modelo el cual no se determina a partir 
@@ -958,7 +1036,7 @@ options(knitr.table.format = "latex")
 
 
 <<results=tex>>=
-kable(sum.table, caption = 'Medidas de resumen de la variable de salida price', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+kable(sum.table, caption = 'Medidas de resumen de la variable de salida price', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 
 Luego, se presenta gráficamente la distribución de la variable mediante un histograma.
@@ -1206,12 +1284,14 @@ RMSE_lm_mr <- sqrt(mean((test_mr$price - predict(lm,test_mr))^2))
 
 lmt <- rbind(broom::glance(lm), broom::glance(lm))
 lmt <- lmt %>% select(-"sigma" , - "AIC", - "BIC",
-                  - "deviance", -"df.residual", -"nobs", -"df", -"logLik")
+                  - "deviance", -"df.residual", -"nobs", -"df", -"logLik", -"p.value")
+
+lmt <- lmt %>% mutate(p.value = "< 2.2e-16")
 
 met <- tribble(
   ~Imput, ~RMSE,
   "Media", round(RMSE_lm), 
-  "Miss Ranger",  round(RMSE_lm_mr)
+  "Random Forest",  round(RMSE_lm_mr)
 )
 
 lmt <- cbind(met, lmt)
@@ -1221,7 +1301,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(lmt, caption = c("Principales resultados de los modelos lineales ajustados según el método de imputación utilizados"), escape = F, booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "hold_position") %>% row_spec(0,bold=TRUE)
+kable(lmt, caption = c("Principales resultados de los modelos lineales ajustados según el método de imputación utilizados"), escape = F, booktabs = T, align = "c", format.args = list(big.mark = "."), col.names = c('Método', 'RMSE', "$R^2$", "$R^2_a$","Estadístico F", "P-Valor" )) %>% kable_styling(latex_options = "hold_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1310,11 +1390,20 @@ A continuación se presenta la tabla con los resultados para las metodologías d
 # RMSE test
 RMSE_arbol <- sqrt(mean((test$price-predict(arbol.prune,test))^2))
 RMSE_arbol_mr <- sqrt(mean((test_mr$price-predict(arbol.prune.mr,test_mr))^2))
+ 
+r2_arbol <- sum((predict(arbol.prune,test)-mean(test$price))^2) /
+                        sum((test$price - mean(test$price))^2)
 
-rmse_arbol <- tribble(
-  ~Imput, ~RMSE,
-  "Media",   round(RMSE_arbol),
-  "Miss Ranger", round(RMSE_arbol_mr)
+r2_arbol_mr <- sum((predict(arbol.prune.mr,test_mr)-mean(test_mr$price))^2) /
+                        sum((test_mr$price - mean(test_mr$price))^2)
+
+mae_arbol <- mean(abs((test$price-predict(arbol.prune,test))))
+mae_arbol_mr <- mean(abs((test_mr$price-predict(arbol.prune.mr,test_mr))))
+
+res_arbol <- tribble(
+  ~Imput, ~RMSE, ~R2, ~MAE, 
+  "Media",   round(RMSE_arbol), r2_arbol, round(mae_arbol),
+  "Random Forest", round(RMSE_arbol_mr), r2_arbol_mr, round(mae_arbol_mr)
 )
 
 library(knitr)
@@ -1322,11 +1411,8 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_arbol, caption = 'Error cuadrático medio de los modelos ajustados por Árbol de regresión', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
-
-
-El modelo tiene un error cuadrático medio de \Sexpr{round(RMSE_arbol)}.
 
 \section{Random Forest \label{sec:randomforest}}
 
@@ -1336,13 +1422,26 @@ A continuación se presenta la tabla con los errores cuadráticos medios de los 
 
 <<>>=
 # RMSE test
-RMSE_rf <- sqrt(mean((test$price-predictions(predict(rf_train,test)))^2))
-RMSE_rf_mr <- sqrt(mean((test_mr$price-predictions(predict(rf_train_mr,test_mr)))^2))
 
-rmse_rf <- tribble(
-  ~Imput, ~ECM,
-  "Media",   round(RMSE_rf),
-  "Miss Ranger", round(RMSE_rf_mr)
+predictions_rf <- predictions(predict(rf_train,test))
+predictions_rf_mr  <- predictions(predict(rf_train_mr,test_mr))
+
+RMSE_rf <- sqrt(mean((test$price-predictions_rf)^2))
+RMSE_rf_mr <- sqrt(mean((test_mr$price - predictions_rf_mr)^2))
+
+r2_rf <- sum((predictions_rf-mean(test$price))^2) /
+      sum((test$price - mean(test$price))^2)
+
+r2_rf_mr <- sum((predictions_rf_mr-mean(test_mr$price))^2) /
+      sum((test_mr$price - mean(test_mr$price))^2)
+
+mae_rf <- mean(abs((test$price-predictions_rf)))
+mae_rf_mr <- mean(abs((test_mr$price-predictions_rf_mr)))
+
+res_rf <- tribble(
+      ~Imput, ~RMSE, ~R2, ~MAE, 
+      "Media",   round(RMSE_rf), r2_rf, round(mae_rf),
+      "Random Forest", round(RMSE_rf_mr), r2_rf_mr, round(mae_rf_mr)
 )
 
 library(knitr)
@@ -1350,9 +1449,8 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
-
 
 \begin{figure}[h!]
 \centering
@@ -1400,18 +1498,30 @@ grid.arrange(p1, p2, ncol = 2)
 \captionof{figure}{Importancia de las variables en los modelos de random forest ajustados. Se observa que \text{total\_area} es la variable con mayor importancia en ambos modelos. A su vez, todas las variables geoespacialesconstruidas aparecen entre las más importantes de ambos modelos.}
 \end{figure}
 
-\vspace{3cm}
 
 \section{Boosting \label{sec:boosting}}
 
 <<>>=
-RMSE_boosting <- RMSE(kernlab::predict(boosting_train, test), test$price)
-RMSE_boosting_mr <- RMSE(kernlab::predict(boosting_train, test_mr), test_mr$price)
+predictions_boost <- gbm::predict.gbm(boosting_train, test)
+predictions_boost_mr <- gbm::predict.gbm(boosting_train_mr, test_mr)
 
-rmse_boost <- tribble(
-  ~Imput, ~ECM,
-  "Media",   round(RMSE_boosting),
-  "Miss Ranger", round(RMSE_boosting_mr)
+RMSE_boosting <- RMSE(predictions_boost, test$price)
+RMSE_boosting_mr <- RMSE(predictions_boost_mr , test_mr$price)
+
+
+r2_boost <- sum((predictions_boost-mean(test$price))^2) /
+      sum((test$price - mean(test$price))^2)
+
+r2_rf_boost <- sum((predictions_boost_mr-mean(test_mr$price))^2) /
+      sum((test_mr$price - mean(test_mr$price))^2)
+
+mae_boost <- mean(abs((test$price-predictions_boost)))
+mae_boost_mr <- mean(abs((test_mr$price-predictions_boost_mr)))
+
+res_boost <- tribble(
+      ~Imput, ~RMSE, ~R2, ~MAE, 
+      "Media",   round(RMSE_boosting), r2_boost, round(mae_boost),
+      "Random Forest", round(RMSE_boosting_mr), r2_rf_boost, round(mae_boost_mr)
 )
 
 library(knitr)
@@ -1419,7 +1529,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, col.names = c("Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1427,14 +1537,14 @@ kable(rmse_boost, caption = 'Error cuadrático medio de los modelos ajustados po
 
 
 <<>>=
-RMSE_svr <- RMSE(kernlab::predict(SVR_train, test), test$price)
-RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr), test_mr$price)
+#RMSE_svr <- RMSE(kernlab::predict(SVR_train, test), test$price)
+#RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr), test_mr$price)
 
 
 rmse_svr <- tribble(
   ~Imput, ~ECM,
-  "Media",   round(RMSE_svr),
-  "Miss Ranger", round(RMSE_svr_mr)
+  "Media", 0,
+  "Random Forest",0
 )
 
 library(knitr)
@@ -1442,7 +1552,81 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(rmse_svr, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, col.names = c("Método de imputación","ECM"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(rmse_svr, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+
+
+A continuación se presenta la tabla con los valores del RMSE para cada uno de los modelos implementados.
+
+<<eval = FALSE>>=
+
+lmt
+
+# rmse_tot <- tribble(
+#   ~Modelo, ~imput, ~RMSE,
+#   "Modelo lineal", "Media", round(RMSE_lm),
+#   "Arbol de regresion", "Media", round(RMSE_arbol),
+#   "Random Forest", "Media", round(RMSE_rf),
+#    "Support Vector Regression", "Media",0,
+#   "Modelo lineal", "Random Forest", round(RMSE_lm_mr),
+#   "Arbol de regresion",  "Random Forest", round(RMSE_arbol_mr),
+#   "Random Forest",  "Random Forest", round(RMSE_rf_mr),
+#    "Support Vector Regression",  "Random Forest", 0
+# )
+
+summary(lm_mr)
+
+rmse_tot <- rbind(rmse_media,rmse_mr)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<eval=FALSE>>=
+kable(rmse_tot, caption = 'Raíz del error cuadrático medio (RMSE) de los modelos ajustados', booktabs = T, align = "c", col.names = c("Modelo", "Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+
+\section{Hyperparameter tuning \label{sec:hypt}}
+
+En ésta sección se presentan los resultados de aplicar los procedimientos de hyperparameter tuning para cada uno de los modelos de aprendizaje automático presentados anteriormente.
+
+La tabla que se presenta a continuación contiene los resultados del mejor modelo, en términos de 
+
+
+<<>>=
+#### Caret
+
+#### RF
+
+RF_caret_tunning_best <-RF_caret_tunning$results[which.min(RF_caret_tunning$results$RMSE), ] %>%
+      select(-RMSESD, -RsquaredSD, -MAESD)
+
+RF_caret_tunning_mr_best <-RF_caret_tunning_mr$results[which.min(RF_caret_tunning_mr$results$RMSE), ] %>% 
+      select(-RMSESD, -RsquaredSD, -MAESD) 
+
+#### Boosting
+
+Boosting_caret_tunning_best <-Boosting_caret_tunning$tunning[which.min(Boosting_caret_tunning$tunning$RMSE), ]
+
+Boosting_caret_tunning_mr_best <-Boosting_caret_tunning$tunning[which.min(Boosting_caret_tunning$tunning$RMSE), ]
+
+# Best tunes
+
+best_tunes_rf <- rbind(RF_caret_tunning_best, RF_caret_tunning_mr_best) %>% arrange(RMSE)
+
+best_tunes_boost <- rbind(Boosting_caret_tunning_best, Boosting_caret_tunning_mr_best) %>% arrange(RMSE)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(best_tunes_rf, caption = 'Mejores modelos RF', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(best_tunes_boost, caption = 'Mejores modelos Boosting', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
 
 
@@ -1493,10 +1677,24 @@ dónde d es la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1
 \section{Proporción de valores faltantes por variable \label{nasA}} 
 
 <<results=tex>>=
-kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
+kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, align = "c", longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
       pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
       pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
 @
+
+
+\section{Arbol de regresión de la variable precio en funcion de latitud y longitud \label{ane:arbollatlonA}}
+
+\begin{figure}[h!]
+\centering
+<<>>=
+rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
+@
+\captionof{figure}{Cualquier cosa}
+\end{figure}
+
+
+\section{Proporción de valores faltantes por variable\label{ane:naA}}
 
 <<>>=
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
@@ -1506,8 +1704,9 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, align = "c", col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
+
 
 \section{Modelo lineal \label{mlA}} 
 
@@ -1521,7 +1720,7 @@ bp_mr <- lmtest::bptest(lm_mr) # se rechaza h0 de varianza constante
 bp_t <- tribble(
   ~Metodo, ~Pvalor, ~Decision,
   "Media",   "< 2.2e-16", "Se rechaza H0",
-  "Miss Ranger", "< 2.2e-16",  "Se rechaza H0"
+  "Random Forest", "< 2.2e-16",  "Se rechaza H0"
 )
 
 
@@ -1530,7 +1729,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(bp_t, caption = 'Resultados de la prueba de Breush-Pagam para el análisis de homoscedasticidad de los residuos', booktabs = T, col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+kable(bp_t, caption = 'Resultados de la prueba de Breush-Pagam para el análisis de homoscedasticidad de los residuos', booktabs = T, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1542,7 +1741,7 @@ lt_mr <- lillie.test(residuals(lm_mr)) #se rechaza h0 de normalidad
 lt_t <- tribble(
   ~Metodo, ~Pvalor, ~Decision,
   "Media", "< 2.2e-16", "Se rechaza H0",
-  "Miss Ranger", "< 2.2e-16",  "Se rechaza H0"
+  "Random Forest", "< 2.2e-16",  "Se rechaza H0"
 )
 
 
@@ -1551,7 +1750,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(lt_t, caption = 'Resultados de la prueba de Llliefors para el análisis de normalidad de los residuos', booktabs = T, col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+kable(lt_t, caption = 'Resultados de la prueba de Llliefors para el análisis de normalidad de los residuos', booktabs = T, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 \section{Arbol de regressión \label{arbolA}} 
 
@@ -1577,7 +1776,6 @@ rpart.plot(arbol.prune.mr,roundint = T,digits = -3)
 \captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre,  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt_mr}. El método de imputación sobre valores faltantes es en éste caso imputación por Random Forest. El árbol se conforma por \Sexpr{npart_mr+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart_mr} particiones.}
 \end{figure}
 
-
 A continuación, a modo de resumen se presenta la tabla de los modelos mencionados en la sección \ref{arbol}. La misma contiene diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, y el tamaño del árbol que dicho valor del parámetro implica.
 
 Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro
@@ -1590,7 +1788,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(cp_error %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.   La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por la media.', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(cp_error %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.   La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por la media.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 <<>>=
@@ -1600,13 +1798,63 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(cp_error_mr %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation. La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por Random Forest.', booktabs = T, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(cp_error_mr %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation. La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por Random Forest.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
+\section{Hyperparameter Tuning \label{ane:hyptA}}
 
+<<>>=
+#### Caret
 
-\section{siete \label{ane:ind}}
+#### RF
+
+RF_caret_res <- RF_caret$results %>% 
+      select(-RMSESD, -RsquaredSD, -MAESD) %>% arrange(RMSE)
+
+RF_caret_mr_res <-RF_caret_mr$results %>%
+      select(-RMSESD, -RsquaredSD, -MAESD) %>% arrange(RMSE)
+
+RF_caret_tunning_res <-RF_caret_tunning$results %>%
+      select(-RMSESD, -RsquaredSD, -MAESD) %>% arrange(RMSE)
+
+RF_caret_tunning_mr_res <-RF_caret_tunning_mr$results %>% 
+      select(-RMSESD, -RsquaredSD, -MAESD) %>% arrange(RMSE)
+
+#### Boosting
+
+Boosting_caret_res <- Boosting_caret$tunning %>% arrange(RMSE)
+Boosting_caret_tunning_res <-Boosting_caret_tunning$tunning  %>% arrange(RMSE)
+@
+
+<<>>=
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(RF_caret_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(RF_caret_mr_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(RF_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(RF_caret_tunning_mr_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(Boosting_caret_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+
+<<results=tex>>=
+kable(Boosting_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
 
 
 \section{ocho \label{ane:var}}
