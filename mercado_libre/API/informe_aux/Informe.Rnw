@@ -34,6 +34,14 @@
 \pagestyle{fancy} 
 \usepackage{caption}
 \captionsetup[table]{position=bottom} 
+\usepackage[backend= biber]{biblatex}
+\bibliography{bibliografia}
+% or \addbibresource{BIBLIOGRAPHY_24th_March_2019.bib}
+
+<<biber, eval= TRUE, include= FALSE, cache= FALSE, echo= FALSE>>=
+library(knitr)
+system (paste ("biber", sub ("\\.Rnw$", "", current_input())))
+@               
 
 \topmargin 2mm
 \oddsidemargin 2mm
@@ -338,29 +346,23 @@ Trabajo final de grado
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Introducción \label{cap:Intro}}
 
-El presente trabajo tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas, mediante las cuáles poder realizar predicciones de una variable de interés. En particular, se trbajó con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay.
+El presente trabajo tiene como principal objetivo el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular, se trabaja con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay, disponibles en mercado libre.
 
-Con el fin de llevar a cabo éste objetivo, fueron realizadas todas las etapas necesarias para realizar un análisis estadístico, desde la obtención de los datos, limpieza y pre-procesamiento, hasta la generación de nuevas variable y modelado. 
+Para ello, se plantearon 3 objetivos específicos, siendo estos: 1) obtención y procesamiento de los datos para transformarlos en información, con especial énfasis en la automatización y reproducibilidad de los mismos; 2) implementación de técnicas de aprendizaje estadístico que permitan una mayor flexibilidad en la estimación con respecto a las técnicas clásicas de estimación y 3) una primera aproximación a un análisis de interpretabilidad enfocándose en los métodos globales modelo-agnósticos (\textit{model-agnostic methods}).
 
-De ésta manera, uno de los puntos de gran importancia de éste trabajo es la obtención y procesamiento de los datos. Gran parte de los datos fueron obtenidos través de la Interfaz para acceder a la página web (API) de Mercado Libre. Para ello fue necesario la creación de un código que permita una descarga automatizada de la información disponible. Asimismo, a partir de los datos obtenidos fueron construídas variables adicionales que se consideraron de interés para el problema planteado.
+En lo que respecta al primer objetivo, gran parte de los datos fueron obtenidos a través de la Interfaz de programación de aplicaciones (API) de Mercado Libre. Esto implicó la creación de un programa que permita una descarga automatizada de la información disponible. Asimismo, se trabajó con diferentes fuentes de información externas. En particular con la Encuesta Contínua de Hogares (ECH) y datos obtenidos de la plataforma Google My Maps. De esta manera, fueron construídas variables adicionales que se consideraron de interés para el problema planteado.
 
-En lo que respecta a la técnicas de aprendizaje estadístico, se hizo especial énfasis en \textit{árboles de decisión}. Los mismos fueron utilizados no solamente para la predicción de la variable de respuesta sino también para la implementación de técnicas de imputación de valores faltantes.
+En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de técnicas aplicadas a Arboles de decisión, en particular Random Forest y Boosting (Hastie). En segundo lugar, se trabajó con la técnica Support Vector Regression la cual pertenece al grupo de los modelos de regresión robusta (Vapnik). En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un modelo lineal (Carmona).
 
-Asimismo, con el fin de mejorar el desempeño predictivo de los modelos fue realizado un proceso de entraniento y validación de los resultados. 
+Una vez implementados los modelos mencionados en el punto anterior, con el fin de determinar el modelo con mejor capacidad predictiva, se llevó a cabo un análisis comparativo en función de diferentes métricas. 
 
-En la medida que existe un \textit{trade off} entre interpretación del modelo y poder predictivo, fueron tomados dos enfoques. 
+Por último, una vez obtenido el mejor modelo, en la medida que los modelos implementados (con excepción del modelo lineal) se denominan como modelos de caja negra (molnar - libro interp) se llevó a cabo un análisis de interpretabilidad. Esto último, principalmente mediante análisis gráfico. 
 
-En primer lugar, se trabajó con técnicas de estimación clásicas tales como el modelo lineal de precios hedónicos. Por otro lado, se implentaron técnicas de aprendizaje automático. 
+Se destaca que las técnicas utilizadas implican un alto costo computacional. De esta forma, con el fin de obtener un mayor poder de cómputo se utilizó un enfoque desde la programación en paralelo. A su vez, todas las etapas fueron realizadas de tal forma que todos los resultados sean reproducibles.
 
-El modelo líneal clásico de precios hedónicos permite una interpretación directa de la relación entra la variable de respuesta y las covariables, pero supone la existencia de una relación lineal entre l variable de respuesta y las variables explicativas, el cuál es un supuesto que puede no ajustar a la realidad. 
+Los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, R, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
 
-Una de las ventajas de las técnicas de aprendizaje automático supervisado es que permiten captar relaciones no lineales. Por su parte, las metodologías como \textit{random forest} suelen tener un desempeño predictivo superior pero a expensas de una pérdida en el grado de interpretabilidad. Debido a ésto, se suele denominar a éstos modelos como \textit{modelos de caja negra}.
-
-Sin embargo, con el fin de atenuar ésta limitante, se realizó un análisis de interpretabilidad de los modelos. Principalmente, mediante métodos globales modelo-agnósticos. Estos métodos permiten describir el comportamiento medio de los modelos de aprendizaje automático y son particularmente útiles cuando se quiere entender los mecanismos generales en los datos.
-
-Se destaca que los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, \textit{R}, enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
-
-Todas las etapas fueron realizando preservando la reproducibilidad de todos los resultados. 
+El trabajo se conforma de 7 capítulos. A continuación se presenta en el capítulo 2 el detalle de la obtención y depuración de los datos utilizados. Luego, en el capítulo 3 se mencionan los principales antecedentes consultados. En lo que respecta al capítulo 4, se detalla la metodología utilizada y el sustento teórico de la misma. Posteriormente, en los capítulos 5 y 6 se presenta el análisis exploratorio de los datos y los principales resultados obtenidos respectivamente. Por su parte, en el capítulo 7 se presentan las principales conclusiones abordadas y principales líneas de trabajo para futuras investigaciones. 
 
 \chapter{Datos \label{cap:datos}}
 
@@ -570,6 +572,27 @@ ggplot(mapa_barrio)+
 
 
 \chapter{Antecedentes \label{cap:Antec}}
+
+Como fue mencionado en la sección \ref{Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
+
+En éste sentido, existen diversos artículos y documentos de trabajo que hablan sobre el tema y que, en particular, trabajan con el precio de los inmuebles en el mercado Uruguayo.
+
+Ponce 2012 propone un modelo de precios de fundamentos para las viviendas el cual se basa en el hecho de que una vivienda puede ser considerada como un activo de inversión y como un activo que brinda servicios, por lo que el precio puede ser considerado como el resultado del mercado por los servicios de vivienda y como el resultado de equilibrio en un mercado de activos. Encuentra, entre otras cosas, que los precios de las viviendas fluctúan más que lo justificado por sus fundamentos lo cual implica periodos de subvaloración o sobrevaloración de los precios de las viviendas. Precio de fundamentos para las viviendas en Uruguay. Ponce 2012.
+
+Posteriormente, Ponce y Tubio 2013 realizan una aplicación de modelos hedónicos para el mercado Uruguayo. Utilizan una base de datos con información de inmuebles ofertados a través de la web, la cual contien información de más de 500 inmobiliarias y más de 20 barrios de Montevideo, Uruguay. Se trata de una sistematización de metodologías existentes para la elaboración de índices de precios de inmuebles, en particular atendiendo a modelos que permitan evaluar el desvío de los precios corrientes con respecto a los fundamentos del mercado. Precios de inmuebles: aproximaciones metodológicas y aplicación empírica. Ponce y Tubio 2013.
+
+Luego, Landaberry y Tubio 2015 con el fin de monitorear el mercado de viviendas en Uruguay proponen una serie de índices de precios. En particular para el caso de Montevideo proponen índices desde un enfoque hedónico ya que, entre otras cosas, permiten estimar precios sombras para los atributos de las viviendas. Estimación de índice de precios de inmuebles en Uruguay, Landaberry y Tubio 2015.
+
+En el año 2017 Goyeneche et al trabajaron en la construcción de un modelo predictivo del valor contado de un determinado inmueble, entendido como valor contado aquel que es asignado por el tasador. En línea con esto, implementaron técnicas de modelado autorregresivas para considerar la información temporal así como también la información espacial, a la vez que las variables hedónicas fueron modeladas mediante un modelo de regresión lineal dinámico, dónde los coeficientes de la regresión son función de la ubicación del inmueble. Recurrieron a la metodología de Stacking con el fin de lograr predicciones más precisas. En particular trabajaron con información de inmuebles en Montevideo, Uruguay. La base de datos utilizada fue proporcionada por el Banco Hipotecario del Uruguay BHU Predicción del valor de un inmueble mediante técnicas agregativas, Goyeneche et al 2017. 
+
+Por último, en 2019 Picardo presenta modelos predictivos para el precio de las viviendas. En particular implementa modelos de regresión lineal, árboles de regresión, y random forest para inmuebles ubicados en Montevideo, Uruguay. La base de datos utilizada corresponde a elaboración propia a través de web scraping y registros administrativos de transacciones de la Dirección General de Registros DGR.
+
+En lo que respecta a las técnicas estadísticas utilizadas, se utilizaron diferentes literaturas. 
+En éste sentido, entre las bibliografías destcadas se encuentra el libro publicado por Gareth James et al  dónde realizan una introducción al aprendizaje estadístico con aplicaciones en R. 
+
+Por otra parte, en lo que respecta al detalle metodológico del modelo líneal, fue consultado principalmente el trabajo de Francesc Carmona. Las pruebas de heteroscedasticidad y normalidad fueron consultadas bla bla.
+
+Para el análisis de interpretabilidad de los modelos de aprendizaje automático fueron consultados los trabajos de bla bla.
 
 \chapter{Marco teórico y metodología\label{cap:MT}}
 
@@ -1411,7 +1434,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 \section{Random Forest \label{sec:randomforest}}
@@ -1449,7 +1472,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 \begin{figure}[h!]
@@ -1529,30 +1552,41 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F,  format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
-
 
 \section{Support vector regression \label{sec:svr}}
 
-
 <<>>=
-#RMSE_svr <- RMSE(kernlab::predict(SVR_train, test), test$price)
-#RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr), test_mr$price)
+# RMSE test
 
+predictions_svr <- kernlab::predict(SVR_train, test)
+predictions_svr_mr <- kernlab::predict(SVR_train_mr, test_mr)
 
-rmse_svr <- tribble(
-  ~Imput, ~ECM,
-  "Media", 0,
-  "Random Forest",0
+RMSE_svr <- RMSE(kernlab::predict(SVR_train, test), test$price)
+RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr), test_mr$price)
+
+r2_svr <- sum((predictions_svr-mean(test$price))^2) /
+                        sum((test$price - mean(test$price))^2)
+
+r2_svr_mr <- sum((predictions_svr_mr-mean(test_mr$price))^2) /
+                        sum((test_mr$price - mean(test_mr$price))^2)
+
+mae_svr <- mean(abs((test$price-predictions_svr)))
+mae_svr_mr <- mean(abs((test_mr$price-predictions_svr_mr)))
+
+res_arbol <- tribble(
+  ~Imput, ~RMSE, ~R2, ~MAE, 
+  "Media",   round(RMSE_svr), r2_svr, round(mae_svr),
+  "Random Forest", round(RMSE_svr_mr), r2_svr_mr, round(mae_svr_mr)
 )
 
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<results=tex>>=
-kable(rmse_svr, caption = 'Error cuadrático medio de los modelos ajustados por SVR', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+<<eval = FALSE, results=tex>>=
+kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "$MAE$"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
 
@@ -1690,7 +1724,7 @@ kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utiliza
 <<>>=
 rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
 @
-\captionof{figure}{Cualquier cosa}
+\captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre, considerando como variables de entrada latitud y longitud del apartamento. A dicho árbol se le realizó el correspondiente proceso de poda, el cual queda conformado por 7 nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. Donde a mayor intensidad del color azul, mayor la predicción en cuanto al precio de oferta del apartamento.}
 \end{figure}
 
 
@@ -1856,11 +1890,10 @@ kable(Boosting_caret_res, caption = 'Resumen', booktabs = T, align = "c", format
 kable(Boosting_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
 
-
-\section{ocho \label{ane:var}}
-
-
 \end{appendix}
 
+\chapter{Bibliografía \label{cap:bib}}
+
+\printbibliography   
 
 \end{document}
