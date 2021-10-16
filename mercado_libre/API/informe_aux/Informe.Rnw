@@ -89,6 +89,7 @@ library(GGally)
 library(latex2exp)
 library(gbm)
 library(kernlab)
+library(tinytex)
 @
 
 
@@ -352,7 +353,7 @@ Para ello, se plantearon 3 objetivos específicos, siendo estos: 1) obtención y
 
 En lo que respecta al primer objetivo, gran parte de los datos fueron obtenidos a través de la Interfaz de programación de aplicaciones (API) de Mercado Libre. Esto implicó la creación de un programa que permita una descarga automatizada de la información disponible. Asimismo, se trabajó con diferentes fuentes de información externas. En particular con la Encuesta Contínua de Hogares (ECH) y datos obtenidos de la plataforma Google My Maps. De esta manera, fueron construídas variables adicionales que se consideraron de interés para el problema planteado.
 
-En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de técnicas aplicadas a Arboles de decisión, en particular Random Forest y Boosting (Hastie). En segundo lugar, se trabajó con la técnica Support Vector Regression la cual pertenece al grupo de los modelos de regresión robusta (Vapnik). En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un modelo lineal (Carmona).
+En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de técnicas aplicadas a Arboles de decisión, en particular Random Forest y Boosting (\cite{james2013introduction}). En segundo lugar, se trabajó con la técnica Support Vector Regression la cual pertenece al grupo de los modelos de regresión robusta (Vapnik). En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un modelo lineal (Carmona).
 
 Una vez implementados los modelos mencionados en el punto anterior, con el fin de determinar el modelo con mejor capacidad predictiva, se llevó a cabo un análisis comparativo en función de diferentes métricas. 
 
@@ -366,55 +367,49 @@ El trabajo se conforma de 7 capítulos. A continuación se presenta en el capít
 
 \chapter{Datos \label{cap:datos}}
 
-\section{Descripción de los datos utilizados \label{sec:desc}}
+Como fue mencionado en el capítulo \ref{cap:Intro}, el principal objetivo del trabajo es el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular se trabaja con el precio de oferta de los apartamentos a la venta en Montevideo, Uruguay.
+
+A continuación se presenta en la sección \ref{sec:obtencion} la descripción del proceso de obtención de los datos. Luego, en la sección \ref{sec:procesamiento} se realiza un detalle de los principales criterios de depuración utilizados. Posteriormente, en la sección \ref{sec:fuentesext} se describen las principales fuentes externas de información utilizadas. Por último en la sección \ref{sec:varselab} se presentan las variables construídas en base a elaboración propia.
 
 \section{Obtención \label{sec:obtencion}}
 
-Los datos de precio de oferta de los apartamentos a la venta en Montevideo y gran parte de las variables utilizadas para modelizar fueron obtenidas a través de la Interfaz para acceder a la página web (API) de Mercado Libre \url{https://www.mercadolibre.com.uy/}. Para ello, es necesario registrarse en la web \url{https://developers.mercadolibre.com.uy/} y desde allí crear una aplicación. Una vez realizado este paso es posible obtener una clave (token) válida por un determinado lapso de tiempo que mercado libre proporciona para la conexión a su API.
+La base de datos utilizada fue obtenida consultando la API de Mercado Libre. Dónde con el fin de interactuar con la misma, es necesario seguir los siguientes pasos: 1) El usuario se registra en la web \url{https://developers.mercadolibre.com.uy/}; 2) se crea una aplicación con el cual se obtiene un identificador y una contraseña para interactuar con la API y 3) se obtiene una clave (token) para poder realizar la consulta. 
 
-De ésta manera y como fue mencionado, una vez que se obtiene el token es posible consultar la API. Para obtener la información de todos los inmuebles tanto a la venta como para el alquier en Uruguay es necesario realizar la consulta filtrando la categoría MLU1459. Sobre esta categoría existen distintas subcategorías. A los efectos del interés del presente trabajo fue consultada la API filtrando según la categoría MLU1474 que corresponde a todos los apartamentos a la venta en Uruguay.
+En particular, para obtener la información de las publicaciones de apartamentos se realiza una consulta a la API especificando en la url la categoría MLU1474. Adicionalmente, para considerar solamente los apartamentos en el departamento de Montevideo, se especifica en la url el identificador de cada uno de los barrios de Montevideo. En el anexo \ref{barriosA} se presenta la tabla los barrios de Montevideo y su identificador. 
 
-Ahora bien, para obtener la información sobre los apartamentos a la venta en el departamento de Montevideo, se consultó la API filtrando según categoría MLU1474 y además filtrando según el id (identificador) de cada uno de los barrios en Montevideo.
+Luego, con el fin de obtener un mayor número de variables explicativas, se accedió a los atributos específicos de cada publicación. Para ello, es necesario ingresar en la url de cada identificador de cada publicación. 
 
-Esto permitió obtener numerosos datos. No obstante, fue necesario acceder a los atributos específicos de cada publicación (ítem) filtrando específicamente en cada id de cada publicación. Es decir una vez obtenida la información disponible consultando la categoría MLU1474 y filtrando los barrios en Montevideo, se utilizaron los id entonces obtenidos de cada una de las publicaciones y se realizaron consultas por publicación.
+De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre y considerada de interés, de manera automatizada. 
 
-De ésta manera fue posible obtener la información de todos los apartamentos a la venta en Montevideo disponible en la API de mercado libre y considerada de interés, de manera automatizada. El programa tarda aproximadamente 3 hs en obtener la totalidad de los datos, pudiendo variar según la máquina utilizada.
+Se destaca dos aspectos relevantes en cuanto al funcionamiento de la API de Mercado Libre. 
 
-Para mayor información es posible consultar el código del script funcion api barrios. Disponible en el repositotio público en Github en el siguiebte link: \url{https://github.com/alvarovalinio/TFG/tree/main/mercado_libre/API/funciones}.
+En primer lugar, es posible obtener la información de las publicaciones vigentes a la fechas de consulta. Por lo tanto, se realizaron descargas mensuales abarcando el periodo comprendido entre los meses de junio a octubre del año 2021, ambos inclusive. Dado que las publicaciones mantienen los identificadores a través de los meses, para el caso de las publicaciones que se mantienen vigentes más de un mes, se optó por considerar los datos correspondientes al último mes de vigencia. 
 
+En segundo lugar, la API permite extraer hasta un límite determinado de publicaciones por consulta (10.000 consultas a la fecha de realización del trabajo). Debido a que las consultas fueron realizadas de forma iterativa por barrio, fue posible sobrellevar ésta limitante. 
 
 \section{Procesamiento y criterios de limpieza\label{sec:procesamiento}}
 
-La obtención y limpieza de los datos fue una parte muy importante de éste trabajo.
-En lo que respecta a la limpieza, el Anexo X contiene detalles específicos de los criterios de limpieza seleccionados para cada una de las variables en la base de datos.
+El proceso de depuración de los datos fue realizados diferenciando según la naturaleza de las variables.
+ 
+En primer lugar, en lo que respecta a las variables cuantitativas el proceso de depuración se centró en el reconocimiento de valores erróneos, por ejemplo valores que repitan una secuencia de números.
 
-En lo que respecta a las variables cuantitativas como precio de oferta del inmueble (price), áera cubierta (area\_total), áera cubierta (covered\_area), etre otras, un punto importante en la limpieza fue tratar de reconocer valores sin sentido, por ejemplo valores que repitan una secuencia de números como 11111, 5555555. 
+Para ello se construyó una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y se considera como valor faltente, con excepción de la variable Precio de oferta (price) dónde la observación completa es eliminada.
 
-Para ello fue construida una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo. Para el caso de la variable price la observación completa es eliminada, para todos los otros casos se imputa NA. 
+Asimismo se decidió no considerar en el análisis las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma. De ésta manera, no se consideraron en el análisis un X PORCIENTO de las observaciones. AGREGAR CONSULTANDO DATOS CRUDOS.
 
-Asimismo se eliminan las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable price superan el percentil 95\% de la misma.
+A su vez, en lo que respecta a las variables total\_area y covered\_area se decidió asignar como valor faltante a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
 
-En lo que respecta a las variables total\_area y covered\_area se decidió asignar NA a todos los valores superiores a 1000 metros cuadrados, ya que se consideran datos erróneos. 
+En segundo lugar, respecto a las variables cualitativas, existe un conjunto de variables asociadas a la publicación del inmueble que toman valor Si, No, ó faltante. Debido a que en todos los casos se trata de campos no obligatorios para el usuario que realiza la publicación, no es posible diferenciar fehacientemente entre los valores faltantes y el valor No. Por lo tanto se trabajó bajo el supuesto de que los valores faltantes corresponden a el valor No y de ésta forma se realiza la recodificación correspondiente.
 
-Existe un conjunto de variables que toman valor Si, No, NA. Para todas ellas se asume que los NA son No y se realiza la recodificación correspondiente en función de ello.
+En tercer lugar, en cuanto a las variables latitud y longitud que permiten georreferenciar a los inmuebles, se realizó un proceso de depuración atendiendo a la factibilidad del dato. Para ello se consideraron los valores de ambas variables correspondientes a coordenadas geográficas dentro de Montevdeo . De ésta manera, valores de latitud inferiores a -35 y superiores a -34.7, al igual que valores de  longitud inferiores a -56.5 y superiores a -56 se consideraron datos erróneos. Los mismos fueron recodificados imputando los valores correspondientes al centroide del barrio donde se ubica el inmueble.
 
-Valores de latitud y longitud en las georreferencias de los inmuebles que no corresponden a coordenadas geográficas dentro de Montevdeo (latitudes inferiores a -35 y superiores a -34.7 , y longitudes inferiores a -56.5 y superiores a -56 ) son considerados datos erróneos. De esta forma se optó por recodificarlos imputando la coordenada del centroide del barrio donde está ubicado el apartamento. 
+A su vez, se detectó otro tipo de error en las georreferencias siendo este el caso de aquellas georreferencias que no se ubican dentro del polígono del barrio al cual pertenece el inmueble. Para estos casos, se supone que el dato correcto es el nombre del barrio y no la georreferencia específica, y se imputa el valor de latitud y longitud correspondiente al centroide del barrio.
 
-Más aún, se pudo detectar la existencia de georreferencias incorrectas ya que en algunos casos la misma no se encontraba dentro del polígono del barrio dónde se ubica el apartamento. Para estos casos, asumimos que el dato correcto es el nombre del barrio y no la georreferencia específica, y se le imputa el valor de latitud y longitud correspondiente al centroide del barrio.
+Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se procedio de la siguiente forma: 1) se separó el mapa de Montevideo en dos regiones utilizando el corte de la calle Avenida Italia en continuación con la calle 18 de Julio; 2) se computó a qué región resultante de 1) pertenece el inmueble utilizando los valores de latitud y longitud; 3) se procedió de forma análoga a 2) considerando el centroide del barrio al cual pertenece el inmueble, 4) se evalua si 2) y 3) coinciden, en caso que difieran se le imputa al inmueble los valores de latitud y longitud correspondientes al centroide del barrio.  
 
-Dada la complejidad que implica la detección de éstas georreferencias erróneas, mediante un procedimiento de trade-off entre costo  y complejidad, se optó por utilizar el corte avenida italia en continuación con 18 de Julio para detectar éstos datos erróneos. En particular, se comparó la ubicación de la georreferencia respecto a la calle avenida italia en continuación con la calle 18 de julio (norte o sur) y la del centroide del barrrio, en caso que no coincidan, se imputó la georreferencia del baricentro de dicho barrio.
+En cuarto lugar, se decidió dejar fuera del análisis las variables con gran porcentaje de valores faltantes superior al 10\%. En el anexo \ref{nasA} se presenta la tabla con la proporción de valores faltantes para cada una de las variables.
 
-Los anterior fue realizado utilizando las variables geoespaciales construidas, que se detallan en la sección \ref{varselab}.
-
-Asimismo, se decidió dejar fuera del análisis algunas de las variables con gran porcentaje de NA. Entre ellas cantidad de habitaciones (rooms), garages (parking\_lots), unidad (unit\_floors), piso (floor), condición nuevo o usado (item\_condition), antiguedad de la propiedad (property age), entre otras.
-
-En lo que respecta al tipo de cambio, los valores del precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio de fecha de bajada de los datos. La obtención del valor del tipo de cambio se realiza de manera automatizada haciendo web scrapping sobre la págine del \textit{Instituto Nacional de Estadistica} (INE).
-
-De manera similar, los gastos comunes expresados en dólares estadounidenses fueron convertidos a pesos uruguayos.
-
-Por mayor información respecto a los criterios de limpieza seleccionados para cada una de las variables disponibles en la base de datos se recomienda dirigirse al Anexo X.
-
-En el anexo \ref{varsA} se encuentra el detalle de las variables disponibles en la base de datos construida.
+Por último, en lo que respecta al tipo de cambio, todos los valores de la variable price expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio a la fecha de obtención de los datos. Sobre éste punto, se destaca que la obtención del valor del tipo de cambio se realiza de manera automatizada realizando un procedimiento de \textit{Web Scrapping} sobre la página web oficial del \textit{Instituto Nacional de Estadistica} (INE).
 
 \section{Fuentes externas de información\label{sec:fuentesext}}
 
@@ -446,7 +441,7 @@ Por otra parte, se utilizó también información de la encuesta contínua de ho
 
 \section{Variables construidas \label{sec:varselab}}
 
-Como se menciona en la sección \ref{fuentesext}, tener la georreferencia específica en la base de datos obtenidamotivó la elaboración de variables geoespaciales. En particular, las variables construídas fueron: ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio \textit{(zona\_avd)}, distancia a la Rambla Este de Montevideo \textit{(dist\_rambla)}, y distancia al shopping más cercano \textit{(dist\_shop)}.
+Como se menciona en la sección \ref{sec:fuentesext}, tener la georreferencia específica en la base de datos obtenidamotivó la elaboración de variables geoespaciales. En particular, las variables construídas fueron: ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio \textit{(zona\_avd)}, distancia a la Rambla Este de Montevideo \textit{(dist\_rambla)}, y distancia al shopping más cercano \textit{(dist\_shop)}.
 
 La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo \ref{harvesineA} se especifican los detalles sobre el cálculo. 
 
@@ -460,7 +455,7 @@ Por último, la variable \textit{(dist\_rambla)} fue construida utilizando la di
 
 En la sección \ref{arbollatlonA} el gráfico del árbol ajustado.
 
-Cabe destacar que tanto los mapas de líneas de las variables \textit{(zona\_avd)} y \textit{(dist\_rambla)} así como el mapa de puntos de la variable \textit{(dist\_shop)} fueron construidos en base a elaboración propia, según detallado en la sección \ref{fuentesext}. 
+Cabe destacar que tanto los mapas de líneas de las variables \textit{(zona\_avd)} y \textit{(dist\_rambla)} así como el mapa de puntos de la variable \textit{(dist\_shop)} fueron construidos en base a elaboración propia, según detallado en la sección \ref{sec:fuentesext}. 
 
 A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con las variables construidas.
 
@@ -573,7 +568,7 @@ ggplot(mapa_barrio)+
 
 \chapter{Antecedentes \label{cap:Antec}}
 
-Como fue mencionado en la sección \ref{Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
+Como fue mencionado en la sección \ref{cap:Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
 
 En éste sentido, existen diversos artículos y documentos de trabajo que hablan sobre el tema y que, en particular, trabajan con el precio de los inmuebles en el mercado Uruguayo.
 
@@ -999,7 +994,7 @@ Luego, se resta uns constante lo cual centra el gráfico de tal manera que el ef
 
 Ahora bien, a pesar de que no todos los modelos trabajan con gradientes, esto no es un problema dado que la metodología de computación de ALE plots utiliza intervalos en lugar de gradientes.
 
-\subsubsection{Estimación \label{subsubsec:est}}
+\subsubsection{Estimación \label{est}}
 
 ALE plots, al igual que PDP y M-plots, puede ser estimado para una o dos variables de interés. En éste apartado se presenta el caso de una sola variable.
 
@@ -1294,7 +1289,7 @@ Por último, en forma de resumen, se presenta un análisis comparativo de los di
 
 Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección marco metodológico.
 
-\section{Modelo lineal \label{sec:ml}}
+\section{Modelo lineal \label{sec:resml}}
 
 A continuación se presentan los principales resultados del modelo de regresión lineal, con la variable price como variable explicada.
 
@@ -1355,7 +1350,7 @@ grid.arrange(lm1, lm2, ncol = 2)
 \captionof{figure}{Residuos del modelo líneal. En el panel izquiero se encuentra el gráfico de dispersión mientras que en el pane izquierdo se encuentra la densidad estimada.}
 \end{figure}
 
-Como fue mencionado en la sección \ref{mlMT} en primer lugar se realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo. El p-valor de la prueba para los residuos del modelo lineal es menor a 0.5 con lo cual se rechaza la hipótesis nula de normalidad.
+Como fue mencionado en la sección \ref{subsec:mlMT} en primer lugar se realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo. El p-valor de la prueba para los residuos del modelo lineal es menor a 0.5 con lo cual se rechaza la hipótesis nula de normalidad.
 
 Por otro lado, en lo que respecta a la prueba de hetoroscedasticidad de Breuch-Pagan también se rechaza la hipótes nula de homoscedasticidad.
 
@@ -1363,7 +1358,7 @@ Estos resultados se mantienen incambiados según se utilice imputación de valor
 
 En el anexo \ref{mlA} se encuentran las tablas con los resultados de las pruebas aplicadas.
 
-\section{Árbol de regresión \label{sec:arbol}}
+\section{Árbol de regresión \label{sec:resarbol}}
 
 A continuación se presentan los resultados del árbol de regresión ajustado sobre la variable price utilizando las metodologías de imputación mencionadas en la sección marco metodológico. 
 
@@ -1437,7 +1432,7 @@ options(knitr.table.format = "latex")
 kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
-\section{Random Forest \label{sec:randomforest}}
+\section{Random Forest \label{sec:resRF}}
 
 En éste sección se presentan los resultados del modelo de Random Forest ajustado. Como fue mencionado anteriormente, en primer lugar se realizó el ajuste sobre los datos dónde las variables cuantitativas con proporción de datos faltantes inferior a 0.1 fueron estimadas por la media. Posteriormente, se ajustó el modelo utilizando un procesi de imputación mediante Random Forest. 
 
@@ -1522,7 +1517,7 @@ grid.arrange(p1, p2, ncol = 2)
 \end{figure}
 
 
-\section{Boosting \label{sec:boosting}}
+\section{Boosting \label{sec:resboosting}}
 
 <<>>=
 predictions_boost <- gbm::predict.gbm(boosting_train, test)
@@ -1555,7 +1550,7 @@ options(knitr.table.format = "latex")
 kable(res_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F,  format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 
-\section{Support vector regression \label{sec:svr}}
+\section{Support vector regression \label{sec:ressvr}}
 
 <<>>=
 # RMSE test
@@ -1700,6 +1695,28 @@ options(knitr.table.format = "latex")
 @
 
 
+<<results=tex>>=
+kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, align = "c", longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
+      pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
+      pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
+@
+
+
+\section{Barrios de Montevideo \label{barriosA}}
+
+
+<<>>=
+barrios <- readr::read_csv(here('mercado_libre/Api/Datos', 'mapeo_barrios.csv'))
+                          
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+
+<<results=tex>>=
+kable(barrios, caption = 'Barrios de Montevideo. En la columna identificador se especifica el código de cada barrio en la API de Mercado libre. En la columna Nombre ML se especifica el nombre asociado a cada identificador en MErcado Libre. En la columna Nombre INE se especifica el nombre INE asociado a cada nombre en Mercado Libre.', booktabs = T, align = "c", col.names = c('Identificador', 'Nombre ML', 'Nombre INE'), longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) 
+@
+
 \section{Fórmula de Haversine para el cálculo de distancias \label{harvesineA}}
 
 La fórmula de Haversine tiene la siguiente expresión:
@@ -1710,14 +1727,9 @@ dónde d es la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1
 
 \section{Proporción de valores faltantes por variable \label{nasA}} 
 
-<<results=tex>>=
-kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, align = "c", longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
-      pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
-      pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
-@
+pegar
 
-
-\section{Arbol de regresión de la variable precio en funcion de latitud y longitud \label{ane:arbollatlonA}}
+\section{Arbol de regresión de la variable precio en funcion de latitud y longitud \label{arbollatlonA}}
 
 \begin{figure}[h!]
 \centering
@@ -1728,7 +1740,7 @@ rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
 \end{figure}
 
 
-\section{Proporción de valores faltantes por variable\label{ane:naA}}
+\section{Proporción de valores faltantes por variable\label{naA}}
 
 <<>>=
 p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),3)) %>% data.frame() %>% 
@@ -1744,7 +1756,7 @@ kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por
 
 \section{Modelo lineal \label{mlA}} 
 
-A continuación se presentan los resultados de las pruebas de normalidad y de homocedasticidad mencionadas en la sección \ref{ml}. Esto considerando ambos métodos de imputación de valores faltantes.
+A continuación se presentan los resultados de las pruebas de normalidad y de homocedasticidad mencionadas en la sección \ref{sec:resml}. Esto considerando ambos métodos de imputación de valores faltantes.
 
 <<>>=
 bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
@@ -1810,7 +1822,7 @@ rpart.plot(arbol.prune.mr,roundint = T,digits = -3)
 \captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre,  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt_mr}. El método de imputación sobre valores faltantes es en éste caso imputación por Random Forest. El árbol se conforma por \Sexpr{npart_mr+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart_mr} particiones.}
 \end{figure}
 
-A continuación, a modo de resumen se presenta la tabla de los modelos mencionados en la sección \ref{arbol}. La misma contiene diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, y el tamaño del árbol que dicho valor del parámetro implica.
+A continuación, a modo de resumen se presenta la tabla de los modelos mencionados en la sección \ref{sec:resarbol}. La misma contiene diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, y el tamaño del árbol que dicho valor del parámetro implica.
 
 Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro
 de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.
@@ -1836,7 +1848,7 @@ kable(cp_error_mr %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indic
 @
 
 
-\section{Hyperparameter Tuning \label{ane:hyptA}}
+\section{Hyperparameter Tuning \label{hyptA}}
 
 <<>>=
 #### Caret
