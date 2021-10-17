@@ -89,7 +89,6 @@ library(GGally)
 library(latex2exp)
 library(gbm)
 library(kernlab)
-library(tinytex)
 @
 
 
@@ -345,7 +344,8 @@ Trabajo final de grado
 \pagenumbering{arabic}
 
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Introducción \label{cap:Intro}}
+\chapter{Introducción}
+\label{cap:Intro}
 
 El presente trabajo tiene como principal objetivo el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular, se trabaja con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay, disponibles en mercado libre.
 
@@ -413,51 +413,41 @@ Por último, en lo que respecta al tipo de cambio, todos los valores de la varia
 
 \section{Fuentes externas de información\label{sec:fuentesext}}
 
-La base de datos obtenida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento lo cuál implica tener la georreferencia específica. Esto motivó la elaboración de variables geoespaciales.
+En la medida que la base de datos construida contiene información sobre la latitud y longitud dónde está ubicado cada apartamento, esto motivó la elaboración de variables geoespaciales.
 
-La herramienta utilizada para construir los archivos .kml que permite obtener georreferencias y construir mapas  fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (Wikipedia, \url{https://es.wikipedia.org/wiki/Google_My_Maps}).
+La herramienta utilizada para construir mapas fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por Google en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre Google Maps. (\url{https://sites.google.com/mrpiercey.com/resources/geo/my-maps} - CITAR).
 
-Una vez obtenidos los archivos .kml los mismos son transformados a archivos ESRI Shapefile utilizando QGis la cual es un Sistema de Información Geográfica (SIG).
+Una vez que se construyen los mapas desde dicha plataforma, se exportan los archivos generados. Luego, éstos son transformados a archivos ESRI Shapefile utilizando QGis el cual es un Sistema de Información Geográfica (SIG).
 
-En lo que respecta a la geometría del departamento de Montevideo fue obtenida a partir de los archivos shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
-
-A continuación se detallan los componentes de un archivo de tipo ESRI Shapefile.
-
-\subsection{Formato ESRI Shapefile \label{subsec:shapefile}}
-
-El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato de archivo informático propietario de datos espaciales desarrollado por la compañía ESRI, quien crea y comercializa software para Sistemas de Información Geográfica como Arc Info o ArcGIS. Originalmente se creó para la utilización con su producto ArcView GIS, pero actualmente se ha convertido en formato estándar de facto para el intercambio de información geográfica entre Sistemas de Información Geográfica por la importancia que los productos ESRI tienen en el mercado SIG y por estar muy bien documentado.
-
-Un shapefile es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. No obstante carece de capacidad para almacenar información topológica. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
+El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
       
 \begin{itemize}       
 \item  shp es el archivo que almacena las entidades geométricas de los objetos.
 \item  shx es el archivo que almacena el índice de las entidades geométricas.
 \item  dbf es la base de datos, en formato dBASE, donde se almacena la información de los atributos de los objetos.
-\end{itemize}       
+\end{itemize}  
 
-(Wikipedia, https://es.wikipedia.org/wiki/Shapefile)
+(citar esri paper 1998)
+
+En lo que respecta a la geometría del departamento de Montevideo la misma fue obtenida a partir de los archivos Shapefile disponibles en la página web del Instituto Nacional de Estadística (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
 Por otra parte, se utilizó también información de la encuesta contínua de hogares 2020 para la construcción de variables que consideren el nivel de ingreso por barrio.
 
 \section{Variables construidas \label{sec:varselab}}
 
-Como se menciona en la sección \ref{sec:fuentesext}, tener la georreferencia específica en la base de datos obtenidamotivó la elaboración de variables geoespaciales. En particular, las variables construídas fueron: ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio \textit{(zona\_avd)}, distancia a la Rambla Este de Montevideo \textit{(dist\_rambla)}, y distancia al shopping más cercano \textit{(dist\_shop)}.
+Como se menciona en la sección \ref{sec:fuentesext}, tener la georreferencia específica en la base de datos motivó la elaboración de variables geoespaciales. En particular, las variables construídas fueron: ubicación respecto a la calle avenida italia en continuación con la calle 18 de Julio \textit{(zona\_avd)}, distancia a la Rambla Este de Montevideo \textit{(dist\_rambla)}, y distancia al shopping más cercano \textit{(dist\_shop)}.
 
 La metodología utilizada para el cálculo de las distancias fue a través de la fórmula del Haversine la cual permite el cómputo de la distancia mínima entre dos puntos que se encuentran en un cuerpo esférico usando latitud y longitud. Para ello en particular se trabajó con la función \textit{distm} del paquete \textit{geosphere}. En el anexo \ref{harvesineA} se especifican los detalles sobre el cálculo. 
 
-En lo que respecta a la variable \textit{(zona\_avd)}, la misma toma valor Norte o Sur según el apartamento se encuentre al Norte o al Sur de la calle avenida italia en continuación con la calle 18 de Julio. Para ello, se tomó el punto más cercano a la ubicación del apartamento en el mapa de líneas que compone avenida italia en continuación con 18 de Julio. En particular, se toma la diferencia mínima en términos de longitud entre el apartamento y los puntos que componen el mapa. Una vez obtenido el mínimo, se comparan las latitudes. En caso que la latitud del apartamento sea mayor que la del punto más cercano seleccionado, se asigna Sur, y en otro caso se asigna Norte.
+En lo que respecta a la variable \textit{(zona\_avd)}, la misma toma valor Norte o Sur según el apartamento se encuentre al Norte o al Sur del corte de la calle Avenida Italia en continuación con la calle 18 de Julio. Para ello, se tomó el punto más cercano a la ubicación del apartamento en el mapa de líneas que compone la calle Avenida Italia en continuación con la calle 18 de Julio. En particular, se toma la diferencia mínima en términos de longitud entre el apartamento y los puntos que componen el mapa. Una vez obtenido el mínimo, se comparan las latitudes. En caso que la latitud del apartamento sea mayor que la del punto más cercano seleccionado, se asigna Sur, y en otro caso se asigna Norte.
 
-Por otra parte, la variable \textit{(dist\_shop)} fue contruida calculando la distancia en metros entre el apartamento y el shopping más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los shoppings ubicados en Montevideo.
+Por otra parte, la variable \textit{(dist\_shop)} fue contruida calculando la distancia en metros entre el apartamento y el centro comercial más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los centros comerciales ubicados en Montevideo ( Montevideo shopping center, Punta Carretas shopping, Tres cruces shopping, Nuevocentro shopping y Portones shopping).
 
-Los shoppings georreferenciados son Montevideo shopping center, Punta Carretas shopping, Tres cruces shopping, Nuevocentro shopping y Portones shopping.
+Por último, la variable \textit{(dist\_rambla)} fue construida utilizando la distancia en metros entre el apartamento y la rambla Este de Montevideo. Ésta variable fue construida a través de los resultados observados mediante el ajuste de un árbol de regresión de la variable precio en función de la latitud y la longitud. En el mismo se observó que los apartamentos con predicciones superiores toman valores de latitud entre -34.92 y -34.89, y valores de longitud mayores o iguales a -56.17. En la sección \ref{arbollatlonA} el gráfico del árbol ajustado
 
-Por último, la variable \textit{(dist\_rambla)} fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Con el fin de seleccionar la zona de la rambla que permita diferenciar el precio de los apartamentos se implementó un análisis de árbol de regresión. En función de los resultados del mismo, se definió de manera cualitativa la zona a incluir.
+Se destaca que los mapas utilizados para construir las variables \textit{(zona\_avd)}, \textit{(dist\_rambla)} y \textit{(dist\_shop)} fueron obtenidos en base a elaboración propia a partir de Google My Maps, según detallado en la sección \ref{sec:fuentesext}. 
 
-En la sección \ref{arbollatlonA} el gráfico del árbol ajustado.
-
-Cabe destacar que tanto los mapas de líneas de las variables \textit{(zona\_avd)} y \textit{(dist\_rambla)} así como el mapa de puntos de la variable \textit{(dist\_shop)} fueron construidos en base a elaboración propia, según detallado en la sección \ref{sec:fuentesext}. 
-
-A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con las variables construidas.
+En la figura \ref{map1} se presenta el mapa del departamento de Montevideo, Uruguay, con las variables construidas.
 
 \begin{figure}
 \centering
@@ -465,7 +455,7 @@ A continuación se presenta el mapa del departamento de Montevideo, Uruguay, con
 ggplot(mapa_barrio)+
       geom_sf(aes(fill = zona_avditalia )) +
       geom_sf(data = mall) +
-      geom_sf(data = avd_italia, color = 'red', size = 0.5) +
+      geom_sf(data = avd_italia, color = 'blue', size = 0.5) +
       geom_sf(data = rambla, color = 'yellow2', size = 0.5) +
       theme(axis.text.x = element_text(angle = 45),
             text = element_text(),
@@ -485,8 +475,9 @@ ggplot(mapa_barrio)+
       ylab('Latitud') +
       scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 @
-\captionof{figure}{Mapa de Montevideo, Uruguay con la georreferencia de los shoppings, calle avenida italia en continuación con la calle avenida 18 de julio y rambla éste de Montevideo . La línea roja indica a la calle avenida italia en continuación con la calle avenida 18 de julio mientras que la línea amarilla a la rambla éste de Montevideo.}
+\captionof{figure}{Mapa de Montevideo, Uruguay con la georreferencia de los shoppings, calle avenida italia en continuación con la calle avenida 18 de julio y rambla Este de Montevideo . La línea azul indica a la calle avenida italia en continuación con la calle avenida 18 de julio mientras que la línea amarilla a la rambla éste de Montevideo.}
 \end{figure}
+\label{map1}
 
 <<echo=FALSE, eval=FALSE>>=
 ggplot(mapa_barrio)+
@@ -511,9 +502,9 @@ ggplot(mapa_barrio)+
       scale_fill_manual(name = 'Zona avenida italia \n 18 de julio', values = c('orangered2', 'springgreen4'))
 @
  
-Por otra parte, la variable ingresomedio\_ECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020. En particular se utilizó la variable \textit{HT11}: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
+Por otra parte, la variable ingresomedio\_ECH fue construida utilizando la información de la encuesta contínua de hogares (ECH) del año 2020 disponible en \url{https://www.ine.gub.uy/}. En particular se utilizó la variable \textit{HT11}: Ingreso total del hogar con valor locativo sin servicio doméstico (en pesos uruguayos). Se calculó el ingreso medio por barrio de los hogares de Montevideo y luego se asignó a cada observación, el nivel de ingreso medio que le corresponda según el barrio dónde se encuentre el apartamento.
 
-A continuación se presenta el mapa del ingreso promedio de los hogares por barrio de Montevideo.
+En la figura \re{map2} se presenta el mapa del ingreso promedio de los hogares por barrio de Montevideo.
 
 <<>>=
 
@@ -538,7 +529,10 @@ f$NOMBBARR <- trimws(f$NOMBBARR, which = "right", whitespace = "[ \t\r\n]")
 
 f$NOMBBARR <- recode(as.factor(f$NOMBBARR), 
                  'Malvín' = 'Malvin',
-                  'Malvín Norte' = 'Malvin Norte')
+                  'Malvín Norte' = 'Malvin Norte',
+                 'Unión' = 'Union',
+                 'Maroñas, Parque Guaraní' = 'Maroñas, Parque Guarani',
+                 'Villa García, Manga Rur.' = 'Villa Garcia, Manga Rur.')
 
 mapa_barrio <- mapa_barrio %>% left_join(f, by = 'NOMBBARR')
 @
@@ -560,10 +554,11 @@ ggplot(mapa_barrio)+
             legend.text = element_text(angle = 0, size = 7),
             legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
       xlab('Longitud') + ylab('Latitud') +
-      scale_fill_gradient(low = 'firebrick', high = 'darkgreen', name = "Ingreso promedio \n por mil ECH",labels = comma)
+      scale_fill_gradient(low = 'red', high = 'green', name = "Ingreso promedio \n por mil ECH",labels = comma) 
 @
 \captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020.}
 \end{figure}
+\label{map2}
 
 
 \chapter{Antecedentes \label{cap:Antec}}
@@ -1733,7 +1728,7 @@ pegar
 
 \begin{figure}[h!]
 \centering
-<<>>=
+<<fig = TRUE>>=
 rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
 @
 \captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre, considerando como variables de entrada latitud y longitud del apartamento. A dicho árbol se le realizó el correspondiente proceso de poda, el cual queda conformado por 7 nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. Donde a mayor intensidad del color azul, mayor la predicción en cuanto al precio de oferta del apartamento.}
