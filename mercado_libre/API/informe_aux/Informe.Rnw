@@ -14,34 +14,23 @@
 %\usepackage[all,2cell,dvips]{xy}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{caption}
 \usepackage[spanish,es-tabla]{babel}
 %\usepackage{parskip}
 %\usepackage{multirow}
 %\usepackage{multicol}
 \usepackage{verbatim}
-\usepackage{float}
-\floatplacement{figure}{H}
 \usepackage{hyperref}
 %\usepackage{fancyvrb}
 \usepackage[authoryear]{natbib}
-\usepackage{booktabs}
-\usepackage{caption}
+\captionsetup[table]{position=bottom} 
+
 \fancyhf{} 
 \fancyhead[LE]{\leftmark} 
 \fancyhead[RO]{\nouppercase{\rightmark}} 
 %\fancyfoot[LE,RO]{\thepage} 
 \rfoot{\thepage} 
 \pagestyle{fancy} 
-\usepackage{caption}
-\captionsetup[table]{position=bottom} 
-\usepackage[backend= biber]{biblatex}
-\bibliography{bibliografia}
-% or \addbibresource{BIBLIOGRAPHY_24th_March_2019.bib}
-
-<<biber, eval= TRUE, include= FALSE, cache= FALSE, echo= FALSE>>=
-library(knitr)
-system (paste ("biber", sub ("\\.Rnw$", "", current_input())))
-@               
 
 \topmargin 2mm
 \oddsidemargin 2mm
@@ -53,11 +42,12 @@ system (paste ("biber", sub ("\\.Rnw$", "", current_input())))
 \linespread{1.6}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE,cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, fig.align = "c", caption = TRUE, comment = FALSE, fig.pos = "h"}
+\SweaveOpts{concordance=TRUE, echo = FALSE}
 
 <<echo=FALSE>>=
-options(scipen = 999, cache = TRUE, fig.pos = "h")  
+options(scipen = 999)  
 @
+
 
 <<librerias>>=
 library(knitr)
@@ -284,6 +274,7 @@ mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR')
 
 \pagenumbering{roman}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%% CARATULA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \thispagestyle{empty}
 
@@ -344,8 +335,8 @@ Trabajo final de grado
 \pagenumbering{arabic}
 
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Introducción}
-\label{cap:Intro}
+\setcounter{chapter}
+\chapter{Introducción \label{cap:Intro}}
 
 El presente trabajo tiene como principal objetivo el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular, se trabaja con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay, disponibles en mercado libre.
 
@@ -353,7 +344,7 @@ Para ello, se plantearon 3 objetivos específicos, siendo estos: 1) obtención y
 
 En lo que respecta al primer objetivo, gran parte de los datos fueron obtenidos a través de la Interfaz de programación de aplicaciones (API) de Mercado Libre. Esto implicó la creación de un programa que permita una descarga automatizada de la información disponible. Asimismo, se trabajó con diferentes fuentes de información externas. En particular con la Encuesta Contínua de Hogares (ECH) y datos obtenidos de la plataforma Google My Maps. De esta manera, fueron construídas variables adicionales que se consideraron de interés para el problema planteado.
 
-En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de técnicas aplicadas a Arboles de decisión, en particular Random Forest y Boosting (\cite{james2013introduction}). En segundo lugar, se trabajó con la técnica Support Vector Regression la cual pertenece al grupo de los modelos de regresión robusta (Vapnik). En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un modelo lineal (Carmona).
+En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de técnicas aplicadas a Arboles de decisión, en particular Random Forest y Boosting (james2013introduction). En segundo lugar, se trabajó con la técnica Support Vector Regression la cual pertenece al grupo de los modelos de regresión robusta (Vapnik). En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un modelo lineal (Carmona).
 
 Una vez implementados los modelos mencionados en el punto anterior, con el fin de determinar el modelo con mejor capacidad predictiva, se llevó a cabo un análisis comparativo en función de diferentes métricas. 
 
@@ -560,10 +551,9 @@ ggplot(mapa_barrio)+
 \end{figure}
 \label{map2}
 
-
 \chapter{Antecedentes \label{cap:Antec}}
 
-Como fue mencionado en la sección \ref{cap:Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
+Como fue mencionado en el capítulo \ref{cap:Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
 
 En éste sentido, existen diversos artículos y documentos de trabajo que hablan sobre el tema y que, en particular, trabajan con el precio de los inmuebles en el mercado Uruguayo.
 
@@ -1009,9 +999,7 @@ Esto se realiza para poder tener una medida del efecto de la variable de interé
 
 En lo que respecta a los intervalos, los mismos son definidos utilizando los cuantiles de la distribución de la variable de interés, lo cual asegura que cada intervalo va a contener el mismo número de observaciones. La desventaja principal de utilizar los cuantiles para definir los intervalos es que los mismos pueden tener longitud muy diferente, haciendo que el gráfico sea muy irregular.
 
-
-
-\subsection{Tratamiento de valores faltantes \label{subsec:nas}}
+\section{Tratamiento de valores faltantes \label{sec:nas}}
 
 La base de datos construida contiene variables con diferentes grado de datos faltantes. 
 
@@ -1029,9 +1017,13 @@ Como fue mencionado anteriormente el criterio genérico para seleccionar las var
 
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
-En esta sección se presentan las principales características de los datos con los cuales se trabajó. La base de datos se conforma por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables de las cuales, una vez realizado el proceso de tratamiento de datos faltantes se cuenta con un total de 24 variables en el caso de imputación por la media, y 25 en el caso de imputación por Random Forest. En la tabla bla del  \ref{nasA} bla se detalla la proporción de observaciones con datos faltantes por variables.|
+En éste capítulo se presenta los principales resultados obtenidos a la hora de realizar el análisis exploratorio de los datos, luego de realizar el proceso de depuración de los mismos detallado en la sección \ref{procesamiento}. De esta forma, la base de datos está conformada por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables. 
 
-En primer lugar se procedió a analizar el comportamiento de la variable de salida (precio). En forma de resumen se presenta a continuación la tabla con las principales medidas de resumen: 
+Por otra parte, una vez realizado el proceso de tratamiento de datos faltantes según se especifica en la sección \ref{nas} se mantiene un total de \Sexpr{paste(dim(aptos_sin_na)[2])} variables en el caso de imputación de valores faltantes por la media, y \Sexpr{paste(dim(aptos_mr)[2])} variables en el caso de imputación de valores faltantes por Random Forest. 
+
+En la tabla AGREGAR REF A TABLA disponible en la sección del anexo \ref{varsA} se detalla el listado de variables utilizadas para la implementación de los diferentes modelos en etapas posteriores del análisis. 
+
+Una vez obtenida la base de datos luego de realizar los procesos mencionados anteriormente, se procedió a analizar el comportamiento de la variable de salida Precio de oferta en dólares estadounidenses. A continuación se presenta en la tabla REF las principales medidas de resumen: 
 
 <<>>=
 sum.table <- aptos %>% summarise(Min = round(min(price),0),
@@ -1040,8 +1032,8 @@ sum.table <- aptos %>% summarise(Min = round(min(price),0),
                     Media = round(mean(price),0),
                     Q3 = round(quantile(price,.75),0),
                     Max = round(max(price),0),
-                    Desvio = round(sd(price),0)
-                    )
+                    Desvio = round(sd(price),0),
+                    CV = round(Desvio/Media,2))
 
 library(knitr)
 options(knitr.table.format = "latex")
@@ -1049,10 +1041,29 @@ options(knitr.table.format = "latex")
 
 
 <<results=tex>>=
-kable(sum.table, caption = 'Medidas de resumen de la variable de salida price', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+kable(sum.table, caption = 'Medidas de resumen de la variable precio de oferta en dólares estadounidenses. En la medida que la media es superior a la mediana, se observa una asimetría hacia la derecha. Por otro lado, se observa un desvío de 76.788 dólares estadounidenses y un coeficiente de variación de 0.47.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
 
-Luego, se presenta gráficamente la distribución de la variable mediante un histograma.
+<<eval = FALSE>>=
+aptos %>%
+      ggplot(aes(x=price)) + 
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 10),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 10),
+             axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            legend.position = 'none') +
+      ylab('') +
+      scale_x_continuous(labels = comma) +
+      geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
+                 colour = 'red', linetype = 'dashed') 
+@
+
+En la figura \ref{fig1} se presenta gráficamente la distribución de la variable mediante un gráfico de histograma.
 
 \begin{figure}[h!]
 \centering
@@ -1065,15 +1076,16 @@ aptos %>% ggplot(aes(x=price)) +
             axis.title.x = element_text(face = 'bold', size = 12),
             axis.text.x = element_text(face = 'bold', size = 12),
             axis.text.y = element_text(size = 12)) +
-      labs(x = 'Precio de oferta') +
+      labs(x = 'Precio de oferta en dolares estadounidenses') +
       scale_fill_manual(values = c('navyblue')) +
       geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
                  colour = 'firebrick') +
       annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'firebrick') +
       scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
+\captionof{figure}{Histograma del precio de oferta en dolares estadounidenses (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
 \end{figure}
+\label{fig1}
 
 En lo que respecta a las variables de entrada, en primer lugar se presenta análisis de las variables cualítativas que se consideraron más relevantes. A continuación se presentan los gráficos de barras con el fin de observar la distribución de los niveles en los datos.
 
@@ -1274,6 +1286,7 @@ ggpairs(aptos, c(3,14), mapping = ggplot2::aes(color = zona_avditalia, alpha = 0
 @
 \captionof{figure}{Gráficos de price según \text{covered\_area}. En el panel superior izquierdo se encuentra la densidad de price segú \text{convered\_area}. En el panel superior derecho se encuentra la correlación total entre price y \text{covered\_area} y la correlación por grupos según \text{zona\_avditalia}. En el panel inferior izquierdo se encuentra el gráfico de dispersión de price según \text{covered\_area} por \text{zona\_avditalia}, mientras que en el panel inferior derecho se encuentra la densidad de \text{covered\_area} según \text{zona\_avditalia}.}
 \end{figure}
+
 
 \chapter{Resultados \label{cap:Resultados}}
 
@@ -1661,13 +1674,12 @@ kable(best_tunes_boost, caption = 'Mejores modelos Boosting', booktabs = T, alig
 
 A continuación se presenta la tabla con los errores cuadráticos medios de los modelos implementados.
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% BIBLIOGRAFíA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\bibliographystyle{apa}
-\bibliography{TFGbiblo}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%% ANEXO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setcounter{chapter}
+\setcounter{section}
+\setcounter{subsection}
+\setcounter{subsubsection}
 
 \begin{appendix}
 
@@ -1676,7 +1688,7 @@ A continuación se presenta la tabla con los errores cuadráticos medios de los 
 \section{Variables \label{varsA}} 
 
 <<>>=
-vars <- readxl::read_excel(here('mercado_libre/Api', 'criterios_de_limpieza.xlsx'),
+vars <- readxl::read_excel(here('mercado_libre/API/datos', 'criterios_de_limpieza.xlsx'),
                                 sheet = 'anexo_vars') %>% arrange(Fuente)
 n <- vars %>% group_by(Fuente) %>% summarise(conteo = n())
 
@@ -1691,9 +1703,51 @@ options(knitr.table.format = "latex")
 
 
 <<results=tex>>=
-kable(vars %>% select(-Fuente), caption = 'Descripción de las variables utilizadas', booktabs = T, align = "c", longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
+kable(vars %>% select(-Fuente), caption = 'Descripción de las variables previo al proceso de depuración', booktabs = T, align = "c", longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) %>% row_spec(0,bold=TRUE) %>%
       pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
       pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
+@
+
+
+<<>>=
+########## Obtenemos variables que usamos
+  
+  
+aux_vars <- vars %>% filter(Nombre %in% names(aptos_mr))
+  
+aux_vars <- aux_vars %>% mutate(`Imputación` = case_when(
+    Nombre == 'no_covered_area' ~ 'Media - Random Forest',
+    Nombre == 'total_area' ~ 'Media - Random Forest',
+    Nombre == 'covered_area' ~ 'Media - Random Forest',
+    Nombre == 'item_condition' ~ 'Random Forest',
+    TRUE ~ 'No Requiere'
+  ))
+
+  
+  # Tipo de datos
+  
+t_data <- sapply(aptos_mr,class) %>% data.frame() %>% rename(tipo = ".") 
+      
+t_data <- t_data %>% mutate(Nombre = rownames(t_data))
+  
+aux_vars <- aux_vars %>% select(Nombre,`Descripción`,`Imputación`) %>% 
+    full_join(t_data,by="Nombre") %>% mutate(Naturaleza = ifelse(tipo =="factor",
+                                                           "cualitativa",
+                                                           "cuantitativa")) %>% 
+relocate(Nombre,`Descripción`,Naturaleza,`Imputación`)
+
+ aux_vars$`Descripción`[which(aux_vars$Nombre=="price")] <- "Precio de oferta en dolares estadounidenses"
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+
+<<results=tex>>=
+kable(aux_vars, caption = 'Variables utilizadas en los diferentes modelos implementados:nombre en la base de datos, descripción, naturaleza y método de imputación de valores faltantes utilizado.', booktabs = T, align = "c", 
+        longtable = TRUE, format.args = list(big.mark = ".")) %>% 
+    kable_styling(latex_options = c("hold_position"), font_size = 10) %>% 
+    row_spec(0,bold=TRUE)
 @
 
 
@@ -1899,8 +1953,8 @@ kable(Boosting_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c"
 
 \end{appendix}
 
-\chapter{Bibliografía \label{cap:bib}}
-
-\printbibliography   
-
 \end{document}
+
+
+
+
