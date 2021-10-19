@@ -336,6 +336,7 @@ Trabajo final de grado
 
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setcounter{chapter}
+
 \chapter{Introducción \label{cap:Intro}}
 
 El presente trabajo tiene como principal objetivo el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular, se trabaja con el precio de oferta de los apartamentos a la venta en el departamento de Montevideo, Uruguay, disponibles en mercado libre.
@@ -1079,28 +1080,28 @@ aptos %>% ggplot(aes(x=price)) +
       labs(x = 'Precio de oferta en dolares estadounidenses') +
       scale_fill_manual(values = c('navyblue')) +
       geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
-                 colour = 'firebrick') +
-      annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'firebrick') +
+                 colour = 'red', linetype = 'dashed') +
+      annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'red') +
       scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta en dolares estadounidenses (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}}
+\captionof{figure}{Histograma del precio de oferta en dolares estadounidenses (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}. Como fue comentado en la tabla REFERENCIAR TABLA se observa una asímetría a la derecha.}
 \end{figure}
 \label{fig1}
 
-En lo que respecta a las variables de entrada, en primer lugar se presenta análisis de las variables cualítativas que se consideraron más relevantes. A continuación se presentan los gráficos de barras con el fin de observar la distribución de los niveles en los datos.
+En lo que respecta a las variables de entrada, en primer lugar se realizó un análisis exploratorio en cuanto a las variables de naturaleza cualitativa. A continuación se presenta en la figura \ref{fig2} la distribución de los niveles en los datos para un conjunto de variables mediante gráficos de barras.
 
 <<>>=
-niveles <- aptos %>% group_by(bedrooms) %>% summarise(n = n())
-colores <- data.frame(colores= c("gold1","darkviolet","green4", "dodgerblue2", "firebrick"))
-niveles <- niveles %>% arrange(n)
-niveles$id <- 1:nrow(niveles)
-colores$id <- 1:nrow(niveles)
-niveles <- left_join(niveles,colores,by="id")
-
-niveles <- niveles %>% arrange(bedrooms)
+# niveles <- aptos %>% group_by(bedrooms) %>% summarise(n = n())
+# colores <- data.frame(colores= c("gold1","darkviolet","green4", "dodgerblue2", "firebrick"))
+# niveles <- niveles %>% arrange(n)
+# niveles$id <- 1:nrow(niveles)
+# colores$id <- 1:nrow(niveles)
+# niveles <- left_join(niveles,colores,by="id")
+# 
+# niveles <- niveles %>% arrange(bedrooms)
 
 p1 <- aptos %>% ggplot() +
-  geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..), fill = bedrooms)) +
+  geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..)), fill = 'green4') +
   theme(axis.ticks.x = element_blank(),
         legend.position = 'none',
         axis.title.y = element_blank(),
@@ -1108,12 +1109,11 @@ p1 <- aptos %>% ggplot() +
         axis.text.x = element_text(face = 'bold')) + 
   scale_y_continuous(labels = scales::percent) +
   geom_text(aes(x = as.factor(bedrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
-  labs(x = 'Cantidad de dormitorios') +
-  scale_fill_manual(values = niveles$colores)
+                y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+  labs(x = 'Cantidad de dormitorios') 
 
 p2 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..), fill = full_bathrooms)) +
+      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..)), fill = 'green4') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1121,12 +1121,11 @@ p2 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(full_bathrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
-      labs(x = 'Cantidad de baños completos') +
-      scale_fill_manual(values = c('aquamarine3','pink3'))
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+      labs(x = 'Cantidad de baños completos') 
 
 p3 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(zona_avditalia)), y = (..count..)/sum(..count..), fill = zona_avditalia)) +
+      geom_bar(aes(x = fct_infreq(as.factor(zona_avditalia)), y = (..count..)/sum(..count..)), fill = 'green4') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1134,12 +1133,12 @@ p3 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(zona_avditalia),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
       labs(x = 'Zona respecto a avenida italia') +
       scale_fill_manual(values = c('orangered2', 'springgreen4'))
 
 p4 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(has_swimming_pool)), y = (..count..)/sum(..count..), fill = has_swimming_pool)) +
+      geom_bar(aes(x = fct_infreq(as.factor(has_swimming_pool)), y = (..count..)/sum(..count..)),  fill = 'green4') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1147,7 +1146,7 @@ p4 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(has_swimming_pool),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
       labs(x = 'El edificio tiene piscina') +
       scale_fill_manual(values = c('mediumpurple2', 'salmon3'))
 
@@ -1158,16 +1157,16 @@ p4 <-aptos %>% ggplot() +
 <<fig = TRUE, fig.pos = 'h'>>=
 grid.arrange(p1, p2, p3, p4, ncol = 2)
 @
-\captionof{figure}{Gráficos de barras para diferentes variables cualitativas. En panel superior se encuentran a la izquierda la variable \text{bedrooms} y a la derecha la variable \text{full\_bathrooms}. Por otro lado, en el panel inferior a la izquierda se encuentra la variable \text{zona\_avditalia} y a la derecha \text{has\_swimming\_pool}}
+\captionof{figure}{Gráfico de barras para diferentes variables cualitativas. En el panel superior izquierdo se encuentra graficada la variable \text{bedrooms} mientras que en el panel superior derecho la variable \text{full\_bathrooms}. Por otro lado, en el panel inferior izquierdo se encuentra la variable \text{zona\_avditalia} mientras que en el panel inferior derecho la variable \text{has\_swimming\_pool}. Se observa que la variable \text{zona\_avditalia} posee niveles balanceados en contraposición a las variables \text{has\_swimming\_pool} y \text{full\_bathrooms}. Por su parte, la variable  \text{bedrooms} presenta mayor proporción de observaciones hacia los niveles centrales (uno y dos dormitorios).}
 \end{figure}
+\label{fig2}
 
-Con el fin de observar la distribución de algunas de las variables graficadas anteriormente a la vez que evaluar si las variables podrían ser candidatas a variables explicativas del modelo, se presentan a continuación algunos gráficos de violín y gráficos de caja.
+Con el fin de observar la distribución de la variable price en los niveles de las variables presentadas en la figura \ref{fig2},  se presentan en la figura \ref{fig3} los gráficos de caja de price según las variables \text{zona\_avditalia} y \text{full\_bathrooms}. 
 
 <<>>=
 p5 <- aptos %>% 
-      ggplot(aes(x=as.character(zona_avditalia), y=price,
-                 fill=as.character(zona_avditalia))) + 
-      geom_violin() +
+      ggplot(aes(x=as.character(zona_avditalia), y=price)) + 
+      geom_violin(fill = 'green4') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1177,16 +1176,14 @@ p5 <- aptos %>%
             axis.text.y = element_text(face = 'bold', size = 10),
             legend.position = 'none') +
       scale_x_discrete() +
-      ylab('Precio de publicación') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      scale_y_continuous(labels = comma) +
-       scale_fill_manual(values = c('orangered2', 'springgreen4'))
+      ylab('Precio de publicación en dólares estadounidenses') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      scale_y_continuous(labels = comma) 
 
 p6 <- aptos %>%
       filter(!is.na(full_bathrooms)) %>%
-      ggplot(aes(x=as.character(full_bathrooms), y=price, 
-                 fill=as.character(full_bathrooms))) + 
-      geom_violin() +
+      ggplot(aes(x=as.character(full_bathrooms), y=price)) + 
+      geom_violin(fill = 'green4') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1197,22 +1194,61 @@ p6 <- aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black') +
-      scale_y_continuous(labels = comma) +
-       scale_fill_manual(values = c('yellow4', 'palevioletred'))
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      scale_y_continuous(labels = comma) 
+
+p7 <- aptos %>%
+      filter(!is.na(bedrooms)) %>%
+      ggplot(aes(x=as.character(bedrooms), y=price)) + 
+      geom_violin(fill = 'green4') +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 10),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 10),
+            axis.text.y = element_text(face = 'bold', size = 10),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      scale_y_continuous(labels = comma) 
+
+p8 <- aptos %>%
+      filter(!is.na(has_swimming_pool)) %>%
+      ggplot(aes(x=as.character(has_swimming_pool), y=price)) + 
+      geom_violin(fill = 'green4') +
+      theme(text = element_text( family = 'sans'),
+            axis.title.y = element_text( size = 10),
+            axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            legend.title = element_blank(),
+            axis.text.x = element_text(face = 'bold', size = 10),
+            axis.text.y = element_text(face = 'bold', size = 10),
+            legend.position = 'none') +
+      scale_x_discrete() +
+      ylab('') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      scale_y_continuous(labels = comma) 
 @
 
 
 \begin{figure}[h!]
 \centering
 <<fig = TRUE, width = 6, height=3>>=
-grid.arrange(p5, p6, ncol =3)
+grid.arrange(p7, p6, p5, p8, ncol =2)
 @
-\captionof{figure}{Gráficos de violín y gráficos de caja. A la izquierda se encuentra el gráfico de price según \text{zona\_avditalia} mientras que a la derecha se encuentra el gráfico de price según \text{full\_bathrooms}. Es posible observar que los gráficos sugieren la existencia de una diferencia en media de price según \text{zona\_avditalia}, teniendo una media superior los apartamentos que se encuentran al Sur de avenida italia. A su vez, los apartamentos con dos o más baños completos tienen una media superior respecto a los apartamentos con 1 solo baño completo.}
+\captionof{figure}{Gráfico de violín y gráfico de caja para diferentes variables cualitativas. En el panel superior izquierdo se encuentra graficada la variable \text{bedrooms} mientras que en el panel superior derecho la variable \text{full\_bathrooms}. Por otro lado, en el panel inferior izquierdo se encuentra la variable \text{zona\_avditalia} mientras que en el panel inferior derecho la variable \text{has\_swimming\_pool}. }
 \end{figure}
+\label{fig3}
 
-Ahora bien, con el objetivo de evaluar posibles interacciones sobre las variables anteriormente graficadas, se presenta el gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}.
+Como se observa en la figura \ref{fig3}, tanto la mediana como la dispersión del precio de oferta en dólares estadounidenses se incrementa conforme aumenta la cantidad de dormitorios del apartamento. Dicho comportamiento también se observa para la cantidad de baños completos.
 
+Por otra parte, los apartamentos ubicados al Sur de la calle Avenida Italia en continuación con la calle 18 de julio presentan una mediana y dispersión superior del precio de oferta en dólares estadounidenses, respecto a los apartamentos ubicados al norte
+
+En lo que respecta a los apartamentos con piscina en el edificio, de manera similar presentan una mediana y dispersión superior del precio de oferta en dólares estadounidenses, respecto a los apartamentos que no tienen piscina en el edificio.
+
+Por último, se procedió a realizar un análisis gráfico bivariado en cuanto a la variable Price. De esta forma, en la figura \ref{fig4}, se presenta la distribución de la variable Price teniendo en cuenta los efectos de las variables zona\_avitalida y full\_bathrooms. Mientras que en la figura \ref{fig5} de forma análoga, se observar los efectos de las variables distancia al shopping y zona\_avitalida.
 
 \begin{figure}[h!]
 \centering
@@ -1229,8 +1265,9 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
       facet_grid(full_bathrooms~zona_avditalia) +
       scale_y_continuous(label = comma)
 @
-\captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en media observardas se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una media superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, el gráfico sugiere que los apartamentos al Sur poseen una media superior respecto a los ubicados al Norte, si bien la diferencia es menos en éste último caso.}
+\captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en mediana observardas en la figura \ref{} se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una mediana superior para los apartamentos ubicados al Sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, se observa que los apartamentos al Sur poseen una mediana superior respecto a los ubicados al Norte, si bien la diferencia es menor en éste último caso.}
 \end{figure}
+\label{fig4}
 
 En lo que respecta a la variables \text{dist\_shop},se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
 
@@ -1259,7 +1296,7 @@ aptos %>%
 @
 \captionof{figure}{Gráfico de caja de \text{dist\_shop} segun \text{zona\_avditali}a. En todos los casos los apartementos ubicados al Sur tienen una media superior. Asimismo, el gráfico sugiere que entre los apartamentos ubicados al Norte, los apartamentos ubicados a menos de 1 km de un shopping tienen una media superior.}
 \end{figure}
-
+\label{fig5}
 
 \begin{figure}[h!]
 \centering
