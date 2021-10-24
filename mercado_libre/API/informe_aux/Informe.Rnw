@@ -79,6 +79,7 @@ library(GGally)
 library(latex2exp)
 library(gbm)
 library(kernlab)
+library(vip)
 @
 
 
@@ -194,6 +195,18 @@ load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_mr.RDS"))
 load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_tunning.RDS")) 
 
 load(here("mercado_libre/modelos/BOOSTING/Caret","Boosting_caret_tunning_mr.RDS")) 
+
+#### SVR
+
+load(here("mercado_libre/modelos/SVR/Caret","SVR_caret.RDS"))
+
+load(here("mercado_libre/modelos/SVR/Caret","SVR_caret_mr.RDS"))
+
+load(here("mercado_libre/modelos/SVR/Caret","SVR_caret_tunning.RDS"))
+
+load(here("mercado_libre/modelos/SVR/Caret","SVR_caret_tunning_mr.RDS"))
+
+
 @
 
 
@@ -335,7 +348,9 @@ Trabajo final de grado
 \pagenumbering{arabic}
 
 %%%%%%%%%%%%%%%%%%%%%%%%% INTRODUCCION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\setcounter{chapter}
+\setcounter{chapter}{0}
+\setcounter{section}{0}
+\setcounter{table}{0}
 
 \chapter{Introducción \label{cap:Intro}}
 
@@ -379,7 +394,8 @@ En primer lugar, es posible obtener la información de las publicaciones vigente
 
 En segundo lugar, la API permite extraer hasta un límite determinado de publicaciones por consulta (10.000 consultas a la fecha de realización del trabajo). Debido a que las consultas fueron realizadas de forma iterativa por barrio, fue posible sobrellevar ésta limitante. 
 
-\section{Procesamiento y criterios de limpieza\label{sec:procesamiento}}
+
+\section{Procesamiento y criterios de limpieza \label{sec:procesamiento}}
 
 El proceso de depuración de los datos fue realizados diferenciando según la naturaleza de las variables.
  
@@ -916,7 +932,7 @@ Con el fin de obtener el modelo con la mejor performance predictiva, se realizó
 Un hyperparámetro es una valor necesario para ajustar un modelo el cual no se determina a partir 
 de los datos sino que, por el contrario, es necesario que sea especificado previamente a la realización del ajuste. Dependiendo del algoritmo con el que se trabaje, el rol de los mismos puede variar. Por ejemplo, como fue mencionado para el caso de Random Forest se tiene 2 hyperparámetros de gran importancia: la cantidad de variables que son seleccionadas para ajustar cada arbol y la cantidad de árboles. 
 
-\section{Interpretabilidad \label{sec:cv}}
+\section{Interpretabilidad \label{sec:interp}}
 
 Una vez implementados los diferentes algoritmos de aprendizaje automático y realizado el proceso de hiperparameter tunning, se procedió a obtener una medida de interpretabilidad de los mismos. Para ello, se trabajó con métodos globales modelo - agnosticos de interpretación, aplicados a aquel modelo con mejor performance predictiva y haciendo hincapié en el análisis gráfico.
 
@@ -1000,7 +1016,8 @@ Esto se realiza para poder tener una medida del efecto de la variable de interé
 
 En lo que respecta a los intervalos, los mismos son definidos utilizando los cuantiles de la distribución de la variable de interés, lo cual asegura que cada intervalo va a contener el mismo número de observaciones. La desventaja principal de utilizar los cuantiles para definir los intervalos es que los mismos pueden tener longitud muy diferente, haciendo que el gráfico sea muy irregular.
 
-\section{Tratamiento de valores faltantes \label{sec:nas}}
+
+\section{Tratamiento de datos faltantes lineal \label{sec:secfalt}}
 
 La base de datos construida contiene variables con diferentes grado de datos faltantes. 
 
@@ -1018,9 +1035,9 @@ Como fue mencionado anteriormente el criterio genérico para seleccionar las var
 
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
-En éste capítulo se presenta los principales resultados obtenidos a la hora de realizar el análisis exploratorio de los datos, luego de realizar el proceso de depuración de los mismos detallado en la sección \ref{procesamiento}. De esta forma, la base de datos está conformada por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables. 
+En éste capítulo se presenta los principales resultados obtenidos a la hora de realizar el análisis exploratorio de los datos, luego de realizar el proceso de depuración de los mismos detallado en la sección \ref{procesamiento} . De esta forma, la base de datos está conformada por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables. 
 
-Por otra parte, una vez realizado el proceso de tratamiento de datos faltantes según se especifica en la sección \ref{nas} se mantiene un total de \Sexpr{paste(dim(aptos_sin_na)[2])} variables en el caso de imputación de valores faltantes por la media, y \Sexpr{paste(dim(aptos_mr)[2])} variables en el caso de imputación de valores faltantes por Random Forest. 
+Por otra parte, una vez realizado el proceso de tratamiento de datos faltantes especificado en la sección \ref{secfalt} se mantiene un total de \Sexpr{paste(dim(aptos_sin_na)[2])} variables en el caso de imputación de valores faltantes por la media, y \Sexpr{paste(dim(aptos_mr)[2])} variables en el caso de imputación de valores faltantes por Random Forest. 
 
 En la tabla AGREGAR REF A TABLA disponible en la sección del anexo \ref{varsA} se detalla el listado de variables utilizadas para la implementación de los diferentes modelos en etapas posteriores del análisis. 
 
@@ -1044,25 +1061,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(sum.table, caption = 'Medidas de resumen de la variable precio de oferta en dólares estadounidenses. En la medida que la media es superior a la mediana, se observa una asimetría hacia la derecha. Por otro lado, se observa un desvío de 76.788 dólares estadounidenses y un coeficiente de variación de 0.47.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
-
-<<eval = FALSE>>=
-aptos %>%
-      ggplot(aes(x=price)) + 
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
-      theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 10),
-            axis.title.x = element_blank(),
-            plot.title = element_blank(),
-            legend.title = element_blank(),
-            axis.text.x = element_text(face = 'bold', size = 10),
-             axis.text.y = element_blank(),
-            axis.ticks.y = element_blank(),
-            legend.position = 'none') +
-      ylab('') +
-      scale_x_continuous(labels = comma) +
-      geom_vline(xintercept = mean(aptos$price, na.rm = TRUE), 
-                 colour = 'red', linetype = 'dashed') 
-@
+\label{tab1}
 
 En la figura \ref{fig1} se presenta gráficamente la distribución de la variable mediante un gráfico de histograma.
 
@@ -1084,7 +1083,7 @@ aptos %>% ggplot(aes(x=price)) +
       annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'red') +
       scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta en dolares estadounidenses (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}. Como fue comentado en la tabla REFERENCIAR TABLA se observa una asímetría a la derecha.}
+\captionof{figure}{Histograma del precio de oferta en dolares estadounidenses (price) de los apartamentos a la venta en Montevideo. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}. Como fue comentado en la tabla \ref{tab1} se observa una asímetría a la derecha.}
 \end{figure}
 \label{fig1}
 
@@ -1101,7 +1100,7 @@ En lo que respecta a las variables de entrada, en primer lugar se realizó un an
 # niveles <- niveles %>% arrange(bedrooms)
 
 p1 <- aptos %>% ggplot() +
-  geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..)), fill = 'green4') +
+  geom_bar(aes(x = bedrooms, y = (..count..)/sum(..count..)), fill = 'navyblue') +
   theme(axis.ticks.x = element_blank(),
         legend.position = 'none',
         axis.title.y = element_blank(),
@@ -1109,11 +1108,11 @@ p1 <- aptos %>% ggplot() +
         axis.text.x = element_text(face = 'bold')) + 
   scale_y_continuous(labels = scales::percent) +
   geom_text(aes(x = as.factor(bedrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+                y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
   labs(x = 'Cantidad de dormitorios') 
 
 p2 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..)), fill = 'green4') +
+      geom_bar(aes(x = fct_infreq(as.factor(full_bathrooms)), y = (..count..)/sum(..count..)), fill = 'navyblue') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1121,11 +1120,11 @@ p2 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(full_bathrooms),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
       labs(x = 'Cantidad de baños completos') 
 
 p3 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(zona_avditalia)), y = (..count..)/sum(..count..)), fill = 'green4') +
+      geom_bar(aes(x = fct_infreq(as.factor(zona_avditalia)), y = (..count..)/sum(..count..)), fill = 'navyblue') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1133,12 +1132,12 @@ p3 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(zona_avditalia),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
       labs(x = 'Zona respecto a avenida italia') +
       scale_fill_manual(values = c('orangered2', 'springgreen4'))
 
 p4 <-aptos %>% ggplot() +
-      geom_bar(aes(x = fct_infreq(as.factor(has_swimming_pool)), y = (..count..)/sum(..count..)),  fill = 'green4') +
+      geom_bar(aes(x = fct_infreq(as.factor(has_swimming_pool)), y = (..count..)/sum(..count..)),  fill = 'navyblue') +
       theme(axis.ticks.x = element_blank(),
             legend.position = 'none',
             axis.title.y = element_blank(),
@@ -1146,7 +1145,7 @@ p4 <-aptos %>% ggplot() +
             axis.text.x = element_text(face = 'bold')) + 
       scale_y_continuous(labels = scales::percent) +
       geom_text(aes(x = as.factor(has_swimming_pool),label = scales::percent(round((..count..)/sum(..count..), 2)), 
-                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 3) + 
+                    y = (..count..)/sum(..count..)), stat = "count", vjust = -0.5, size = 2) + 
       labs(x = 'El edificio tiene piscina') +
       scale_fill_manual(values = c('mediumpurple2', 'salmon3'))
 
@@ -1166,7 +1165,7 @@ Con el fin de observar la distribución de la variable price en los niveles de l
 <<>>=
 p5 <- aptos %>% 
       ggplot(aes(x=as.character(zona_avditalia), y=price)) + 
-      geom_violin(fill = 'green4') +
+      geom_violin(fill = 'navyblue') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1177,13 +1176,13 @@ p5 <- aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('Precio de publicación en dólares estadounidenses') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
       scale_y_continuous(labels = comma) 
 
 p6 <- aptos %>%
       filter(!is.na(full_bathrooms)) %>%
       ggplot(aes(x=as.character(full_bathrooms), y=price)) + 
-      geom_violin(fill = 'green4') +
+      geom_violin(fill = 'navyblue') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1194,13 +1193,13 @@ p6 <- aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
       scale_y_continuous(labels = comma) 
 
 p7 <- aptos %>%
       filter(!is.na(bedrooms)) %>%
       ggplot(aes(x=as.character(bedrooms), y=price)) + 
-      geom_violin(fill = 'green4') +
+      geom_violin(fill = 'navyblue') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1211,13 +1210,13 @@ p7 <- aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
       scale_y_continuous(labels = comma) 
 
 p8 <- aptos %>%
       filter(!is.na(has_swimming_pool)) %>%
       ggplot(aes(x=as.character(has_swimming_pool), y=price)) + 
-      geom_violin(fill = 'green4') +
+      geom_violin(fill = 'navyblue') +
       theme(text = element_text( family = 'sans'),
             axis.title.y = element_text( size = 10),
             axis.title.x = element_blank(),
@@ -1228,7 +1227,7 @@ p8 <- aptos %>%
             legend.position = 'none') +
       scale_x_discrete() +
       ylab('') +
-      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'green4') +
+      geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = 'navyblue') +
       scale_y_continuous(labels = comma) 
 @
 
@@ -1248,7 +1247,14 @@ Por otra parte, los apartamentos ubicados al Sur de la calle Avenida Italia en c
 
 En lo que respecta a los apartamentos con piscina en el edificio, de manera similar presentan una mediana y dispersión superior del precio de oferta en dólares estadounidenses, respecto a los apartamentos que no tienen piscina en el edificio.
 
-Por último, se procedió a realizar un análisis gráfico bivariado en cuanto a la variable Price. De esta forma, en la figura \ref{fig4}, se presenta la distribución de la variable Price teniendo en cuenta los efectos de las variables zona\_avitalida y full\_bathrooms. Mientras que en la figura \ref{fig5} de forma análoga, se observar los efectos de las variables distancia al shopping y zona\_avitalida.
+Por último, se procedió a realizar un análisis gráfico bivariado en cuanto a la variable Price. De esta forma, en la figura \ref{fig4}, se presenta la distribución de la variable Price teniendo en cuenta los efectos de las variables zona\_avitalida y full\_bathrooms. Mientras que en la figura \ref{fig5} de forma análoga, se observa los efectos de las variables distancia a la rambla y cantidad de baños completos.
+
+Se destaca que en lo que respecta a la variable \text{dist\_rambla}, se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
+
+- Inferior al primer cuantil: valores inferiores a \Sexpr{paste(quantile(aptos$dist_rambla, prob = 0.25))}  
+- Entre primer y segundo cuantil: para valores en el intervalo [\Sexpr{paste(round(quantile(aptos$dist_rambla, prob = 0.25)))}, \Sexpr{paste(round(quantile(aptos$dist_rambla, prob = 0.5)))})
+- - Entre segundo y tercer cuantil: para valores en el intervalo [\Sexpr{paste(round(quantile(aptos$dist_rambla, prob = 0.5)))}, \Sexpr{paste(round(quantile(aptos$dist_rambla, prob = 0.75)))})
+- Igual o superior al tercer cuantil: valores iguales o superiores a \Sexpr{paste(quantile(aptos$dist_rambla, prob = 0.75))} 
 
 \begin{figure}[h!]
 \centering
@@ -1265,38 +1271,35 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
       facet_grid(full_bathrooms~zona_avditalia) +
       scale_y_continuous(label = comma)
 @
-\captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en mediana observardas en la figura \ref{} se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una mediana superior para los apartamentos ubicados al Sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, se observa que los apartamentos al Sur poseen una mediana superior respecto a los ubicados al Norte, si bien la diferencia es menor en éste último caso.}
+\captionof{figure}{Gráfico de caja de price según \text{zona\_avditalia} y \text{full\_bathrooms}. El gráfico sugiere que las diferencias en mediana observardas en la figura \ref{fig3} se mantienen cuando condicionamos en \text{full\_bathrooms}. En particular, entre los apartamentos con 2 o más baños completos. se observa una mediana superior para los apartamentos ubicados al Sur respecto a los apartamentos ubicados al Norte. En lo que respecta a los apartamentos con un sólo baño completo, se observa que los apartamentos al Sur poseen una mediana superior respecto a los ubicados al Norte, si bien la diferencia es menor en éste último caso.}
 \end{figure}
 \label{fig4}
-
-En lo que respecta a la variables \text{dist\_shop},se realizó la siguiente discretización para poder tener una aproximacón de su efecto sobre la variable price:
-
-- Menos de 1 km: para volores inferiores a 1000
-- Entre 1 km y 5 km para valores en el intervalo [1000, 5000)
-- Mayor a 5 km para valores mayores a 5000
-
-a continuación se presentá el gráfico de cajas del precio de oferta según \text{dist\_shop} por \text{zona\_avditalia} utilizando la discretización mencionada.
 
 \begin{figure}[h!]
 \centering
 <<fig = TRUE, width = 6, height=3>>=
 aptos %>% 
-      mutate(dist_shop = factor(case_when(dist_shop < 1000 ~ 'Menos de 1 km',
-      dist_shop < 5000 ~ 'Entre 1 km y 5 km',
-      TRUE ~ 'Más de 5 km'))) %>%
-      ggplot(aes(y=price,x=dist_shop,fill=zona_avditalia)) + 
+      mutate(dist_rambla = factor(case_when(dist_rambla < quantile(dist_rambla, prob = 0.25) ~ '1er cuantil',
+                                            dist_rambla < quantile(dist_rambla, prob = 0.5) ~ 'Entre el 1er y  2do cuantil',
+                                            dist_rambla < quantile(dist_rambla, prob = 0.75) ~ 'Entre el 2do y 3er cuantil',
+                                          TRUE ~ 'Mayor al tercer cuantil'))) %>%
+      ggplot(aes(y=price,x=dist_rambla,fill=full_bathrooms)) + 
       geom_boxplot() +      
       theme(axis.ticks.x = element_blank(),
             axis.title.y = element_blank(),
             axis.title.x = element_text(face = 'bold', size = 10),
-            axis.text.x = element_text()) +
+            axis.text.x = element_text(angle = 45)) +
       labs(y = 'Precio de oferta', x = 'Distancia al shopping más cercano') +
-      scale_fill_manual(values = c('orangered2', 'springgreen4'))  +
-      scale_y_continuous(label = comma)      
+      scale_fill_manual(values = c('darkgreen', 'darkmagenta'))  +
+      scale_y_continuous(label = comma) +
+      scale_x_discrete(labels = c('1er cuantil','Entre el 1er y \n 2do cuantil','Entre el 2do y \n 3er cuantil','Mayor al tercer \n cuantil'))
 @
-\captionof{figure}{Gráfico de caja de \text{dist\_shop} segun \text{zona\_avditali}a. En todos los casos los apartementos ubicados al Sur tienen una media superior. Asimismo, el gráfico sugiere que entre los apartamentos ubicados al Norte, los apartamentos ubicados a menos de 1 km de un shopping tienen una media superior.}
+\captionof{figure}{Gráfico de caja de \text{dist\_rambla} según \text{full\_bathrooms} utilizando una discretización de la variable distancia a la rambla mediante los cuantiles. En primer lugar, se observa que el precio de oferta en dólares estadounidenses de los apartamentos se ve diferenciado según el número de baños completos. Esto último en la medida que, condicionando por todos los niveles de la variable distancia a la rambla discretizada, la mediana de los apartamentos con dos o más baños completos es superior a aquellos con un solo baño completo. Por otro lado, entre los apartamentos con dos o más baños completos, el precio se ve difereciado si se considera la discretización de la variable distancia a la rambla en función de los cuantiles de la misma. Esto último debido a que la mediana del precio de los apartamentos de los dos primeros niveles es mayor que la de los últimos.}
 \end{figure}
 \label{fig5}
+
+Por otro lado, en lo que respectaal análisis exloratorio para las variables cuantitativas, se precedió a a analizar la correlación lineal entre las mismas. Para ello, en la figura \re{\end{figure}} se presenta a modo de resumen la matriz de correlación de manera gráfica.
+
 
 \begin{figure}[h!]
 \centering
@@ -1309,52 +1312,56 @@ corr<-round(cor(aptos_cor, use='pairwise.complete.obs') , 2)
 ggcorrplot(corr, method = c("square"),type=c("upper"), 
            ggtheme = ggplot2::theme_gray,lab=TRUE)
 @
-\captionof{figure}{Mapa de correlación. Como es de esperar, precio y distancia a la ramble éste de montevideo estan correlacionadas negativamente.}
+\captionof{figure}{Gráfico de matriz de correlación. En primer lugar, en cuanto a la variable precio de oferta se observa que las variables área total, área cubierta y distancia a la rambla se encuentran linealmente correlacionadas. Dónde para las dos primeras ésta relación es de carácter positivo mientras que para la última es de carácter negativo. Por otro lado, se tiene que tanto la distancia en metros al shopping más cercano como a la rambla Este, no se encuentran linealmente correlacionadas con el área total del apartamento, al igual que el área cubierta y no cubierta. Por último, se observan correlaciones lineales positivas las cuales son producto de la construcción misma de las variables. Por ejemplo, la correlación lineal positiva entre área cubierta y área total.} 
 \end{figure}
-
-Por último, se presentan algunos gráficos que permiten observar la relación entre el precio de los apartamentos, el área cubierta, y la variable zona_avditalia.
-
-\begin{figure}[h!]
-\centering
-<<fig = TRUE>>=
-ggpairs(aptos, c(3,14), mapping = ggplot2::aes(color = zona_avditalia, alpha = 0.5), 
-        diag = list(continuous = wrap("densityDiag")), 
-        lower=list(continuous = wrap("points", alpha=0.5)))
-@
-\captionof{figure}{Gráficos de price según \text{covered\_area}. En el panel superior izquierdo se encuentra la densidad de price segú \text{convered\_area}. En el panel superior derecho se encuentra la correlación total entre price y \text{covered\_area} y la correlación por grupos según \text{zona\_avditalia}. En el panel inferior izquierdo se encuentra el gráfico de dispersión de price según \text{covered\_area} por \text{zona\_avditalia}, mientras que en el panel inferior derecho se encuentra la densidad de \text{covered\_area} según \text{zona\_avditalia}.}
-\end{figure}
+\label{figcor}
 
 
 \chapter{Resultados \label{cap:Resultados}}
 
-En ésta sección se presentan los principales resultados obtenidos en el presente trabajo.
-Como se menciona en la sección marco metodológico, en primer lugar se presentan los resultados del modelo lineal, seguido por las siguientes técnicas de aprendizaje estadístico: random forest, boosting, y support vector regression. Para estas últimas, a su vez se presentan los resultados obtenidos en el proceso de hyperparameter tuning.
+En ésta sección se presentan los principales resultados obtenidos luego de realizar la implementación de las técnicas detalladas en la sección \ref{MT}.
 
-Por último, en forma de resumen, se presenta un análisis comparativo de los diferentes modelos en función de su performance predictiva. A partir del mismo se selecciona el mejor modelo y a éste se le realiza un análisis gráfico de interpretabilidad.
+En primer lugar se tinen los resultados obtenidos luego de relizar un ajuste mediante un modelo de regresión lineal múltiple. 
 
-Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección marco metodológico.
+Luego, se exponen los resultados de la implementación de las técnicas de aprendizaje estadístico  explicitadas en la sección \ref{MT}.
+
+Con el fin de tener una primera aproximación de la performance predictiva de los modelos, se trabajó con una metodología de muestra de entrenamiento y muestra de testeo. Para ello, se consideró el 80\% de los datos como muestra de entrenamiento y el restante 20\% como muesra de testeo. 
+
+Por último, en forma de resumen, se muestra un análisis comparativo de los diferentes modelos en función de su performance predictiva mediante la metodología de k-folds e hyperparameter tuning especificada en la sección \ref{cv}. En particular se trabajó con 5-folds.
+
+De éste último, al mejor modelo se presenta el análisis gráfico de interpretabilidad según lo detallado en la sección \ref{interp}.
+
+Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección \ref{secfalt}. 
 
 \section{Modelo lineal \label{sec:resml}}
 
-A continuación se presentan los principales resultados del modelo de regresión lineal, con la variable price como variable explicada.
+En ésta sección se presentan los principales resultados obtenidos luego de relizar un ajuste mediante un modelo de regresión lineal múltiple. 
+
+En lo que respecta a las estimaciones de los coeficientes del modelo, en el anexo \ref{mlA} se expone la tabla de resumen para cada método de imputación de valores faltantes, con los coeficientes estimados, el error estándar de cada uno de ellos, el estadístico T de student y su P-valor asociado.
+
+Por otra parte, en la tabla \ref{tab2} se presentan los resultados globales del modelo de regresión lineal.
 
 <<>>=
 lm <- lm(price ~ ., data = train)
 RMSE_lm <- sqrt(mean((test$price - predict(lm,test))^2))
 
 lm_mr <- lm(price ~ ., data = train_mr)
-RMSE_lm_mr <- sqrt(mean((test_mr$price - predict(lm,test_mr))^2))
+RMSE_lm_mr <- sqrt(mean((test_mr$price - predict(lm_mr,test_mr))^2))
 
-lmt <- rbind(broom::glance(lm), broom::glance(lm))
+lmt <- rbind(broom::glance(lm), broom::glance(lm_mr))
 lmt <- lmt %>% select(-"sigma" , - "AIC", - "BIC",
                   - "deviance", -"df.residual", -"nobs", -"df", -"logLik", -"p.value")
 
 lmt <- lmt %>% mutate(p.value = "< 2.2e-16")
 
+MAE_lm <- mean(abs(test$price-predict(lm,test)))
+MAE_lm_mr <- mean(abs(test_mr$price-predict(lm_mr,test_mr)))
+
+
 met <- tribble(
-  ~Imput, ~RMSE,
-  "Media", round(RMSE_lm), 
-  "Random Forest",  round(RMSE_lm_mr)
+  ~Imput, ~RMSE, ~MAE,
+  "Media", round(RMSE_lm), MAE_lm,
+  "Random Forest", round(RMSE_lm_mr), MAE_lm_mr
 )
 
 lmt <- cbind(met, lmt)
@@ -1364,50 +1371,64 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(lmt, caption = c("Principales resultados de los modelos lineales ajustados según el método de imputación utilizados"), escape = F, booktabs = T, align = "c", format.args = list(big.mark = "."), col.names = c('Método', 'RMSE', "$R^2$", "$R^2_a$","Estadístico F", "P-Valor" )) %>% kable_styling(latex_options = "hold_position") %>% row_spec(0,bold=TRUE)
+kable(lmt, caption = c("Principales resultados de los modelos lineales ajustados según el método de imputación utilizado, considerando muestra de entrenamiento y muestra de testeo. Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 43.000 y 30.000 dólares estadounidenses si se utiliza como medida de error a la raíz cuadrada del error cuadrático medio y error absoluto medio respectivamente. Asimismo, los modelos explican aproximadamente un 70 porciento de la varianza en los datos y son globalmente significativos."), escape = F, booktabs = T, align = "c", format.args = list(big.mark = "."), col.names = c('Método', 'RMSE', 'MAE', "$R^2$", "$R^2_a$","Estadístico F", "P-Valor" )) %>% kable_styling(latex_options = "hold_position") %>% row_spec(0,bold=TRUE)
 @
+\label{tab2}
 
-
-No se observa que el método de imputación genere diferencias sustanciales en término de RMSE. Por lo tanto se realiza el diagnóstico sobre los residuos del modelo solamente para el caso de imputación por la media.
+Por último, en lo que respecta al análisis de los residuos, en primer lugar lugar se realiza un análisis gráfico de los mismos. En la figura \ref{figerrorml} se presentan los errores ($\hat{\epsilon}$) en función de los valores ajustados (\hat{y}) y la distribución de los mismos considerando ambos métodos de imputación.
 
 \begin{figure}[h!]
 \centering
 <<fig = TRUE, width=6, height=3>>=
-lm1 <- ggplot(as_tibble(lm$residuals) %>% 
-             mutate(id = seq(1, length(lm$residuals), 1))) + 
-      geom_point(aes(x = id, y = value), color = 'red', alpha = 1/5) +
+lm1 <- ggplot(as_tibble(lm$residuals)) +
+      geom_point(aes(x = lm$fitted.values, y = value), color = 'red', alpha = 1/5) +
       theme(axis.title.y = element_text(face = 'bold', size = 14),
             axis.title.x = element_text(),
             plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
-      labs(x = 'Id.', y = TeX("$\\hat{\\epsilon}$"))
+      labs(x = TeX("$\\hat{y}$"), y = TeX("$\\hat{\\epsilon}$")) +
+      scale_x_continuous(labels = comma)
 
 mediana_reslm <- quantile(lm$residuals, probs = 0.5)
 media_reslm <- mean(lm$residuals)
 
 lm2 <- ggplot(as_tibble(lm$residuals)) + 
-      geom_density(aes(value), color = 'red') +
+      geom_histogram(aes(value), fill = 'red') +
       theme(axis.title = element_text(face = 'bold', size = 14),
             plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
-      labs(y = TeX("$\\hat{f}_{\\epsilon}$"), x = TeX("$\\hat{\\epsilon}$"))
+      labs(y = TeX("$\\hat{f}_{\\epsilon}$"), x = TeX("$\\hat{\\epsilon}$")) 
 
-grid.arrange(lm1, lm2, ncol = 2)
+lm_mr3 <- ggplot(as_tibble(lm_mr$residuals)) +  
+      geom_point(aes(x = lm_mr$fitted.values, y = value), color = 'red', alpha = 1/5) +
+      theme(axis.title.y = element_text(face = 'bold', size = 14),
+            axis.title.x = element_text(),
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
+      labs(x = 'Id.', y = TeX("$\\hat{\\epsilon}$")) +
+      scale_x_continuous(labels = comma)
+
+mediana_reslm_mr <- quantile(lm_mr$residuals, probs = 0.5)
+media_reslm_mr <- mean(lm_mr$residuals)
+
+lm_mr4 <- ggplot(as_tibble(lm_mr$residuals)) + 
+      geom_histogram(aes(value), fill = 'red') +
+      theme(axis.title = element_text(face = 'bold', size = 14),
+            plot.title = element_text(face = 'bold', size = 14, hjust = 0.5)) +
+      labs(y = TeX("$\\hat{y}$"), x = TeX("$\\hat{\\epsilon}$"))
+
+grid.arrange(lm1, lm2, lm_mr3, lm_mr4, ncol = 2)
 @
-\captionof{figure}{Residuos del modelo líneal. En el panel izquiero se encuentra el gráfico de dispersión mientras que en el pane izquierdo se encuentra la densidad estimada.}
+\captionof{figure}{Gráficos de los residuos de los modelos líneales ajustados. En el panel superior se encuentran los resultados para el caso de imputación de valores faltantes por la media, mientras que en el panel inferior se encuentran los resultados para el caso de imputación de valores faltantes por Random Forest. A la izquierda se encuentra el gráfico de dispersión entre los errores del modelo y los valores predichos. A la derecha se encuentra el histograma de los mismos.}
 \end{figure}
+\label{figerrorml}
 
-Como fue mencionado en la sección \ref{subsec:mlMT} en primer lugar se realizó la prueba de normalidad de Lilliefors (1976) sobre los residuos del modelo. El p-valor de la prueba para los residuos del modelo lineal es menor a 0.5 con lo cual se rechaza la hipótesis nula de normalidad.
+Una vez realizado el análisis gráfico se procedió a realizar las pruebas sobre los supuestos de los residuos del modelo mencionadas en la sección \ref{subsec:mlMT}. Considerando ambos métodos de imputación y un nivel de significación del 0.05, se procedió a rechazar tanto el supuesto de normalidad como el supuesto de homoscedasticidad de los residuos las hipótesis nulas de ambas pruebas en la medida que el p-valor es menor al nivel de significación considerado. 
 
-Por otro lado, en lo que respecta a la prueba de hetoroscedasticidad de Breuch-Pagan también se rechaza la hipótes nula de homoscedasticidad.
-
-Estos resultados se mantienen incambiados según se utilice imputación de valores faltantes por la media o por Random Forest.
-
-En el anexo \ref{mlA} se encuentran las tablas con los resultados de las pruebas aplicadas.
+En las tablas \ref{tab13} y \ref{tab14} de el anexo \ref{mlA} se encuentran los resultados de las pruebas aplicadas.
 
 \section{Árbol de regresión \label{sec:resarbol}}
 
-A continuación se presentan los resultados del árbol de regresión ajustado sobre la variable price utilizando las metodologías de imputación mencionadas en la sección marco metodológico. 
+A continuación se presentan los resultados del ajuste mediante un árbol de regresión ajustado considerando ambas metodologías de imputación de valores faltantes. 
 
-En primer lugar se presenta, para cada modelo ajustado, el gráfico luego de realizar el proceso de poda. Respecto a éste punto, en el \ref{arbolA} se presenta la tabla con los diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, al igual que el tamaño del árbol que dicho valor del parámetro implica y otras métricas de interés.
+En primer lugar se presenta, para cada modelo ajustado, el gráfico luego de realizar el proceso de poda. Respecto a éste punto, en el anexo \ref{arbolA} se presenta la tabla con los diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, al igual que el tamaño del árbol que dicho valor del parámetro implica y otras métricas de interés.
 
 \begin{figure}[h!]
 \centering
@@ -1443,11 +1464,10 @@ rpart.plot(arbol.prune,roundint = T,digits = -3)
 
 En función a lo observado en la figura, se tiene que la primera variable en realizar una partición binaria es la variable \text{full\_bathrooms}. Las variables \text{dist\_rambla}, \text{total\_area}, \text{bedrooms} e \text{ingresomedio\_ech} son utilizadas en las siguientes particiones.
 
-El gráfico de árbol realizando imputación de valores faltantes por random forest se encuentra en el anezo debido a que no presenta diferencias sustanciales con el árbol realizando imputación por la media presentado e la figura anterior.
+El gráfico de árbol realizando imputación de valores faltantes por Random Forest es presentado en la figura \ref{figarbol} del anexo \ref{arbolA} debido a que no presenta diferencias sustanciales con el gráfico de árbol obtenido realizando imputación por la media presentado e la figura anterior.
 
-Una vez observada las principales características de los modelos, se procedió a obtener cierta medida de la performance predictiva de los mismos. Para ello, se calculó la raíz error cuadrático medio (RMSE). 
+Una vez observada las principales características de los modelos, se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}. 
 
-A continuación se presenta la tabla con los resultados para las metodologías de imputación utilizadas.
 
 <<>>=
 # RMSE test
@@ -1474,37 +1494,24 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE). Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 43.000 y 30.000 dólares estadounidenses si se utiliza como medida de error al RMSE y MAE respectivamente. Asimismo, los modelos explican aproximadamente un 70 porciento de la varianza en los datos.', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
+\label{tab3}
+
 
 \section{Random Forest \label{sec:resRF}}
 
-En éste sección se presentan los resultados del modelo de Random Forest ajustado. Como fue mencionado anteriormente, en primer lugar se realizó el ajuste sobre los datos dónde las variables cuantitativas con proporción de datos faltantes inferior a 0.1 fueron estimadas por la media. Posteriormente, se ajustó el modelo utilizando un procesi de imputación mediante Random Forest. 
+En éste sección se presentan los resultados del ajuste por Random Forest considerando ambas metodologías de imputación. 
+Se destaca que el ajuste se realizó utilizando la función \textit{ranger} del paquete \textit{ranger} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{rf} para ambos métodos de imputación. 
 
-A continuación se presenta la tabla con los errores cuadráticos medios de los modelos mencionados. No se observa una diferencia entre los valores lo cual puede deberse a que las variables imputadas fueron seleccionadas con un bajo porcentaje de valores faltantes.
+De esta manera, en primer lugar se presenta en la tabla \ref{hyprf} los valores utilizados. 
 
 <<>>=
-# RMSE test
 
-predictions_rf <- predictions(predict(rf_train,test))
-predictions_rf_mr  <- predictions(predict(rf_train_mr,test_mr))
-
-RMSE_rf <- sqrt(mean((test$price-predictions_rf)^2))
-RMSE_rf_mr <- sqrt(mean((test_mr$price - predictions_rf_mr)^2))
-
-r2_rf <- sum((predictions_rf-mean(test$price))^2) /
-      sum((test$price - mean(test$price))^2)
-
-r2_rf_mr <- sum((predictions_rf_mr-mean(test_mr$price))^2) /
-      sum((test_mr$price - mean(test_mr$price))^2)
-
-mae_rf <- mean(abs((test$price-predictions_rf)))
-mae_rf_mr <- mean(abs((test_mr$price-predictions_rf_mr)))
-
-res_rf <- tribble(
-      ~Imput, ~RMSE, ~R2, ~MAE, 
-      "Media",   round(RMSE_rf), r2_rf, round(mae_rf),
-      "Random Forest", round(RMSE_rf_mr), r2_rf_mr, round(mae_rf_mr)
+hyp_rf <- tribble(
+  ~Hyperparametro, ~Valor,
+  "Número de árboles (B)",  rf_train$num.trees, 
+  "Cantidad de variables (p)",  rf_train$mtry
 )
 
 library(knitr)
@@ -1512,8 +1519,11 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_rf, caption = 'Error cuadrático medio de los modelos ajustados por Random Forest', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(hyp_rf, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Valor'), caption = 'Valores por defecto utilizados de los hyperparámentros en los modelos ajustados por Random Forest. Se detalla el número de árboles y la cantidad de variables utilizadas en cada árbol.' , escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
+\label{hyprf}
+
+Luego se presenta graficamente en la figura \ref{rf_import} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{rf}. 
 
 \begin{figure}[h!]
 \centering
@@ -1538,53 +1548,61 @@ colnames(importancia_rf_mr) <- c("importance")
 
 importancia_rf_mr$variables <- row.names(importancia_rf_mr)
 
-p1 <- importancia_rf %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="",x="") +
+p1 <- importancia_rf %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance))+
+  geom_col(fill= 'navyblue')+theme(legend.position="none")+labs(y="",x="") +
       theme(axis.text.x = element_blank(),
             axis.text.y = element_text(face = 'bold'),
             axis.ticks.x = element_blank(),
             axis.title.x = element_text(size = 12),
             axis.title.y = element_blank()) +
-      scale_fill_manual(values = c('navy', 'orangered3', 'darkgreen', 'slateblue3', 'brown3', 'gold3', 'springgreen3', 'pink3', 'royalblue4', 'firebrick'))
+      labs(y="Variables",x="Importancia")
 
-p2 <- importancia_rf_mr %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance,fill=variables))+
-  geom_col()+theme(legend.position="none")+labs(y="",x="")+
+p2 <- importancia_rf_mr %>% arrange(desc(importance)) %>% slice(1:10) %>% ggplot(aes(y=reorder(variables,importance),x=importance)) +
+  geom_col(fill= 'navyblue') + theme(legend.position="none")+labs(y="",x="")+
       theme(axis.text.x = element_blank(),
             axis.text.y = element_text(face = 'bold'),
             axis.ticks.x = element_blank(),
             axis.title.x = element_text(size = 12),
             axis.title.y = element_blank()) +
-      scale_fill_manual(values = c('navy', 'orangered3', 'darkgreen', 'slateblue3', 'brown3', 'gold3', 'springgreen3', 'pink3', 'royalblue4', 'firebrick'))
+      labs(y="Variables",x="Importancia")
 
 grid.arrange(p1, p2, ncol = 2)
 @
-\captionof{figure}{Importancia de las variables en los modelos de random forest ajustados. Se observa que \text{total\_area} es la variable con mayor importancia en ambos modelos. A su vez, todas las variables geoespacialesconstruidas aparecen entre las más importantes de ambos modelos.}
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Random Forest. Se observa que las variables área total, área cubierta y cantidad de baños completos son las 3 variables más importantes en ambos modelos. A su vez, todas las variables geoespaciales construidas se encuentran entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la impitación por Random Forest, la variable condición del ítem condition no se encuentra entre las 10 variables más importantes.}
 \end{figure}
+\label{rf_import}
 
+Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}.
 
-\section{Boosting \label{sec:resboosting}}
 
 <<>>=
-predictions_boost <- gbm::predict.gbm(boosting_train, test)
-predictions_boost_mr <- gbm::predict.gbm(boosting_train_mr, test_mr)
+# RMSE test
 
-RMSE_boosting <- RMSE(predictions_boost, test$price)
-RMSE_boosting_mr <- RMSE(predictions_boost_mr , test_mr$price)
+predictions_rf <- predictions(predict(rf_train,test))
+predictions_rf_mr  <- predictions(predict(rf_train_mr,test_mr))
 
+RMSE_rf <- sqrt(mean((test$price-predictions_rf)^2))
+RMSE_rf_mr <- sqrt(mean((test_mr$price - predictions_rf_mr)^2))
 
-r2_boost <- sum((predictions_boost-mean(test$price))^2) /
+r2_rf <- sum((predictions_rf-mean(test$price))^2) /
       sum((test$price - mean(test$price))^2)
 
-r2_rf_boost <- sum((predictions_boost_mr-mean(test_mr$price))^2) /
+r2_rf_mr <- sum((predictions_rf_mr-mean(test_mr$price))^2) /
       sum((test_mr$price - mean(test_mr$price))^2)
 
-mae_boost <- mean(abs((test$price-predictions_boost)))
-mae_boost_mr <- mean(abs((test_mr$price-predictions_boost_mr)))
+mae_rf <- mean(abs((test$price-predictions_rf)))
+mae_rf_mr <- mean(abs((test_mr$price-predictions_rf_mr)))
 
-res_boost <- tribble(
-      ~Imput, ~RMSE, ~R2, ~MAE, 
-      "Media",   round(RMSE_boosting), r2_boost, round(mae_boost),
-      "Random Forest", round(RMSE_boosting_mr), r2_rf_boost, round(mae_boost_mr)
+r2_rf_oob <- rf_train$r.squared
+r2_rf_mr_oob <- rf_train_mr$r.squared
+
+RMSE_rf_oob <- round(sqrt(rf_train$prediction.error))
+RMSE_rf_mr_oob <- round(sqrt(rf_train_mr$prediction.error))
+
+res_rf <- tribble(
+      ~Imput, ~RMSE, ~R2, ~MAE, ~RMSE_oob, ~R2_oob, 
+      "Media",   round(RMSE_rf), r2_rf, round(mae_rf), RMSE_rf_oob, r2_rf_oob,
+      "Random Forest", round(RMSE_rf_mr), r2_rf_mr, round(mae_rf_mr), RMSE_rf_mr_oob, r2_rf_mr_oob
 )
 
 library(knitr)
@@ -1592,10 +1610,159 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(res_boost, caption = 'Error cuadrático medio de los modelos ajustados por Boosting', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F,  format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+kable(res_rf, caption = 'Principales medidas de resumen de los modelos ajustados por Random Forest según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE), al igual que el error out of bag y el coeficiente de determinación out of bag. Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 26.000 y 17.000 dólares estadounidenses si se utiliza como medida de error al RMSE y MAE respectivamente. Asimismo, los modelos explican aproximadamente un 82 porciento de la varianza en los datos. Por su parte, si se consideran las métricas de RMSE y R2 out of bag, se tiene un error medio de predicción de aproximadamente 27.000 dólares estadounidenses y una varianza explicada aproximadamente del 88 porciento.', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE", 'RMSE OOB', "$R^2 OOB$"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+\label{tab4}
+
+
+\section{Boosting \label{sec:resboosting}}
+
+En éste sección se presentan los resultados del ajuste por Boosting considerando ambas metodologías de imputación. 
+Se destaca que el ajuste se realizó utilizando la función \textit{gbm} del paquete \textit{gbm} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{boosting} para ambos métodos de imputación. 
+
+De esta manera, en primer lugar se presenta en la tabla \ref{hypb} los valores utilizados. 
+
+<<>>=
+
+hyp_boost <- tribble(
+  ~Hyperparametro, ~Valor,
+  "Número de árboles (B)",  boosting_train$n.trees, 
+  "Tasa de aprendizaje (lambda)", boosting_train$shrinkage,
+  "Número de particiones en cada arbol (d)",boosting_train$interaction.depth
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
 @
 
+<<results=tex>>=
+kable(hyp_boost, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Valor'), caption = 'Valores por defecto utilizados de los hyperparámentros en los modelos ajustados por Boosting. Se detalla el número de árboles, la tasa de aprendizaje y el número de particiones en cada árbol.' , escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+\label{hypb}
+
+Luego se presenta graficamente en la figura \ref{boost_import} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{boosting}. 
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE>>=
+
+pfun <- function(object, newdata) predict(object, newdata = newdata)
+
+importancia_boosting <- vip(boosting_train, method = "permute", target = "price", metric = "rmse", 
+         pred_wrapper = pfun,plot=F) 
+
+p3 <- importancia_boosting$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+importancia_boosting_mr <- vip(boosting_train_mr, method = "permute", target = "price", metric = "rmse", 
+                            pred_wrapper = pfun,plot=F) 
+
+p4 <- importancia_boosting_mr$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+
+grid.arrange(p3, p4, ncol = 2)
+
+#importancia_boosting <- vip::vip(boosting_train,plot=F)
+#importancia_boosting_mr <- vip::vip(boosting_train_mr,plot=F)
+
+@
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables cantidad de baños completos, área total e ingreso medio ECH son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia a la rambla se encuentra entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition se encuentra entre las 10 variables más importantes.}
+\end{figure}
+\label{boost_import}
+
+Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{boosting}. Las mismas se presentan a continuación en la tabla \ref{tab5}.
+
+<<>>=
+predictions_boost <- gbm::predict.gbm(boosting_train, test)
+predictions_boost_mr <- gbm::predict.gbm(boosting_train_mr, test_mr)
+
+RMSE_boost <- RMSE(predictions_boost, test$price)
+RMSE_boost_mr <- RMSE(predictions_boost_mr , test_mr$price)
+
+
+r2_boost <- sum((predictions_boost-mean(test$price))^2) /
+      sum((test$price - mean(test$price))^2)
+
+r2_boost_mr <- sum((predictions_boost_mr-mean(test_mr$price))^2) /
+      sum((test_mr$price - mean(test_mr$price))^2)
+
+mae_boost <- mean(abs((test$price-predictions_boost)))
+mae_boost_mr <- mean(abs((test_mr$price-predictions_boost_mr)))
+
+res_boost <- tribble(
+      ~Imput, ~RMSE, ~R2, ~MAE, 
+      "Media",   round(RMSE_boost), r2_boost, round(mae_boost),
+      "Random Forest", round(RMSE_boost_mr), r2_boost_mr, round(mae_boost_mr)
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(res_boost, caption = 'Principales medidas de resumen de los modelos ajustados por Boosting según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE). Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 40.000 y 39.000 dólares estadounidenses si se utiliza como medida de error al RMSE y MAE respectivamente. Asimismo, los modelos explican aproximadamente un 60 porciento de la varianza en los datos.', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+\label{tab5}
+
 \section{Support vector regression \label{sec:ressvr}}
+
+En éste sección se presentan los resultados del ajuste por Support Vector Regression considerando ambas metodologías de imputación. Se destaca que el ajuste se realizó utilizando la función \textit{ksvm} del paquete \textit{kernlab} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{svr} para ambos métodos de imputación. 
+
+De esta manera, en primer lugar se presenta en la tabla \ref{hypsvr} los valores utilizados. 
+
+<<>>=
+hyp_svr <- tribble(
+  ~Hyperparametro, ~Valor,
+  "Complejidad del modelo (C)", 1, 
+  "Error (epsilon)", 0.1,
+  "Escala (gamma)", 0.03085
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(hyp_svr, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Valor'), caption = 'Valores por defecto utilizados de los hyperparámentros en los modelos ajustados por Support Vector Regression Se detalla el parámetro de complejidad, el error especificado en la función de error para medir la discrepancia entre lo predicho y lo observado, y el parámetr de escala.' , escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+\label{hypsvr}
+
+En éste sección se presentan los resultados del ajuste por Suppport Vector Regression considerando ambas metodologías de imputación. 
+
+En primer lugar se presenta graficamente un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{svr}. 
+
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE, eval = FALSE>>=
+
+# pfun <- function(object, newdata) predict(object, newdata = newdata)
+# 
+# importancia_boosting <- vip(boosting_train, method = "permute", target = "price", metric = "rmse", 
+#          pred_wrapper = pfun,plot=F) 
+# 
+# p3 <- importancia_boosting$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+#   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+# 
+# importancia_boosting_mr <- vip(boosting_train_mr, method = "permute", target = "price", metric = "rmse", 
+#                             pred_wrapper = pfun,plot=F) 
+# 
+# p4 <- importancia_boosting_mr$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+#   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+# 
+# 
+# grid.arrange(p3, p4, ncol = 2)
+
+#importancia_boosting <- vip::vip(boosting_train,plot=F)
+#importancia_boosting_mr <- vip::vip(boosting_train_mr,plot=F)
+
+@
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables cantidad de baños completos, área total e ingreso medio ECH son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia a la rambla se encuentra entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition se encuentra entre las 10 variables más importantes.}
+\end{figure}
+\label{svr_import}
+
+Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{svr}. Las mismas se presentan a continuación en la tabla \ref{tabsvr}.
 
 <<>>=
 # RMSE test
@@ -1615,7 +1782,7 @@ r2_svr_mr <- sum((predictions_svr_mr-mean(test_mr$price))^2) /
 mae_svr <- mean(abs((test$price-predictions_svr)))
 mae_svr_mr <- mean(abs((test_mr$price-predictions_svr_mr)))
 
-res_arbol <- tribble(
+res_svr <- tribble(
   ~Imput, ~RMSE, ~R2, ~MAE, 
   "Media",   round(RMSE_svr), r2_svr, round(mae_svr),
   "Random Forest", round(RMSE_svr_mr), r2_svr_mr, round(mae_svr_mr)
@@ -1625,45 +1792,49 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<eval = FALSE, results=tex>>=
-kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de regresión, ajustados según metodologías de imputación pr la media y por Random Forest. Se presentan el RMSE, R2, y MAE', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "$MAE$"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+
+<<results=tex>>=
+kable(res_svr, caption = 'Principales medidas de resumen de los modelos ajustados por Support Vector Regression según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE). Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 37.000 y 17.000 dólares estadounidenses si se utiliza como medida de error al RMSE y MAE respectivamente. Asimismo, los modelos explican aproximadamente un 65 porciento de la varianza en los datos.', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
+\label{tabsvr}
 
-
-A continuación se presenta la tabla con los valores del RMSE para cada uno de los modelos implementados.
+Por último, a continuación se presenta en la tabla \ref{resmod} con los valores del RMSE, $R^2$ y MAE para cada uno de los modelos implementados.
 
 <<eval = FALSE>>=
 
-lmt
+r2_lm <- lmt$r.squared[1]
+r2_lm_mr <- lmt$r.squared[2]
 
-# rmse_tot <- tribble(
-#   ~Modelo, ~imput, ~RMSE,
-#   "Modelo lineal", "Media", round(RMSE_lm),
-#   "Arbol de regresion", "Media", round(RMSE_arbol),
-#   "Random Forest", "Media", round(RMSE_rf),
-#    "Support Vector Regression", "Media",0,
-#   "Modelo lineal", "Random Forest", round(RMSE_lm_mr),
-#   "Arbol de regresion",  "Random Forest", round(RMSE_arbol_mr),
-#   "Random Forest",  "Random Forest", round(RMSE_rf_mr),
-#    "Support Vector Regression",  "Random Forest", 0
-# )
+res_tot <- tribble(
+   ~Modelo, ~imput, ~RMSE, ~R2, ~MAE,
+   "Modelo lineal", "Media", round(RMSE_lm), r2_lm , round(MAE_lm),
+  "Arbol de regresion", "Media", round(RMSE_arbol), r2_arbol, round(mae_arbol),
+   "Random Forest", "Media", round(RMSE_rf), r2_rf, round(mae_rf),
+    "Support Vector Regression", "Media",round(RMSE_svr), round(RMSE_svr), round(mae_svr),
+   "Modelo lineal", "Random Forest", round(RMSE_lm_mr), r2_lm_mr, round(MAE_lm_mr),
+   "Arbol de regresion",  "Random Forest", round(RMSE_arbol_mr),r2_arbol_mr, round(mae_arbol_mr),
+   "Random Forest",  "Random Forest", round(RMSE_rf_mr), r2_rf_mr, round(mae_rf_mr),
+    "Support Vector Regression",  "Random Forest", round(RMSE_svr_mr), r2_svr_mr, round(mae_svr_mr))
 
-summary(lm_mr)
-
-rmse_tot <- rbind(rmse_media,rmse_mr)
 
 library(knitr)
 options(knitr.table.format = "latex")
 @
 
-<<eval=FALSE>>=
-kable(rmse_tot, caption = 'Raíz del error cuadrático medio (RMSE) de los modelos ajustados', booktabs = T, align = "c", col.names = c("Modelo", "Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
-@
 
+<<eval=FALSE>>=
+kable(res_tot, caption = 'Principales medidas de resumen de los modelos ajustados según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE).', booktabs = T, align = "c", col.names = c("Modelo", "Método de imputación","RMSE"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{resmod}
 
 \section{Hyperparameter tuning \label{sec:hypt}}
 
-En ésta sección se presentan los resultados de aplicar los procedimientos de hyperparameter tuning para cada uno de los modelos de aprendizaje automático presentados anteriormente.
+Una vez realizado los ajustes de los modeos detallados en la sección \ref{MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los hiperparámetros de cada modelo. Para ello, se trabajó con la función \textit{train} del paquete \textit{CARET}. Se destaca que ésta función tiene especificada por defecto una grilla de valores para los hiperparámetros de cada modelo. Se realiza un ajuste para cada combinación de hiperparámetros en dicha grilla y se evalúan los ajustes en función de las métricas detalladas en la sección \ref{cv}.
+
+
+En la tabla \ref{grilla} de la sección del anexo \ref{hyptA} se detalla la grilla de hiperparámetros utilizada en cada ajuste.
+
+
 
 La tabla que se presenta a continuación contiene los resultados del mejor modelo, en términos de 
 
@@ -1674,10 +1845,10 @@ La tabla que se presenta a continuación contiene los resultados del mejor model
 #### RF
 
 RF_caret_tunning_best <-RF_caret_tunning$results[which.min(RF_caret_tunning$results$RMSE), ] %>%
-      select(-RMSESD, -RsquaredSD, -MAESD)
+      select(-RMSESD, -RsquaredSD, -MAESD, -splitrule, -min.node.size)
 
 RF_caret_tunning_mr_best <-RF_caret_tunning_mr$results[which.min(RF_caret_tunning_mr$results$RMSE), ] %>% 
-      select(-RMSESD, -RsquaredSD, -MAESD) 
+      select(-RMSESD, -RsquaredSD, -MAESD, -splitrule, -min.node.size) 
 
 #### Boosting
 
@@ -1698,16 +1869,17 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(best_tunes_rf, caption = 'Mejores modelos RF', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab7}
 
 <<results=tex>>=
 kable(best_tunes_boost, caption = 'Mejores modelos Boosting', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab8}
+
+\section{Interpretabilidad \label{sec:resinterp}}
 
 
-\section{Interpretabilidad \label{sec:cv}}
-
-
-\section{Selección del mejor modelo e interpretabilidad \label{sec:cv}}
+\section{Selección del mejor modelo e interpretabilidad \label{sec:resmejor}}
 
 A continuación se presenta la tabla con los errores cuadráticos medios de los modelos implementados.
 
@@ -1744,7 +1916,7 @@ kable(vars %>% select(-Fuente), caption = 'Descripción de las variables previo 
       pack_rows("Fuente: API ML", 2, as.numeric(n[1,2]))  %>% 
       pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(vars)) 
 @
-
+\label{tab9}
 
 <<>>=
 ########## Obtenemos variables que usamos
@@ -1786,7 +1958,7 @@ kable(aux_vars, caption = 'Variables utilizadas en los diferentes modelos implem
     kable_styling(latex_options = c("hold_position"), font_size = 10) %>% 
     row_spec(0,bold=TRUE)
 @
-
+\label{tab10}
 
 \section{Barrios de Montevideo \label{barriosA}}
 
@@ -1802,6 +1974,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(barrios, caption = 'Barrios de Montevideo. En la columna identificador se especifica el código de cada barrio en la API de Mercado libre. En la columna Nombre ML se especifica el nombre asociado a cada identificador en MErcado Libre. En la columna Nombre INE se especifica el nombre INE asociado a cada nombre en Mercado Libre.', booktabs = T, align = "c", col.names = c('Identificador', 'Nombre ML', 'Nombre INE'), longtable = TRUE, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = c("hold_position"), font_size = 10) 
 @
+\label{tab11}
 
 \section{Fórmula de Haversine para el cálculo de distancias \label{harvesineA}}
 
@@ -1838,11 +2011,27 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(p_na %>% filter(p_na > 0), caption = 'Proporción de valores faltantes por variable', booktabs = T, align = "c", col.names = c("Proporción por variable"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
-
+\label{tab12}
 
 \section{Modelo lineal \label{mlA}} 
 
-A continuación se presentan los resultados de las pruebas de normalidad y de homocedasticidad mencionadas en la sección \ref{sec:resml}. Esto considerando ambos métodos de imputación de valores faltantes.
+<<>>=
+a <- broom::tidy(lm)
+b <- broom::tidy(lm_mr)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(a, caption = 'Tabla de resumen de los coeficientes del ajuste lineal con imputación de valores faltantes por la media. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico t de student y su p-valor asociado.', booktabs = T, align = "c", col.names = c("Variable", "Coeficientes estimados", "Error estándar", "Estadístico T", "P-Valor"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+@
+\label{taba}
+
+<<results=tex>>=
+kable(b, caption = 'Tabla de resumen de los coeficientes del ajuste lineal con imputación de valores faltantes por Random Forest. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico t de student y su p-valor asociado', booktabs = T, align = "c", col.names = c("Variable", "Coeficientes estimados", "Error estándar", "Estadístico T", "P-Valor"), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
+@
+\label{tabb}
 
 <<>>=
 bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
@@ -1863,7 +2052,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(bp_t, caption = 'Resultados de la prueba de Breush-Pagam para el análisis de homoscedasticidad de los residuos', booktabs = T, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
-
+\label{tab13}
 
 <<>>=
 lt <- lillie.test(residuals(lm)) #se rechaza h0 de normalidad
@@ -1881,9 +2070,12 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
+
 <<results=tex>>=
 kable(lt_t, caption = 'Resultados de la prueba de Llliefors para el análisis de normalidad de los residuos', booktabs = T, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ".")) %>% kable_styling() %>% row_spec(0,bold=TRUE)
 @
+\label{tab14}
+
 \section{Arbol de regressión \label{arbolA}} 
 
 \begin{figure}[h!]
@@ -1907,6 +2099,7 @@ rpart.plot(arbol.prune.mr,roundint = T,digits = -3)
 @
 \captionof{figure}{Árbol de regresión obtenido al ajustar la variable price mediante la base de datos construida en base a información obtenida de Mercado Libre,  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt_mr}. El método de imputación sobre valores faltantes es en éste caso imputación por Random Forest. El árbol se conforma por \Sexpr{npart_mr+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart_mr} particiones.}
 \end{figure}
+\label{figarbol}
 
 A continuación, a modo de resumen se presenta la tabla de los modelos mencionados en la sección \ref{sec:resarbol}. La misma contiene diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de cross-validation asociado, y el tamaño del árbol que dicho valor del parámetro implica.
 
@@ -1922,6 +2115,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(cp_error %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation.   La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por la media.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
+\label{tab17}
 
 <<>>=
 
@@ -1932,9 +2126,101 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(cp_error_mr %>% select(-rel.error, -xstd), caption = 'Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de cross-validation. La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por Random Forest.', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
-
+\label{tab18}
 
 \section{Hyperparameter Tuning \label{hyptA}}
+
+<<>>=
+
+#Grillas por defecto
+
+#rf
+a <- expand.grid(
+  .mtry = c(2,12,23),
+  .splitrule = c("variance","extratrees"),
+  min.node.size = 5
+) %>% select(-min.node.size)
+
+#boosting
+b <- b_grilla_inicial  <- expand.grid(
+   interaction.depth = c(1,2,3),
+   n.trees = c(50,100,150), #rule to split on
+   shrinkage = c(0.1),
+   n.minobsinnode = 10
+) %>% select(-n.minobsinnode) %>% 
+      select(n.trees,  shrinkage, interaction.depth)
+
+#SVR
+c <- expand.grid(
+  C = c(.25,.5,1),
+  epsilon = .1,
+  sigma = .03085
+)
+
+#Tuning grids
+
+#rf
+d <- tuneGrid <- data.frame(
+   .mtry = c(12:20),
+   .splitrule = "variance", #rule to split on
+   .min.node.size = 5
+) %>% select(-.min.node.size)
+
+#boosting
+e <- tuneGrid <- expand.grid(
+   interaction.depth = c(3,5,10),
+   n.trees = c(500,1500,2000,5000), 
+   shrinkage = c(0.01,0.1),
+   n.minobsinnode = 10
+) %>% select(-n.minobsinnode) %>% 
+      select(n.trees,  shrinkage, interaction.depth)
+
+
+#SVR
+f <- tuneGrid <- expand.grid(
+   sigma = c(.03085,.05,.01),
+    epsilon = .1,
+   C = c(1,3,5)
+) %>% select(C, epsilon, sigma)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+
+<<results=tex>>=
+kable(a, caption = 'Grillas de hiperparámetros por defecto para los modelos ajustados por Random Forest. Se destaca que el número de observaciones mínimas en cada nodo terminal es 5 mientras que la cantidad de árboles utilizada es 500.', booktabs = T, align = "c", col.names = c("Cantidad de variables (p)", "Regla de partición"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grilla1}
+
+<<results=tex>>=
+kable(b, caption = 'Grillas de hiperparámetros por defecto para los modelos ajustados por Boosting.  Se destaca que el número de observaciones mínimas en cada nodo terminal es 10', booktabs = T, align = "c", col.names = c("Número de árboles (B)", "Tasa de aprendizaje (lambda)", "Número de particiones en cada árbol (d)"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grillab}
+
+<<results=tex>>=
+kable(c, caption = 'Grillas de hiperparámetros por defecto para los modelos ajustados por Support Vector Regression.', booktabs = T, align = "c", col.names = c("Complejidad del modelo (C)", "Error (epsilon)", "Escala (gamma)"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grillac}
+
+
+<<results=tex>>=
+kable(d, caption = 'Grillas de hiperparámetros especificada para los modelos ajustados por Random Forest. Se destaca que la cantidad de árboles utilizada es 500', booktabs = T, align = "c", col.names = c("Cantidad de variables (p)", "Regla de partición"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grillad}
+
+
+<<results=tex>>=
+kable(e, caption = 'Grillas de hiperparámetros especificaa para los modelos ajustados por Boosting.  Se destaca que el número de observaciones mínimas en cada nodo terminal es 10', booktabs = T, align = "c", col.names = c("Número de árboles (B)", "Tasa de aprendizaje (lambda)", "Número de particiones en cada árbol (d)"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grillae}
+
+
+<<results=tex>>=
+kable(f, caption = 'Grillas de hiperparámetros especificada para los modelos ajustados por Support Vector Regression.', booktabs = T, align = "c", col.names = c("Complejidad del modelo (C)", "Error (epsilon)", "Escala (gamma)"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
+@
+\label{grillaf}
+
 
 <<>>=
 #### Caret
@@ -1967,26 +2253,32 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(RF_caret_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab19}
 
 <<results=tex>>=
 kable(RF_caret_mr_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab20}
 
 <<results=tex>>=
 kable(RF_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab21}
 
 <<results=tex>>=
 kable(RF_caret_tunning_mr_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab22}
 
 <<results=tex>>=
 kable(Boosting_caret_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab23}
 
 <<results=tex>>=
 kable(Boosting_caret_tunning_res, caption = 'Resumen', booktabs = T, align = "c", format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
+\label{tab24}
 
 \end{appendix}
 
