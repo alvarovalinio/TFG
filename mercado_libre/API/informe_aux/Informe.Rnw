@@ -206,6 +206,19 @@ load(here("mercado_libre/modelos/SVR/Caret","SVR_caret_tunning.RDS"))
 
 load(here("mercado_libre/modelos/SVR/Caret","SVR_caret_tunning_mr.RDS"))
 
+# cARGAMOS IMPORTANCIA VARIABLES
+
+load(here("mercado_libre/modelos/RF","importancia_rf.RDS")) 
+
+load(here("mercado_libre/modelos/RF","importancia_rf_mr.RDS")) 
+
+load(here("mercado_libre/modelos/SVR","importancia_SVR.RDS"))
+
+load(here("mercado_libre/modelos/SVR","importancia_SVR_mr.RDS"))
+
+load(here("mercado_libre/modelos/BOOSTING","importancia_boosting.RDS")) 
+
+load(here("mercado_libre/modelos/BOOSTING","importancia_boosting_mr.RDS")) 
 
 @
 
@@ -934,13 +947,40 @@ de los datos sino que, por el contrario, es necesario que sea especificado previ
 
 \section{Interpretabilidad \label{sec:interp}}
 
-Una vez implementados los diferentes algoritmos de aprendizaje automático y realizado el proceso de hiperparameter tunning, se procedió a obtener una medida de interpretabilidad de los mismos. Para ello, se trabajó con métodos globales modelo - agnosticos de interpretación, aplicados a aquel modelo con mejor performance predictiva y haciendo hincapié en el análisis gráfico.
+Una vez implementados los diferentes algoritmos de aprendizaje estadístico y realizado el proceso de hiperparameter tunning, se procedió a obtener una medida de interpretabilidad de los mismos. Para ello, se trabajó con métodos globales modelo - agnosticos de interpretación, aplicados a aquel modelo con mejor performance predictiva y haciendo hincapié en el análisis gráfico.
 
 Estos métodos de interpretación para modelos de caja negra, consiste en describir el compartamiento promedio del modelo. Donde, los mismos generalmente se expresan mediante un valor esperado, basado en la distribución de los datos. (Molnar, 2021)
 
-A pesar de que en la literatura existen diferentes métodos para llevar a cabo el análsis, se trabajó mediante dos aproximaciones. Como primera aproximación, se realizó el análisis mediante los gráficos denominados \texit{Partial Dependece Plot} (PDP). Luego, con el fin de realizar un análisis con mayor profundidad y en la medida de que la metodología anterior presenta ciertas limitantes, se trabajó mediante el estudio de \texit{Accumulated local effect plots} (ALE).
+A pesar de que en la literatura existen diferentes métodos para llevar a cabo el análsis, se trabajó mediante tres aproximaciones. Como primera aproximación, se implemento un análisis sobre la importancia de cada predictor, mediante la metodología \texit{Permutation-based feature importance}. 
 
-En las siguientes subsecciones se detallan los principales aspectos teóricos de ambas metodologías, al igual que sus ventajas y limitantes.
+Luego, se realizó el análisis mediante los gráficos denominados \texit{Partial Dependece Plot} (PDP). Por último, con el fin de realizar un análisis con mayor profundidad y en la medida de que la metodología anterior presenta ciertas limitantes, se trabajó mediante el estudio de \texit{Accumulated local effect plots} (ALE).
+
+En las siguientes subsecciones se detallan los principales aspectos teóricos de las metodologías, al igual que sus ventajas y limitantes.
+
+\subsection{Permutation-based feature importance \label{subsec:import}}
+
+La metodología \texit{Permutation-based feature importance}, consiste en obtener una medida de importancia de determinada variable de entrada, calculando el aumento en el error de predicción obtenido al permutar los valores en dicha variable.
+
+De esta forma, se tiene que si la variable es relevante, al permutar los valores de la misma de forma aleatoria en el conjunto de entranamiento, se genera un aumento en el error de predicción (esto debido a que al permutar los valores de la variable se deshace cualquier relación entre la variable y la variable de salida) (Bradley, 2020)
+
+A la hora de llevar acabo esta metodología, en primer lugar se computa una metrica de la performance predictiva del modelo obtenida sin alterera el conjunto de entrenamiento. Luego, se computa dicha metrica permutando para cierta variable de interes, sus valores en el conjunto de entrenamiento. Esto con el fin de observar la diferencia entre el valor original de la metrica y el nuevo valor obtenido.
+
+A modo de resumen, si denotamos $X_{1},\dots,X_{j}$ como las variables de interes, entonces el algortimo consiste en:
+
+1) En $i = 1,\dots,j$:
+
+a) Se permuta los valores de la variable $X_{i}$ en el conjunto de entranamiento
+
+b) Se calcula la performance predicitva mediante una metrica predefinida en a). 
+
+c) Se calcula la diferencia entre la medida de error original y la obtenida en b)
+
+2) Se ordena a cada variable de forma decreciente en función de c)
+ 
+Por ende, se tiene que la variable es "importante" si al permutar sus valores, aumenta el error de predicción del modelo. Por su contraparte, una variable no es "importante", si al permutar sus valores el error del modelo permanece incambiado. (Bradley, 2020)
+
+Se destaca que si se cuenta con variables altamente correlacionadas, este método posee una gran limitante. En la medida de que al permutar los valores de una sola variable, pueden generarse observaciones las cuales no son factibles. (Bradley, 2020)
+
 
 \subsection{Partial Dependence Plot (PDP) \label{subsec:pdp}}
 
@@ -1016,7 +1056,6 @@ Esto se realiza para poder tener una medida del efecto de la variable de interé
 
 En lo que respecta a los intervalos, los mismos son definidos utilizando los cuantiles de la distribución de la variable de interés, lo cual asegura que cada intervalo va a contener el mismo número de observaciones. La desventaja principal de utilizar los cuantiles para definir los intervalos es que los mismos pueden tener longitud muy diferente, haciendo que el gráfico sea muy irregular.
 
-
 \section{Tratamiento de datos faltantes lineal \label{sec:secfalt}}
 
 La base de datos construida contiene variables con diferentes grado de datos faltantes. 
@@ -1035,9 +1074,9 @@ Como fue mencionado anteriormente el criterio genérico para seleccionar las var
 
 \chapter{Análisis exploratorio de  datos \label{cap:EDA}}
 
-En éste capítulo se presenta los principales resultados obtenidos a la hora de realizar el análisis exploratorio de los datos, luego de realizar el proceso de depuración de los mismos detallado en la sección \ref{procesamiento} . De esta forma, la base de datos está conformada por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables. 
+En éste capítulo se presenta los principales resultados obtenidos a la hora de realizar el análisis exploratorio de los datos, luego de realizar el proceso de depuración de los mismos detallado en la sección \ref{sec:procesamiento} . De esta forma, la base de datos está conformada por un total de \Sexpr{paste(dim(aptos)[1])} observaciones y \Sexpr{paste(dim(aptos)[2])} variables. 
 
-Por otra parte, una vez realizado el proceso de tratamiento de datos faltantes especificado en la sección \ref{secfalt} se mantiene un total de \Sexpr{paste(dim(aptos_sin_na)[2])} variables en el caso de imputación de valores faltantes por la media, y \Sexpr{paste(dim(aptos_mr)[2])} variables en el caso de imputación de valores faltantes por Random Forest. 
+Por otra parte, una vez realizado el proceso de tratamiento de datos faltantes especificado en la sección \ref{sec:secfalt} se mantiene un total de \Sexpr{paste(dim(aptos_sin_na)[2])} variables en el caso de imputación de valores faltantes por la media, y \Sexpr{paste(dim(aptos_mr)[2])} variables en el caso de imputación de valores faltantes por Random Forest. 
 
 En la tabla AGREGAR REF A TABLA disponible en la sección del anexo \ref{varsA} se detalla el listado de variables utilizadas para la implementación de los diferentes modelos en etapas posteriores del análisis. 
 
@@ -1319,19 +1358,19 @@ ggcorrplot(corr, method = c("square"),type=c("upper"),
 
 \chapter{Resultados \label{cap:Resultados}}
 
-En ésta sección se presentan los principales resultados obtenidos luego de realizar la implementación de las técnicas detalladas en la sección \ref{MT}.
+En ésta sección se presentan los principales resultados obtenidos luego de realizar la implementación de las técnicas detalladas en la sección \ref{cap:MT}.
 
 En primer lugar se tinen los resultados obtenidos luego de relizar un ajuste mediante un modelo de regresión lineal múltiple. 
 
-Luego, se exponen los resultados de la implementación de las técnicas de aprendizaje estadístico  explicitadas en la sección \ref{MT}.
+Luego, se exponen los resultados de la implementación de las técnicas de aprendizaje estadístico  explicitadas en la sección \ref{cap:MT}.
 
 Con el fin de tener una primera aproximación de la performance predictiva de los modelos, se trabajó con una metodología de muestra de entrenamiento y muestra de testeo. Para ello, se consideró el 80\% de los datos como muestra de entrenamiento y el restante 20\% como muesra de testeo. 
 
-Por último, en forma de resumen, se muestra un análisis comparativo de los diferentes modelos en función de su performance predictiva mediante la metodología de k-folds e hyperparameter tuning especificada en la sección \ref{cv}. En particular se trabajó con 5-folds.
+Por último, en forma de resumen, se muestra un análisis comparativo de los diferentes modelos en función de su performance predictiva mediante la metodología de k-folds e hyperparameter tuning especificada en la sección \ref{sec:cv}. En particular se trabajó con 5-folds.
 
-De éste último, al mejor modelo se presenta el análisis gráfico de interpretabilidad según lo detallado en la sección \ref{interp}.
+De éste último, al mejor modelo se presenta el análisis gráfico de interpretabilidad según lo detallado en la sección \ref{sec:interp}.
 
-Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección \ref{secfalt}. 
+Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la sección \ref{sec:secfalt}. 
 
 \section{Modelo lineal \label{sec:resml}}
 
@@ -1466,7 +1505,7 @@ En función a lo observado en la figura, se tiene que la primera variable en rea
 
 El gráfico de árbol realizando imputación de valores faltantes por Random Forest es presentado en la figura \ref{figarbol} del anexo \ref{arbolA} debido a que no presenta diferencias sustanciales con el gráfico de árbol obtenido realizando imputación por la media presentado e la figura anterior.
 
-Una vez observada las principales características de los modelos, se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}. 
+Una vez observada las principales características de los modelos, se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{sec:cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}. 
 
 
 <<>>=
@@ -1502,7 +1541,7 @@ kable(res_arbol, caption = 'Principales medidas de resumen de los árboles de re
 \section{Random Forest \label{sec:resRF}}
 
 En éste sección se presentan los resultados del ajuste por Random Forest considerando ambas metodologías de imputación. 
-Se destaca que el ajuste se realizó utilizando la función \textit{ranger} del paquete \textit{ranger} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{rf} para ambos métodos de imputación. 
+Se destaca que el ajuste se realizó utilizando la función \textit{ranger} del paquete \textit{ranger} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{subsec:rf} para ambos métodos de imputación. 
 
 De esta manera, en primer lugar se presenta en la tabla \ref{hyprf} los valores utilizados. 
 
@@ -1523,11 +1562,11 @@ kable(hyp_rf, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Valor
 @
 \label{hyprf}
 
-Luego se presenta graficamente en la figura \ref{rf_import} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{rf}. 
+Luego se presenta graficamente en la figura \ref{rf_import2} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{sec:import}. 
 
 \begin{figure}[h!]
 \centering
-<<fig=TRUE, width=6, height=3>>=
+<<eval = FALSE, width=6, height=3>>=
 ############ RF 
 
 # Importancia de las variables
@@ -1572,7 +1611,29 @@ grid.arrange(p1, p2, ncol = 2)
 \end{figure}
 \label{rf_import}
 
-Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}.
+\begin{figure}[h!]
+\centering
+<<fig = TRUE, width=6, height=3>>=
+############ RF 
+
+p1 <- importancia_rf$data %>% 
+      ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+
+p2 <- importancia_rf_mr$data %>% 
+      ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+# Importancia de las variables
+grid.arrange(p1, p2, ncol = 2)
+@
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Random Forest. Se observa que las variables área cubierta, área total y distancia a la rambla son las 3 variables más importantes en ambos modelos. A su vez, todas las variables geoespaciales construidas se encuentran entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition no se encuentra entre las 10 variables más importantes.}
+\end{figure}
+\label{rf_import2}
+
+
+Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{sec:cv}. Las mismas se presentan a continuación en la tabla \ref{tab3}.
 
 
 <<>>=
@@ -1618,7 +1679,7 @@ kable(res_rf, caption = 'Principales medidas de resumen de los modelos ajustados
 \section{Boosting \label{sec:resboosting}}
 
 En éste sección se presentan los resultados del ajuste por Boosting considerando ambas metodologías de imputación. 
-Se destaca que el ajuste se realizó utilizando la función \textit{gbm} del paquete \textit{gbm} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{boosting} para ambos métodos de imputación. 
+Se destaca que el ajuste se realizó utilizando la función \textit{gbm} del paquete \textit{gbm} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{subsec:boosting} para ambos métodos de imputación. 
 
 De esta manera, en primer lugar se presenta en la tabla \ref{hypb} los valores utilizados. 
 
@@ -1640,26 +1701,17 @@ kable(hyp_boost, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Va
 @
 \label{hypb}
 
-Luego se presenta graficamente en la figura \ref{boost_import} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{boosting}. 
+Luego se presenta graficamente en la figura \ref{boost_import} un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{subsec:boosting}. 
 
 \begin{figure}[h!]
 \centering
 <<fig = TRUE>>=
 
-pfun <- function(object, newdata) predict(object, newdata = newdata)
-
-importancia_boosting <- vip(boosting_train, method = "permute", target = "price", metric = "rmse", 
-         pred_wrapper = pfun,plot=F) 
-
 p3 <- importancia_boosting$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
 
-importancia_boosting_mr <- vip(boosting_train_mr, method = "permute", target = "price", metric = "rmse", 
-                            pred_wrapper = pfun,plot=F) 
-
 p4 <- importancia_boosting_mr$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
-
 
 grid.arrange(p3, p4, ncol = 2)
 
@@ -1667,11 +1719,11 @@ grid.arrange(p3, p4, ncol = 2)
 #importancia_boosting_mr <- vip::vip(boosting_train_mr,plot=F)
 
 @
-\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables cantidad de baños completos, área total e ingreso medio ECH son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia a la rambla se encuentra entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition se encuentra entre las 10 variables más importantes.}
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables área total, cantidad de baños completos e ingreso medio ECH son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia a la rambla se encuentra entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem se encuentra entre las 10 variables más importantes.}
 \end{figure}
 \label{boost_import}
 
-Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{boosting}. Las mismas se presentan a continuación en la tabla \ref{tab5}.
+Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{subsec:boosting}. Las mismas se presentan a continuación en la tabla \ref{tab5}.
 
 <<>>=
 predictions_boost <- gbm::predict.gbm(boosting_train, test)
@@ -1707,9 +1759,9 @@ kable(res_boost, caption = 'Principales medidas de resumen de los modelos ajusta
 
 \section{Support vector regression \label{sec:ressvr}}
 
-En éste sección se presentan los resultados del ajuste por Support Vector Regression considerando ambas metodologías de imputación. Se destaca que el ajuste se realizó utilizando la función \textit{ksvm} del paquete \textit{kernlab} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{svr} para ambos métodos de imputación. 
+En éste sección se presentan los resultados del ajuste por Support Vector Regression considerando ambas metodologías de imputación. Se destaca que el ajuste se realizó utilizando la función \textit{ksvm} del paquete \textit{kernlab} y tomando los valores por defecto de los hyperparametros detallados en la sección \ref{subsec:svr} para ambos métodos de imputación. 
 
-De esta manera, en primer lugar se presenta en la tabla \ref{hypsvr} los valores utilizados. 
+De esta manera, en primer lugar se presenta en la tabla \ref{hypsvr} los valores de los hiperparámetros utilizados. 
 
 <<>>=
 hyp_svr <- tribble(
@@ -1728,41 +1780,26 @@ kable(hyp_svr, booktabs = T, align = "c", col.names = c('Hyperparámetro', 'Valo
 @
 \label{hypsvr}
 
-En éste sección se presentan los resultados del ajuste por Suppport Vector Regression considerando ambas metodologías de imputación. 
-
-En primer lugar se presenta graficamente un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{svr}. 
-
+Por otro lado en la figura \ref{svrimport} se presenta gráficamente un análisis de la importancia de las variables siguiendo la metodología detallada en la sección \ref{sec:import}. 
 
 \begin{figure}[h!]
 \centering
 <<fig = TRUE, eval = FALSE>>=
 
-# pfun <- function(object, newdata) predict(object, newdata = newdata)
-# 
-# importancia_boosting <- vip(boosting_train, method = "permute", target = "price", metric = "rmse", 
-#          pred_wrapper = pfun,plot=F) 
-# 
-# p3 <- importancia_boosting$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
-#   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
-# 
-# importancia_boosting_mr <- vip(boosting_train_mr, method = "permute", target = "price", metric = "rmse", 
-#                             pred_wrapper = pfun,plot=F) 
-# 
-# p4 <- importancia_boosting_mr$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
-#   geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
-# 
-# 
-# grid.arrange(p3, p4, ncol = 2)
+p3 <- importancia_SVR$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
 
-#importancia_boosting <- vip::vip(boosting_train,plot=F)
-#importancia_boosting_mr <- vip::vip(boosting_train_mr,plot=F)
+p4 <- importancia_SVR_mr$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+grid.arrange(p3, p4, ncol = 2)
 
 @
-\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables cantidad de baños completos, área total e ingreso medio ECH son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia a la rambla se encuentra entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition se encuentra entre las 10 variables más importantes.}
+\captionof{figure}{Gráfico de importancia de las 10 primeras variables en los modelos ajustados por Boosting. Se observa que las variables área cubierta, área total y distancia a la rambla son las 3 variables más importantes en ambos modelos. A su vez, en lo que respecta a las variables geoespaciales construidas, distancia al shopping más cercano e ingreso medioECH también se encuentran entre las 10 variables más importantes para ambos casos. Por otro lado se destaca que, a la hora de realizar la imputación por Random Forest, la variable condición del ítem condition se encuentra entre las 10 variables más importantes.}
 \end{figure}
-\label{svr_import}
+\label{svrimport}
 
-Por otro lado se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{svr}. Las mismas se presentan a continuación en la tabla \ref{tabsvr}.
+Por último, se procedió a obtener cierta medida de la performance predictiva en función de las métricas definidas en la sección \ref{subsec:svr}. Las mismas se presentan a continuación en la tabla \ref{tabsvr}.
 
 <<>>=
 # RMSE test
@@ -1792,15 +1829,15 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-
 <<results=tex>>=
 kable(res_svr, caption = 'Principales medidas de resumen de los modelos ajustados por Support Vector Regression según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE). Se observa que ambos modelos tienen un error promedio de predicción de aproximadamente 37.000 y 17.000 dólares estadounidenses si se utiliza como medida de error al RMSE y MAE respectivamente. Asimismo, los modelos explican aproximadamente un 65 porciento de la varianza en los datos.', booktabs = T, align = "c", col.names = c('Método', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
 @
 \label{tabsvr}
 
-Por último, a continuación se presenta en la tabla \ref{resmod} con los valores del RMSE, $R^2$ y MAE para cada uno de los modelos implementados.
 
 <<eval = FALSE>>=
+
+# COMPARATIVA MODELOS TRAIN TEST
 
 r2_lm <- lmt$r.squared[1]
 r2_lm_mr <- lmt$r.squared[2]
@@ -1829,15 +1866,11 @@ kable(res_tot, caption = 'Principales medidas de resumen de los modelos ajustado
 
 \section{Hyperparameter tuning \label{sec:hypt}}
 
-Una vez realizado los ajustes de los modeos detallados en la sección \ref{MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los hiperparámetros de cada modelo. Para ello, se trabajó con la función \textit{train} del paquete \textit{CARET}. Se destaca que ésta función tiene especificada por defecto una grilla de valores para los hiperparámetros de cada modelo. Se realiza un ajuste para cada combinación de hiperparámetros en dicha grilla y se evalúan los ajustes en función de las métricas detalladas en la sección \ref{cv}.
-
+Una vez realizado los ajustes de los modeos detallados en la sección \ref{cap:MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los hiperparámetros de cada modelo. Para ello, se trabajó con la función \textit{train} del paquete \textit{CARET}. Se destaca que ésta función tiene especificada por defecto una grilla de valores para los hiperparámetros de cada modelo. Se realiza un ajuste para cada combinación de hiperparámetros en dicha grilla y se evalúan los ajustes en función de las métricas detalladas en la sección \ref{sec:cv}.
 
 En la tabla \ref{grilla} de la sección del anexo \ref{hyptA} se detalla la grilla de hiperparámetros utilizada en cada ajuste.
 
-
-
 La tabla que se presenta a continuación contiene los resultados del mejor modelo, en términos de 
-
 
 <<>>=
 #### Caret
