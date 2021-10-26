@@ -1866,9 +1866,66 @@ kable(res_tot, caption = 'Principales medidas de resumen de los modelos ajustado
 
 \section{Hyperparameter tuning \label{sec:hypt}}
 
-Una vez realizado los ajustes de los modeos detallados en la sección \ref{cap:MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los hiperparámetros de cada modelo. Para ello, se trabajó con la función \textit{train} del paquete \textit{CARET}. Se destaca que ésta función tiene especificada por defecto una grilla de valores para los hiperparámetros de cada modelo. Se realiza un ajuste para cada combinación de hiperparámetros en dicha grilla y se evalúan los ajustes en función de las métricas detalladas en la sección \ref{sec:cv}.
+Una vez realizado los ajustes de los modelos detallados en la sección \ref{cap:MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los hiperparámetros de cada modelo. 
+
+Para ello, se trabajó con la función \textit{train} del paquete \textit{CARET}. Se destaca que ésta función tiene especificada por defecto una grilla de valores para los hiperparámetros de cada modelo. De esta manera, para cada combinación de hiperparámetros, se realiza un ajuste y luego se evalúan en función de las métricas detalladas en la sección \ref{sec:cv}.
 
 En la tabla \ref{grilla} de la sección del anexo \ref{hyptA} se detalla la grilla de hiperparámetros utilizada en cada ajuste.
+
+Mediante los resultados obtenidos en estos ajustes iniciales, se realizó el proceso de búsqueda de combinaciones que puedan mejorar la performance predictiva en cada modelo.
+En la figura BLA se observa la evolución del error de predicción en función de los valores de los hiperparámentros para cada modelo. 
+
+Se destaca que algunos de los hiperparámetros detallados en la sección \ref{sec:MT} permanecen constantes a la hora de realizar los diferentes ajustes utilizando las grillas por defecto. Los mismos se detallan en la tabla \ref{hypdef}.
+
+ 
+<<>>=
+hyp_def <- tribble(
+  ~Modelo, ~Hiperparametro, ~Valor_por_defecto,
+  "Ranfom Forest", "Número de árboles", 500,
+  "Ranfom Forest", "Cantidad de observaciones mínimas", 5,
+  "Boosting", "Shrinkage", 0.1,
+   "Boosting", "Cantidad de observaciones mínimas", 10,
+  "SVR", "Gamma", 0.03085,
+  "SVR", "Epsilon", 0.1
+)
+
+library(knitr)
+options(knitr.table.format = "latex")
+@
+
+<<results=tex>>=
+kable(hyp_def, booktabs = T, align = "c", col.names = c('Modelo', 'Hyperparámetro', 'Valor por defecto'), caption = 'Tabla resumen de los valores de los hiperparámetros que utiliza por defecto la función train del paquete CARET y que se mantienen constantes para todos los ajustes.' , escape = F, format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE)
+@
+\label{hypdef}
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE>>=
+
+a <- ggplot(RF_caret)
+
+b <- Boosting_caret$tunning %>% mutate(max_tree_depth = factor(interaction.depth)) %>% 
+   ggplot(aes(y=RMSE, x= n.trees,color=max_tree_depth)) + 
+   geom_point()+ geom_line()
+
+c <- ggplot(SVR_caret) + theme(legend.position = 'right')    
+      
+grid.arrange(a,b,c, ncol = 2)      
+      
+@
+\captionof{figure}{Gráfico de la evolución del error cuadrático medio de predicción (RMSE) en función de los valores de los hiperparámetros por defecto para el caso de imputación por la media. En el panel suerior izquierdo se encuentran los resultados para los ajustes por Random Forest, en el panel superior derecho se encuentran los resultados para el ajuste por Boosting, y en el panel inferior izquierdo se encuentran los resultados para el ajuste por Support Vector Regression.}
+\end{figure}
+\label{tun}
+
+En lo que respecta a los ajustes realizados por Random Forest se observa en la figura \ref{tun} que aquellos ajustes que toman el criterio VARIANCE en la regla de partición poseen un menor error cuadrático medio de predicción que aquellos ajustes que toman el criterio EXTRATREES. 
+
+A su vez, para lo valores de mtry en la grilla por defecto 2, 12, y 23, se observa un comportamiento decreciente entre los valores 3 y 12 y un comportamiento creciente de menor magnitud, entre los valores 12 y 23. De esta forma, a la hora de realizar el proceso de hyperparameter tuning se consideraron todos los valores enteros entre los números 12 y 20, y un criterio de partición VARIANCE.
+
+Por otro lado, en cuanto a los ajustes realizados por Boosting, se observa que el error de predicción es decreciente conforme crece el número de árboles B. Asimismo, se observa que el mismo es decreciente en cuanto al número de particiones. De esta manera, en la medida que los comportamientos observados para dichos hiperparámetros es decreciente conforma se incrementa el valor de los mismos se tomaron valores del número de particiones entre 3 y 10; y cantidad de árboles entre 500 y 5000. Por último se decidió variarla tasa de parendizaje tomando valor 0.1 (valor fijo por defecto) y 0.01.
+
+Por último, sobre los ajustes realizados por Support Vector Regression, se observa que el error de predicción es decreciente a medida que aumenta el parámetro de complejidad. Por lo tanto, se trabajó con valores enteros entre 1 y 5. A su vez, se utilizaron valores de 0.05 y 0.01 del parámetro gamma.
+
+Se destaca que en la medida que los resultados obtenidos son similares para el caso de imputación de valores faltantes por Random Forest, la grilla seleccionada para realizar el proceso de hyperparameer tuning es análoga para cada modelo. En la figura \ref{hyprfdef} se encuentran los gráficos correspondientes.
 
 La tabla que se presenta a continuación contiene los resultados del mejor modelo, en términos de 
 
@@ -2253,6 +2310,27 @@ kable(e, caption = 'Grillas de hiperparámetros especificaa para los modelos aju
 kable(f, caption = 'Grillas de hiperparámetros especificada para los modelos ajustados por Support Vector Regression.', booktabs = T, align = "c", col.names = c("Complejidad del modelo (C)", "Error (epsilon)", "Escala (gamma)"), format.args = list(big.mark = ".")) %>% kable_styling(latex_options = "HOLD_position") %>% row_spec(0,bold=TRUE) 
 @
 \label{grillaf}
+
+
+
+\begin{figure}[h!]
+\centering
+<<fig = TRUE>>=
+
+a <- ggplot(RF_caret_mr)
+
+b <- Boosting_caret_mr$tunning %>% mutate(max_tree_depth = factor(interaction.depth)) %>% 
+   ggplot(aes(y=RMSE, x= n.trees,color=max_tree_depth)) + 
+   geom_point()+ geom_line()
+
+c <- ggplot(SVR_caret_mr) + theme(legend.position = 'right')    
+      
+grid.arrange(a,b,c, ncol = 2)      
+      
+@
+\captionof{figure}{Gráfico de la evolución del error cuadrático medio de predicción (RMSE) en función de los valores de los hiperparámetros por defecto para el caso de imputación por Random Forest. En el panel suerior izquierdo se encuentran los resultados para los ajustes por Random Forest, en el panel superior derecho se encuentran los resultados para el ajuste por Boosting, y en el panel inferior izquierdo se encuentran los resultados para el ajuste por Support Vector Regression.}
+\end{figure}
+\label{hyprfdef}
 
 
 <<>>=
