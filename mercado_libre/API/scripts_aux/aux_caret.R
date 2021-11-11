@@ -605,6 +605,20 @@ save(file="Boosting_caret_tunning_mr.RDS",Boosting_caret_tunning_mr)
 # Caso 1: imputamos solo variables cuantitativas con % NA < 0.1 #
 #################################################################
 
+# Estandarizamos variables continuas
+
+aptos_sin_na$covered_area <- scale(aptos_sin_na$covered_area)
+
+aptos_sin_na$total_area <- scale(aptos_sin_na$total_area)
+
+aptos_sin_na$no_covered_area <- scale(aptos_sin_na$no_covered_area)
+
+aptos_sin_na$ingresomedio_ech <- scale(aptos_sin_na$ingresomedio_ech)
+
+aptos_sin_na$dist_shop <- scale(aptos_sin_na$dist_shop)
+
+aptos_sin_na$dist_rambla <- scale(aptos_sin_na$dist_rambla)
+
 # 1er - SVR
 
 no_cores <- detectCores(logical = FALSE)
@@ -641,12 +655,16 @@ SVR_caret
 # Vemos graficamente el comportamiento de los hiperparametros
 plot(SVR_caret)
 
+# Guardamos el modelo
+
+save(file="SVR_caret.RDS",SVR_caret)
+
 
 # Definimos grilla segun lo que vemos
 
 tuneGrid <- expand.grid(
-   .sigma = c(.03085),
-   .C = c(1,2,3)
+   .sigma = c(.03085,.05,.01),
+   .C = c(1,3,5)
 )
 
 
@@ -666,8 +684,8 @@ clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
 pracma::tic()
 
 SVR_caret_tunning <- train(
-   x = aptos_x, 
-   y = aptos_y,
+   price ~ .,
+   data = aptos_sin_na,
    tuneGrid = tuneGrid,
    method = 'svmRadial',
    trControl = myControl
@@ -680,9 +698,28 @@ registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
 
+# Guardamos el modelo
+
+save(file="SVR_caret_tunning.RDS",SVR_caret_tunning)
+
+
 ########################################
 # Caso 2: imputamos usando Miss Ranger #
 ########################################
+
+# Estandarizamos variables continuas
+
+aptos_mr$covered_area <- scale(aptos_mr$covered_area)
+
+aptos_mr$total_area <- scale(aptos_mr$total_area)
+
+aptos_mr$no_covered_area <- scale(aptos_mr$no_covered_area)
+
+aptos_mr$ingresomedio_ech <- scale(aptos_mr$ingresomedio_ech)
+
+aptos_mr$dist_shop <- scale(aptos_mr$dist_shop)
+
+aptos_mr$dist_rambla <- scale(aptos_mr$dist_rambla)
 
 # 1er - SVR
 
@@ -697,8 +734,8 @@ clusterSetRNGStream(cl, iseed=12345)
 pracma::tic()
 
 SVR_caret_mr <- train(
-   x = aptos_x_mr, 
-   y = aptos_y_mr,
+   price ~ .,
+   data = aptos_mr,
    method = 'svmRadial',
    trControl = myControl_mr
 )
@@ -718,11 +755,15 @@ SVR_caret_mr
 # Vemos graficamente el comportamiento de los hiperparametros
 plot(SVR_caret_mr)
 
+# Guardamos el modelo
+
+save(file="SVR_caret_mr.RDS",SVR_caret_mr)
+
 # Definimos grilla segun lo que vemos
 
 tuneGrid <- expand.grid(
-   .sigma = c(.03085),
-   .C = c(1,2,3)
+   .sigma = c(.03085,.05,.01),
+   .C = c(1,3,5)
 )
 
 
@@ -742,8 +783,8 @@ clusterSetRNGStream(cl, iseed=12345) # Para lograr reproducibilidad
 pracma::tic()
 
 SVR_caret_tunning_mr <- train(
-   x = aptos_x_mr, 
-   y = aptos_y_mr,
+   price ~ .,
+   data = aptos_mr,
    tuneGrid = tuneGrid,
    method = 'svmRadial',
    trControl = myControl_mr,
@@ -756,5 +797,10 @@ stopCluster(cl)
 registerDoSEQ() # Para volver a "modo secuencial"
 
 pracma::toc()
+
+
+# Guardamos el modelo
+
+save(file="SVR_caret_tunning_mr.RDS",SVR_caret_tunning_mr)
 
 ############################################################

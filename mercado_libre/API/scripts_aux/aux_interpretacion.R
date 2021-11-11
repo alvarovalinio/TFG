@@ -2,19 +2,22 @@
 
 library(here)
 library(tidyverse)
-#library(iml)
-library(ranger)
+library(iml) # PDP plots
+#library(ranger)
 library(data.table)
 library(doParallel)
 #library(future)
 #library(future.callr)
-library(pdp) # PDP plots
+#library(pdp) # PDP plots
 library(ALEPlot) #ALE plots
 library(gridExtra)
-
+library(vip)
+#library(gbm)
 # Cargamos modelo (con mejor performance predictiva)
 
-#best_model <- load(here("mercado_libre/modelos/RF","RF_train.RDS"))
+load(here("mercado_libre/modelos/BOOSTING/caret","Boosting_caret_tunning.RDS"))
+
+best_model <- Boosting_caret_tunning[[2]]
 
 # Por ahora usamos de ejemplo RF con todos los datos (falta correr caret)
 
@@ -25,7 +28,7 @@ source(here("mercado_libre/API/funciones","funcion_imput_media.R"))
 aptos_yearmonth <- list.files(path = here("mercado_libre/API/datos/limpios/apt"), 
                               pattern = "*.csv", full.names = T)
 
-yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109")
+yearmonth <- c('aptos_202106','aptos_202107',"aptos_202108","aptos_202109","aptos_202110")
 
 
 aptos <- sapply(aptos_yearmonth, FUN=function(yearmonth){
@@ -62,13 +65,124 @@ aptos_sin_na <- imput_media(aptos,p=.1)
 aptos_sin_na <- aptos_sin_na %>% as.data.table()
 
 #COMENTAR ESTA LINEAL UNA VEZ QUE TENGAMOS LOS MODELOS CON MEJOR AJUSTE
-best_model <- ranger(price ~ ., data = aptos_sin_na)
+#best_model <- ranger(price ~ ., data = aptos_sin_na)
+
+###########################################################
+################## Primer metodo permutation ##############
+###########################################################
+
+pfun <- function(object, newdata) predict(object, newdata = newdata)
+
+set.seed(1234)
+
+importancia_best <- vip(Boosting_caret_tunning$model, method = "permute", target = "price", metric = "rmse", 
+                            pred_wrapper = pfun,plot=F,train=aptos_sin_na) 
+
+importancia_best$data %>% ggplot(aes(y=reorder(Variable,Importance),x=Importance))+
+  geom_col(fill='navyblue')+theme(legend.position="none")+labs(y="Variables",x="Importancia")
+
+save(file="importancia_best.RDS",importancia_best)
+
 
 ##########################################################
-####################### Primer metodo PDP#################
+####################### Segundo metodo PDP#################
 ##########################################################
 
-# Primera forma con el paquete pdp
+# Primera forma con el paquete iml
+
+# Definimos matriz de variables de entrada
+
+X <-  aptos_sin_na %>% select(-price) %>% data.table()
+
+# Definimos funcion para obtener la predicciones
+
+pfun <- function(X.model, newdata) as.numeric(gbm::predict.gbm(X.model, newdata))
+
+## Contruimos el objeto para hacer la prediccion
+
+model <-  Predictor$new(model =  best_model, data = X, y = aptos_sin_na$price,
+                        predict.fun = pfun)
+
+### Construimos diferentes objetos para pdp
+
+## Variables individuales
+
+pdp_total_area <- FeatureEffect$new(model, feature = "total_area", 
+                                      method = 'pdp')
+
+pdp_total_area$results %>% ggplot(aes(x=total_area,y=.value)) + geom_point()+
+  geom_line()
+
+
+save(file="pdp_total_area.RDS",pdp_total_area)
+
+
+pdp_dist_shop <- FeatureEffect$new(model, feature = c("dist_shop"), 
+                                      method = 'pdp')
+
+pdp_dist_shop$results %>% ggplot(aes(x=dist_shop,y=.value)) + geom_point()+
+  geom_line()
+
+
+save(file="pdp_dist_shop.RDS",pdp_dist_shop)
+
+pdp_dist_rambla <- FeatureEffect$new(model, feature = "dist_rambla", 
+                                      method = 'pdp')
+
+pdp_dist_rambla$results %>% ggplot(aes(x=dist_rambla,y=.value)) + geom_point()+
+  geom_line()
+
+
+save(file="pdp_dist_rambla.RDS",pdp_dist_rambla)
+
+
+## full_bathrooms
+
+pdp_full_bathrooms <- FeatureEffect$new(model, feature = "full_bathrooms", 
+                                     method = 'pdp')
+
+pdp_full_bathrooms$results %>% ggplot(aes(x=full_bathrooms,y=.value)) + geom_col()
+
+save(file="pdp_full_bathrooms.RDS",pdp_full_bathrooms)
+
+## Interaccion
+
+## Distancia rambla y fullbathrooms
+
+pdp_dr_fb <- FeatureEffect$new(model, feature = c("dist_rambla","full_bathrooms"), 
+                                     method = 'pdp')
+
+pdp_dr_fb$results %>% ggplot(aes(x=dist_rambla,y=.value,color=full_bathrooms)) + geom_point()+
+  geom_line()
+
+save(file="pdp_dr_fb.RDS",pdp_dr_fb)
+
+## Distancia shop y bedrooms
+
+pdp_ds_b <- FeatureEffect$new(model, feature = c("dist_shop","bedrooms"), 
+                               method = 'pdp')
+
+pdp_ds_b$results %>% ggplot(aes(x=dist_shop,y=.value,color=bedrooms)) + geom_point()+
+  geom_line()
+
+
+## Total area y ingreso medio ECH
+
+pdp_ta_ech <- FeatureEffect$new(model, feature = c("total_area","ingresomedio_ech"), 
+                              method = 'pdp')
+
+install.packages("viridis")
+library(viridis)
+pdp_ta_ech$results %>% ggplot(aes(x=total_area,y=ingresomedio_ech,
+                                  fill=.value)) + geom_tile() +
+  scale_fill_viridis(discrete =FALSE) 
+
+
+save(file="pdp_ta_ech.RDS",pdp_ta_ech)
+
+
+
+# Segunda forma con el paquete pdp (no anda en GBM ver)
 
 # Proceso de paralelo
 
@@ -105,7 +219,7 @@ pracma::toc()
 ## Mediante ALEplot
 
 # Definimos funcion para hacer predicciones
-yhat <- function(X.model, newdata) as.numeric(ranger::predictions(predict(X.model, newdata)))
+yhat <- function(X.model, newdata) as.numeric(gbm::predict.gbm(X.model, newdata))
 
 ## OBS, definir diferente yhat si best_modelo != RF (sacar ranger::predictions)
 
@@ -126,10 +240,10 @@ g_covered_area <- cbind(ale_covered_area$x.values,ale_coverd_area$f.values) %>% 
   ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="covered_area",y="ALE",title="ALE covered_area")
 
 
-g_dist_shop <- cbind(ale_dist_shop$x.values,ale_coverd_area$f.values) %>% data.frame() %>% 
+g_dist_shop <- cbind(ale_dist_shop$x.values,ale_dist_shop$f.values) %>% data.frame() %>% 
   ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="dist_shop",y="ALE",title="ALE dist_shop")
 
-g_dist_rambla <- cbind(ale_covered_area$x.values,ale_dist_rambla$f.values) %>% data.frame() %>% 
+g_dist_rambla <- cbind(ale_dist_rambla$x.values,ale_dist_rambla$f.values) %>% data.frame() %>% 
   ggplot(aes(x=X1,y=X2)) + geom_line() +labs(x="dist_rambla",y="ALE",title="ALE dist_rambla")
 
 
@@ -151,7 +265,7 @@ pfun <- function(object, newdata) predict(object, data = newdata)$predictions
 ## Contruimos el objeto para hacer la prediccion
 
 model <-  Predictor$new(model =  best_model, data = X, y = aptos_sin_na$price,
-                        predict.fun = pfun)
+                        predict.fun = yhat)
 
 # PDP
 

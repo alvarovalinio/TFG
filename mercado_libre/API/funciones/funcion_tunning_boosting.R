@@ -5,9 +5,9 @@ library(tidyverse)
 library(gbm)
 library(doParallel)
 
-tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,control=F){
+tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,control){
 
-  #################### Ajuste grilla
+  #################### Ajuste grilla ====
   
   # Chequiamos que en la grilla esten todos los hiperametros y sino le ponemos
   # el valor por defecto de la funcion
@@ -114,7 +114,7 @@ tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,contro
 }
   
   
- ################ Creamos objeto para almacenar el RMSE, Rsquared  y MAE 
+ ################ Creamos objeto para almacenar el RMSE, Rsquared  y MAE ====
   
   if(grilla == F){
   
@@ -136,20 +136,8 @@ tunning_boosting <- function(datos,grilla=F,k=10,seed = 1234,parallel = F,contro
   }
   
   
-  ################ Proceso de K-folds
-  
-  ##### CASO control = FALSE
-  
-  
-if(control[[1]] == F) {
+  ################ Proceso de K-folds ====
 
-  return(2+2)
-  
-  
-  }
-  
- else { # CASO control!= F
-    
     ###### Diferenciamos segun si queremos proceso en paralelo
     
     if(parallel == F){
@@ -170,7 +158,7 @@ if(control[[1]] == F) {
       clusterSetRNGStream(cl, iseed=seed) # Para lograr reproducibilidad
     }
     
-   ######## Calculamos el RMSE, Rsquared y MAE 
+   ######## Calculamos el RMSE, Rsquared y MAE  ====
    # para cada Fold y posible combinacion de parametros
     
     for(r in 1:nrow(RMSE)){  
@@ -246,7 +234,7 @@ if(control[[1]] == F) {
    return(resultados = list(tunning = grilla,model = best))
    
    
-  }
+  
   
 }
   
