@@ -7,7 +7,7 @@
 library(tidyverse)
 library(here)
 library(kernlab)
-library(missRanger)
+library(vip)
 
 options(scipen = 999)
 
@@ -54,6 +54,20 @@ p_na <- sapply(aptos, function(x) round(sum(is.na(x))/length(x),4)) %>% data.fra
 
 aptos_sin_na <- imput_media(aptos,p=.1)
 
+# Estandarizamos variables continuas
+
+aptos_sin_na$covered_area <- scale(aptos_sin_na$covered_area)
+
+aptos_sin_na$total_area <- scale(aptos_sin_na$total_area)
+
+aptos_sin_na$no_covered_area <- scale(aptos_sin_na$no_covered_area)
+
+aptos_sin_na$ingresomedio_ech <- scale(aptos_sin_na$ingresomedio_ech)
+
+aptos_sin_na$dist_shop <- scale(aptos_sin_na$dist_shop)
+
+aptos_sin_na$dist_rambla <- scale(aptos_sin_na$dist_rambla)
+
 ############ SVR 
 
 set.seed(1234)
@@ -71,7 +85,7 @@ SVR_train <-
     scaled = TRUE,
     C = 1,
     kernel = "rbfdot",
-    kpar = list(sigma = 1),
+    kpar = list(sigma = .03085),
     type = "eps-svr",
     epsilon = 0.1
   )
@@ -80,6 +94,16 @@ SVR_train <-
 # Vemos el numero de support vectors
 
 SVR_train
+
+# Vemos importancia de las variables
+
+pfun <- function(object, newdata) predict(object, newdata = newdata)
+
+importancia_SVR <- vip(SVR_train, method = "permute", target = "price", metric = "rmse", 
+                          pred_wrapper = pfun,plot=F,train=train) 
+
+save(file="importancia_SVR.RDS",importancia_SVR)
+
 
 # Veamos el Error de prediccion 
 
@@ -104,6 +128,21 @@ aptos_mr <- read_csv(here("mercado_libre/API/datos/limpios/apt/aptos_mr","aptos_
 
 aptos_mr <- aptos_mr %>% mutate_if(is.character, as.factor)
 
+# Estandarizamos variables continuas
+
+aptos_mr$covered_area <- scale(aptos_mr$covered_area)
+
+aptos_mr$total_area <- scale(aptos_mr$total_area)
+
+aptos_mr$no_covered_area <- scale(aptos_mr$no_covered_area)
+
+aptos_mr$ingresomedio_ech <- scale(aptos_mr$ingresomedio_ech)
+
+aptos_mr$dist_shop <- scale(aptos_mr$dist_shop)
+
+aptos_mr$dist_rambla <- scale(aptos_mr$dist_rambla)
+
+
 # Definimos mismo conjunto de entrenamiento y testeo
 
 train_mr <- aptos_mr[ids,]
@@ -121,7 +160,7 @@ SVR_train_mr <-
     scaled = TRUE,
     C = 1,
     kernel = "rbfdot",
-    kpar = list(sigma = 1),
+    kpar = list(sigma = .03085),
     type = "eps-svr",
     epsilon = 0.1
   )
@@ -130,6 +169,15 @@ SVR_train_mr <-
 # Vemos el numero de support vectors
 
 SVR_train_mr
+
+# Vemos importancia de las variables
+
+pfun <- function(object, newdata) predict(object, newdata = newdata)
+ 
+importancia_SVR_mr <- vip(SVR_train_mr, method = "permute", target = "price", metric = "rmse", 
+                             pred_wrapper = pfun,plot=F,train=train_mr) 
+ 
+save(file="importancia_SVR_mr.RDS",importancia_SVR_mr)
 
 # Veamos RMSE en el conjunto de testeo
 
