@@ -78,12 +78,13 @@ Trabajo final de grado
 
 \vspace{2.5cm}
 
-\textbf{\large Aplicación de técnicas de aprendizaje estadístico e interpretabilidad, caso de estudio: predicción del precio de oferta de apartamentos a la venta en Montevideo, Uruguay}
+\textbf{\large Aplicación de técnicas de aprendizaje estadístico e interpretabilidad. Caso de estudio:} \\
+\textbf{\large Predicción del precio de oferta de apartamentos a la venta en Montevideo, Uruguay.}
 
 \vspace{1.5 cm}
 
-\textbf{Lucía Coudet} -
-\textbf{Alvaro Valiño}
+Lucía Coudet y
+Alvaro Valiño
 
 
 \end{center}
@@ -102,7 +103,6 @@ Trabajo final de grado
 \noindent Montevideo, Diciembre 2021.
 
 \end{center}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Agredecimientos %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{abstract}
@@ -2381,7 +2381,7 @@ Por último, a la hora de realizar los ajustes de los diferentes modelos de apre
 \section{Variables \label{varsA}} 
 
 <<>>=
-vars <- readxl::read_excel(here('mercado_libre/API/datos', 'criterios_de_limpieza.xlsx'),
+vars <- readxl::read_excel(here('Auxiliar', 'anexo_vars.xlsx'),
                                 sheet = 'anexo_vars') %>% arrange(Fuente)
 n <- vars %>% group_by(Fuente) %>% summarise(conteo = n())
 
