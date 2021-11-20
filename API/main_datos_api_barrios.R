@@ -115,59 +115,59 @@ fwrite(aptos,file=here(ruta_apt_limpios,paste0(nombre,".csv")))
 
 ### Casas
 
-ruta_casas <- paste0("Datos/Crudos/casas")
-
-dir.create(here(ruta_casas,year_month))
-
-ruta_casas_fecha <- paste0(ruta_casas,"/",year_month)
-
-for(i in 1:nrow(id_barrios)){
-  
-  if(i==1){
-    
-    
-    resultados <-  datos_barrio(clientid = clientID,
-                                secret = secret,
-                                code = code,
-                                redict_url = redict_url,
-                                id_barrio = id_barrios$id_city[i],
-                                apt = F,
-                                token=T,
-                                atributos = T)
-    
-    nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
-    
-    fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))
-    
-    aux_response <- resultados$response
-    
-    aux_atributos <- resultados$atributos 
-    
-  } else {
-    
-    
-    resultados <-  datos_barrio(clientid = clientID,
-                                secret = secret,
-                                code = code,
-                                redict_url = redict_url,
-                                id_barrio = id_barrios$id_city[i],
-                                apt = F,
-                                token=aux_response,
-                                atributos = aux_atributos)
-    
-    nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
-    
-    fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))  
-    
-    aux_response <- resultados$response
-    
-    aux_atributos <- resultados$atributos 
-    
-    
-    
-  }
-  
-}
-
+# ruta_casas <- paste0("Datos/Crudos/casas")
+# 
+# dir.create(here(ruta_casas,year_month))
+# 
+# ruta_casas_fecha <- paste0(ruta_casas,"/",year_month)
+# 
+# for(i in 1:nrow(id_barrios)){
+#   
+#   if(i==1){
+#     
+#     
+#     resultados <-  datos_barrio(clientid = clientID,
+#                                 secret = secret,
+#                                 code = code,
+#                                 redict_url = redict_url,
+#                                 id_barrio = id_barrios$id_city[i],
+#                                 apt = F,
+#                                 token=T,
+#                                 atributos = T)
+#     
+#     nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+#     
+#     fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))
+#     
+#     aux_response <- resultados$response
+#     
+#     aux_atributos <- resultados$atributos 
+#     
+#   } else {
+#     
+#     
+#     resultados <-  datos_barrio(clientid = clientID,
+#                                 secret = secret,
+#                                 code = code,
+#                                 redict_url = redict_url,
+#                                 id_barrio = id_barrios$id_city[i],
+#                                 apt = F,
+#                                 token=aux_response,
+#                                 atributos = aux_atributos)
+#     
+#     nombre <- paste0("barrio_",id_barrios$id_city[i],"_",year_month)
+#     
+#     fwrite(resultados$datos,file=here(ruta_casas_fecha,paste0(nombre,".csv")))  
+#     
+#     aux_response <- resultados$response
+#     
+#     aux_atributos <- resultados$atributos 
+#     
+#     
+#     
+#   }
+#   
+# }
+# 
 
 

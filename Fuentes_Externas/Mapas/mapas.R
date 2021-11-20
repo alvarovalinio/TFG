@@ -1,3 +1,5 @@
+# Script para la creacion de los diferentes mapas utilizados
+
 rm(list = ls())
 
 library(here)
