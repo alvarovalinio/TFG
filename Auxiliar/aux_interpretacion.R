@@ -12,7 +12,7 @@ library(viridis)
 
 # Cargamos modelo (con mejor performance predictiva)
 
-load(here("Modelos/BOOSTING/caret","Boosting_caret_tunning.RDS"))
+load(here("Modelos/Resultados/BOOSTING/caret","Boosting_caret_tunning.RDS"))
 
 best_model <- Boosting_caret_tunning[[2]]
 
