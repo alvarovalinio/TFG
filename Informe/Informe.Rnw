@@ -1385,7 +1385,7 @@ p5 <- aptos %>%
       ggplot(aes(x=as.character(zona_avditalia), y=price)) + 
       geom_violin(fill = '#3D56B2') +
       theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 10),
+            axis.title.y = element_text(face = 'bold', size = 10),
             axis.title.x = element_text(face = 'bold', size = 10),
             plot.title = element_blank(),
             legend.title = element_blank(),
@@ -1393,7 +1393,7 @@ p5 <- aptos %>%
             axis.text.y = element_text(face = 'bold', size = 10),
             legend.position = 'none') +
       scale_x_discrete() +
-      labs(y='', x='Zona Avd. Italia' ) +
+      labs(y='Precio de oferta en dólares', x='Zona Avd. Italia' ) +
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = '#3D56B2') +
       scale_y_continuous(labels = comma) 
 
@@ -1419,7 +1419,7 @@ p7 <- aptos %>%
       ggplot(aes(x=as.character(bedrooms), y=price)) + 
       geom_violin(fill = '#3D56B2') +
       theme(text = element_text( family = 'sans'),
-            axis.title.y = element_text( size = 10),
+            axis.title.y = element_text(face = 'bold', size = 10),
             axis.title.x = element_text(face = 'bold', size = 10),
             plot.title = element_blank(),
             legend.title = element_blank(),
@@ -1427,7 +1427,7 @@ p7 <- aptos %>%
             axis.text.y = element_text(face = 'bold', size = 10),
             legend.position = 'none') +
       scale_x_discrete() +
-      labs(y='', x='Cantidad de dormitorios') +
+      labs(y='Precio de oferta en dólares', x='Cantidad de dormitorios') +
       geom_boxplot(width=0.1, colour='black', outlier.color = 'black', fill = '#3D56B2') +
       scale_y_continuous(labels = comma) 
 
