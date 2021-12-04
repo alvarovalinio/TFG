@@ -1,5 +1,3 @@
-# Script para la creacion de los diferentes mapas utilizados
-
 rm(list = ls())
 
 library(here)
@@ -166,3 +164,33 @@ m2 <- ggplot(mapa_barrio) +
         legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
   xlab('Longitud') + ylab('Latitud') +
   scale_fill_gradient(low = 'red', high = 'green', name = "Ingreso promedio \n por mil ECH",labels = comma) 
+
+
+# Pasa latitud y longitud del los apartamentos a objeto sf y crea geometria
+aptos_sf <- aptos %>% 
+      st_as_sf(coords = c("longitude","latitude"), 
+               crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+ggplot(mapa_barrio) +
+      geom_sf() +
+      geom_sf(data = aptos_sf, aes(color = price/1000) , alpha = 0.7) +
+      theme(axis.text.x = element_text(angle = 45),
+            text = element_text(),
+            panel.grid.major = element_line(
+                  color = '#cccccc',linetype = 'dashed',size = .3),
+            panel.background = element_rect(fill = 'aliceblue'),
+            axis.title = element_blank(),
+            axis.text = element_text(size = 8),
+            legend.position = 'bottom',
+            legend.text = element_text(angle = 0, size = 7),
+            legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+      xlab('Longitud') + ylab('Latitud') +
+      scale_color_gradient2(low = 'red', high = 'green', mid = 'skyblue', 
+                            midpoint = mean(aptos$price, na.rm = TRUE)/1000,
+                            name = "Precio de oferta en dólares \n por mil",labels = comma)
+
+
+
+
+
+

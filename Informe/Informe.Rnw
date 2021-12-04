@@ -92,7 +92,7 @@ Alvaro Valiño
 
 \vspace{2cm}
 
-\noindent Tutores:\\
+\noindent Tutora:\\
 \noindent Natalia da Silva\\
 
 
@@ -533,11 +533,13 @@ A su vez, en lo que respecta a las variables área total y área cubierta se dec
 
 En segundo lugar, respecto a las variables cualitativas, existe un conjunto de variables asociadas a la publicación del inmueble que toman valor Si, No, o faltante. Debido a que en todos los casos se trata de campos no obligatorios para el usuario que realiza la publicación, no es posible diferenciar fehacientemente entre los valores faltantes y el valor No. Por lo tanto se trabajó bajo el supuesto de que los valores faltantes corresponden a el valor No y de esta forma se realizó la recodificación correspondiente.
 
-En tercer lugar, en cuanto a las variables latitud y longitud que permiten georreferenciar a los apartmentos, se realizó un proceso de depuración atendiendo a la factibilidad del dato. Para ello se consideraron los valores de ambas variables correspondientes a coordenadas geográficas dentro de Montevideo. De esta manera, valores de latitud inferiores a -35 y superiores a -34.7, al igual que valores de longitud inferiores a -56.5 y superiores a -56 se consideraron datos erróneos ya que Montevideo se encuentra entre dichos valores de latitud y longitud. Los mismos fueron recodificados imputando los valores correspondientes al centroide del barrio donde se ubica el apartamento.
+En tercer lugar, en cuanto a las variables latitud y longitud que permiten georreferenciar a los apartmentos, se realizó un proceso de depuración atendiendo a la factibilidad del dato. Para ello se consideraron los valores de ambas variables correspondientes a coordenadas geográficas dentro del cuadrante donde se encuentra el polígono de Montevideo. De esta manera, valores de latitud inferiores a -35 y superiores a -34.7, al igual que valores de longitud inferiores a -56.5 y superiores a -56 se consideraron datos erróneos ya que Montevideo se encuentra entre dichos valores de latitud y longitud. Los mismos fueron recodificados imputando los valores correspondientes al centroide del barrio donde se ubica el apartamento.
 
-A su vez, se detectó otro tipo de error en las georreferencias siendo este el caso de aquellas georreferencias que no se ubican dentro del polígono del barrio al cual pertenece el apartamento. Para estos casos, se supone que el dato correcto es el nombre del barrio y no la georreferencia específica, y se imputa el valor de latitud y longitud correspondiente al centroide del barrio.
+A su vez, se detectó otro tipo de error en las georreferencias siendo este el caso de aquellas que no se ubican dentro del polígono del barrio al cual pertenece el apartamento. Para estos casos, se supone que el dato correcto es el nombre del barrio y no la georreferencia específica, y se imputa el valor de latitud y longitud correspondiente al centroide del barrio.
 
-Dada la complejidad que implica la detección de estas georreferencias erróneas, mediante un procedimiento de \textit{trade-off} entre costo  y complejidad, se procedió de la siguiente forma: 1) se separó el mapa de Montevideo en dos regiones utilizando el corte de la calle Avenida Italia en continuación con la calle Avenida 18 de Julio; 2) se computó a qué región resultante de 1) pertenece el apartamento utilizando los valores de latitud y longitud; 3) se procedió de forma análoga a 2) considerando el centroide del barrio al cual pertenece el apartamento, 4) se evalua si 2) y 3) coinciden, en caso que difieran se le imputa al apartamento los valores de latitud y longitud correspondientes al centroide del barrio.  
+Dada la complejidad que implica la detección de estas georreferencias erróneas, mediante un procedimiento de \textit{trade-off} entre eficiencia  y complejidad, se procedió de la siguiente forma: 1) se separó el mapa de Montevideo en dos regiones utilizando el corte de la calle Avenida Italia en continuación con la calle Avenida 18 de Julio; 2) se computó a qué región resultante de 1) pertenece el apartamento utilizando los valores de latitud y longitud; 3) se procedió de forma análoga a 2) considerando el centroide del barrio al cual pertenece el apartamento, 4) se evalua si 2) y 3) coinciden, en caso que difieran se le imputa al apartamento los valores de latitud y longitud correspondientes al centroide del barrio.  
+
+Se destaca que las metodologías detalladas ateriormente permitieron en gran parte de los casos corregir las georreferencias no factibles o consideradas errónes, con excepción de algunos apartamentos. Estos últimos se tratan de apartamentos con coordenadas geográficas que, si bien se encuentran dentro del cuadrante donde se ubica Montevideo y a su vez coincide la ubicación respecto a la calle Avenida Italia en continuación con la calle Avenida 18 de Julio con respecto al centroide del barrio en el cual está ubicado, los mismos se encuentran fuera del polígono de Montevideo. Sin embargo, se tiene que las excepciones mencionadas representan un valor inferior al 0.1 \% de las observaciones.
 
 En cuarto lugar, se decidió considerar en el análisis las variables con porcentaje de valores faltantes inferior al 15 \%. En la Tabla \ref{tabna} de la Sección del Anexo \ref{varsA} se presenta la proporción de valores faltantes para cada una de ellas.
 
@@ -667,7 +669,7 @@ ggplot(mapa_barrio)+
             legend.text = element_text(angle = 0, size = 7),
             legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
       xlab('Longitud') + ylab('Latitud') +
-      scale_fill_gradient2(low = 'red', mid = 'white', high = 'blue', name = "Ingreso promedio \n por mil ECH",labels = comma,  midpoint = media_mvd) 
+      scale_fill_gradient2(low = 'red', mid = 'skyblue', high = 'green', name = "Ingreso promedio \n por mil ECH",labels = comma,  midpoint = media_mvd) 
 @
 \captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020. Los barrios en color rojo tienen un ingreso promedio inferior al ingreso promedio de Montevideo mientras que los barrios en color azul tienen un ingreso promedio superior al mismo.}
 \label{map2}
@@ -920,7 +922,6 @@ En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penaliza
 
 \subsection{Bagging y Random Forest\label{subsec:rf}}
 
-
 A pesar de que los \textit{Árboles de Regresión} poseen un alto grado de interpretabilidad y sencillez en su implementación, estos poseen la gran limitante de ser inestables. Esto en el sentido de que pequeñas variaciones en el conjunto de entrenamiento y testeo generan grandes cambios en las estimaciones. (Hastie, 2001) (\cite{hastie2001tibshirani})
 
 Por lo tanto, se emplearon diferentes métodos alternativos buscando estabilidad en las predicciones.
@@ -931,11 +932,11 @@ En este contexto, estas nuevas versiones se construyen generando nuevos conjunto
 
 A la hora de utilizar este método en problemas de regresión, se procede a tomar varias muestras \textit{bootstrap}, donde a partir de cada una de ellas se construye un \textit{Árbol de Regresión}. Luego, se le asigna a la observación el promedio de las respuestas de los \textit{Árboles de Regresión} construidos en cada muestra. 
 
-Se destaca que a cada árbol ajustado no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma se mejora la precisión de la predicción. (Hastie, 2001) (\cite{hastie2001tibshirani})
+Se destaca que el algoritmo a la hora de construir los diferentes estimadores (árboles), no considera en cada partición el total de variables, sino un subconjunto de estas elegido de forma aleatoria. Como primera aproximación se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. En etapas posteriores del análisis, se modificó el valor del mismo con el fin de obtener un mayor poder predictivo.
 
-A su vez, el algoritmo a la hora de construir los diferentes estimadores (árboles), no considera en cada partición el total de variables, sino un subconjunto de estas elegido de forma aleatoria. Como primera aproximación se procedió a utilizar la parte entera de $\sqrt{p}$, siendo $p$ el número de variables. En etapas posteriores del análisis, se modificó el valor del mismo con el fin de obtener un mayor poder predictivo.
+Siendo este último punto lo que diferencia al algoritmo con su versión más simple denominada \textit{Bagging} (también desarrollada por \textit{Breiman}). En este último se considera en cada división el total de las variables, por lo que resulta ser un caso particular del método \textit{Random Forest}.
 
-Este último punto es lo que diferencia al algoritmo con su versión más simple denominada \textit{Bagging} (también desarrollada por \textit{Breiman}). En este último se considera en cada división el total de las variables, por lo que resulta ser un caso particular del método \textit{Random Forest}.
+A su vez, a cada árbol ajustado no se le realiza un proceso de poda. Por lo que estos mismos presentan una gran varianza, pero bajo sesgo. Sin embargo, al predecir mediante un promedio de los $B$ árboles, se logra una reducción considerable en la varianza del estimador y de esta forma se mejora la precisión de la predicción. (Hastie, 2001) (\cite{hastie2001tibshirani})
 
 Por lo tanto, a modo de resumen el algoritmo utilizado para realizar el ajuste mediante el método \textit{Random Forest} se expresa de la siguiente forma:
 
@@ -1306,6 +1307,42 @@ aptos %>% ggplot(aes(x=price)) +
 \label{fig1}
 \end{figure}
 
+Por otra parte, en la Figura \ref{map3} se presenta el mapa de Montevideo con los puntos dónde se encuentran ubicados los apartamentos, luego de haber implementado los criterios de depuración detallados en la Sección \ref{sec:procesamiento}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}), siendo éste de color celeste.
+
+\begin{figure}
+\centering
+<<fig=TRUE>>=
+aptos_sf <- aptos %>% 
+      st_as_sf(coords = c("longitude","latitude"), 
+               crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+  
+ggplot(mapa_barrio) +
+      geom_sf() +
+      geom_sf(data = aptos_sf, aes(color = price/1000) , alpha = 0.7) +
+      theme(axis.text.x = element_text(angle = 45),
+            text = element_text(),
+            panel.grid.major = element_line(
+                  color = '#cccccc',linetype = 'dashed',size = .3),
+            panel.background = element_rect(fill = 'aliceblue'),
+            axis.title = element_blank(),
+            axis.text = element_text(size = 8),
+            legend.position = 'bottom',
+            legend.text = element_text(angle = 0, size = 7),
+            legend.title = element_text(size = 9, face = 'bold', hjust = 0.5)) +
+      xlab('Longitud') + ylab('Latitud') +
+      scale_color_gradient2(low = 'red', high = 'green', mid = 'skyblue', 
+                            midpoint = mean(aptos$price, na.rm = TRUE)/1000,
+                           name = "Precio de oferta en dólares \n por mil",labels = comma)  
+@
+\captionof{figure}{Mapa de puntos donde se encuentran ubicados los apartamentos en la base de datos obtenida de \textit{Mercado Libre}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}), siendo éste de color celeste.}
+\label{map3}
+\end{figure}
+
+Como se observa en la Figura \ref{map3}, el precio de oferta en dólares de los apartamentos incrementa conforme aumenta la proximidad de la ubicación de los mismos a la rambla este de Montevieo. En contraparte, se observa que el precio disminuye para los apartamentos que se encuentran en barrios ubicados hacia el norte de Montevideo.
+
+Por otro lado, se observa una mayor concentración de apartamentos en barrios ubicados hacia el sur de Montevideo. Por último, como fue mencionado en la Sección \ref{sec:procesamiento}, se tiene que algunos apartamentos quedaron ubicados fuera del polígono de Montevideo.
+
 En lo que respecta a las variables de entrada, en primer lugar se realizó un análisis exploratorio en cuanto a las variables de naturaleza cualitativa. A continuación se presenta en la Figura \ref{fig2} la distribución de los niveles en los datos para un conjunto de variables mediante gráficos de barras.
 
 <<>>=
@@ -1630,6 +1667,12 @@ Según se observa en la Tabla \ref{tab2} los modelos lineales ajustados tienen u
 
 Por último, en lo que respecta al análisis de los residuos, en primer lugar se realiza un análisis gráfico de los mismos. En la Figura \ref{figerrorml} se presentan los errores en función de los valores ajustados y la distribución de los mismos considerando ambos métodos de imputación.
 
+El gráfico de dispersión de la Figura \ref{figerrorml} sugiere heterocedasticidad en los residuos de los modelos ajustados. Por otra parte, el histograma de los residuos muestra que los mismos se encuentran en torno al valor 0.
+
+Una vez realizado el análisis gráfico se procedió a realizar las pruebas sobre los supuestos de los residuos del modelo mencionadas en la Sección \ref{subsec:mlMT}. Considerando ambos métodos de imputación y un nivel de significación del 0.05, se procedió a rechazar tanto el supuesto de normalidad como el supuesto de homocedasticidad de los residuos en la medida que se rechazan las hipótesis nulas de ambas pruebas. Esto último teniendo en cuenta que en ambos casos el p-valor asociado a la prueba es inferior al nivel de significación considerado. 
+
+En las Tablas \ref{tab13} y \ref{tab14} de la Sección del Anexo \ref{mlA} se encuentran los resultados de las pruebas aplicadas.
+
 \begin{figure}[H]
 \centering
 <<fig = TRUE>>=
@@ -1682,12 +1725,6 @@ grid.arrange(lm1, lm2, lm_mr3, lm_mr4, ncol = 2)
 \captionof{figure}{Gráficos de los residuos de los \textit{Modelos de Regresión Lineal Múltiple} ajustados. En el panel superior se encuentran los resultados para el caso de imputación de valores faltantes por la media, mientras que en el panel inferior se encuentran los resultados para el caso de imputación de valores faltantes por \textit{Random Forest}. A la izquierda se encuentra el gráfico de dispersión entre los errores del modelo y los valores predichos. A la derecha se encuentra el histograma de los mismos.}
 \label{figerrorml}
 \end{figure}
-
-El gráfico de dispersión de la Figura \ref{figerrorml} sugiere heterocedasticidad en los residuos de los modelos ajustados. Por otra parte, el histograma de los residuos muestra que los mismos se encuentran en torno al valor 0.
-
-Una vez realizado el análisis gráfico se procedió a realizar las pruebas sobre los supuestos de los residuos del modelo mencionadas en la Sección \ref{subsec:mlMT}. Considerando ambos métodos de imputación y un nivel de significación del 0.05, se procedió a rechazar tanto el supuesto de normalidad como el supuesto de homocedasticidad de los residuos en la medida que se rechazan las hipótesis nulas de ambas pruebas. Esto último teniendo en cuenta que en ambos casos el p-valor asociado a la prueba es inferior al nivel de significación considerado. 
-
-En las Tablas \ref{tab13} y \ref{tab14} de la Sección del Anexo \ref{mlA} se encuentran los resultados de las pruebas aplicadas.
 
 \section{Árbol de regresión \label{sec:resarbol}}
 
