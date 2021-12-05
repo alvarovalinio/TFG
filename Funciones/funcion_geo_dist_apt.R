@@ -296,6 +296,38 @@ dist_barrios <- function(datos_entrada){
   
   datos_entrada <- datos_entrada %>% select(-lon_barrio,lat_barrio)
   
+  ### Aplicamos filtro para aquellos apartamentos que todavia no se encuentran
+  # en el poligono de mvdeo
+  
+  aux_lat_lon <- data.frame(lon = datos_entrada$longitude,lat = datos_entrada$latitude)
+  
+  aux_lat_lon <- aux_lat_lon %>% 
+    sf::st_as_sf(coords = c(1,2)) %>% st_set_crs(4326) %>% st_transform(crs=32736)
+  
+  
+  aux_lat_lon <- st_transform(aux_lat_lon, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+  
+  
+  interseccion <- st_intersects(aux_lat_lon,mapa_barrio$geometry,sparse = T)
+  
+  for(i in 1:nrow(interseccion)){
+    
+    if(is_empty(interseccion[[i]])){
+      
+      interseccion[[i]] <- NA
+      
+    }
+    
+  }
+  
+  interseccion <- interseccion %>% as.data.frame()
+  
+  
+  datos_entrada$filtro <- interseccion$col.id
+  
+  datos_entrada <- datos_entrada %>% filter(!is.na(filtro))
+  
+  datos_entrada <- datos_entrada %>% select(-filtro)
   
   return(datos_entrada)
   
