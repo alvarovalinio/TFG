@@ -2,7 +2,7 @@ Este repositorio contiene el código necesario para la realización del trabajo 
 
 El mismo se titula: 
 
- ***Aplicación de técnicas de aprendizaje estadístico e interpretabilidad. Caso de estudio: Predicción del precio de oferta de apartamentos a la venta en Montevideo, Uruguay.***
+ ***Precio de oferta de apartamentos en Montevideo: Una aproximación desde la ciencia de datos.***
 
 El mismo consiste en la implementación de técnicas de aprendizaje estadístico con el fin de realizar predicciones sobre el precio de oferta de los apartamentos a la venta en Montevideo, Uruguay.
 
