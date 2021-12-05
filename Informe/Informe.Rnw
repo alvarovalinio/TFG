@@ -113,7 +113,7 @@ Alvaro Valiño
 \textit{\latinword{Agredecimientos}}
 \end{center}
 
-Agredecer en primera instancia a nuestra tutora Natalia da Silva por su dedicación y compromiso en cada instancia de éste proceso. A la Facultad de Ciencias Económicas y de Administración de la UdelaR que ha acompañado nuestra formación universitaria y profesional a lo largo de muchos años. A nuestras familias, amigos y compañeros que fueron un pilar fundamental para poder estar hoy finalizando esta etapa de nuestras vidas. A quienes han sido nuestros docentes a lo largo de la carrera por la formación y conocimientos brindados.
+Agredecer en primera instancia a nuestra tutora Natalia da Silva por su dedicación y compromiso en cada instancia de este proceso. A la Facultad de Ciencias Económicas y de Administración de la UdelaR que ha acompañado nuestra formación universitaria y profesional a lo largo de muchos años. A nuestras familias, amigos y compañeros que fueron un pilar fundamental para poder estar hoy finalizando esta etapa de nuestras vidas. A quienes han sido nuestros docentes a lo largo de la carrera por la formación y conocimientos brindados.
 \end{abstract}
 
 \newpage
@@ -127,7 +127,7 @@ Agredecer en primera instancia a nuestra tutora Natalia da Silva por su dedicaci
 \begin{center}
 \textbf{Abstract}
 \end{center}
-El siguiente trabajo consiste en la implementación de técnicas de aprendizaje estadístico con el fin de realizar predicciones sobre el precio de oferta de los apartamentos a la venta en Montevideo, Uruguay. Para ello, se trabajó con una base de datos de elaboración propia a partir de los apartamentos que se ofertan a través de la plataforma \textit{Mercado Libre}. La misma contiene información para el periodo comprendido entre el mes de Mayo al mes de Setiembre del año 2021. Esto último en la  medida que no es posible la obtención de datos históricos. En cuanto a las técnicas de aprendizaje estadístico, se trabajó con algoritmos de \textit{Árboles de Decisión} y métodos agregados de los mismos como ser \textit{Random Forest} y \textit{Boosting}, al igual que con métodos de \textit{regresión robusta} (\textit{Support Vector Regression}). Asimismo, se implementó un ajuste mediante un \textit{Modelo de Regresión Lineal Múltiple} el cual es conocido en la literatura económica como \textit{Modelo de Precios Hedónicos} y usualmente aplicado en problemas de este índole. Éste úlimo con el fin de comparar su capacidad predictiva en relación a las técnicas anteriores. Con respecto a la performance predictiva de los algoritmos, se observó que el ajuste por \textit{Boosting} presentó una performance predictiva superior, esto último luego de haber ajustado los respectivos \textit{parámetros de ajuste}. En cuanto al análisis de interpretabilidad de los modelos, se trabajó con métodos \textit{modelo-agnósticos}, haciendo hincapié en las metodologías \textit{importancia de las variables permutadas} y \textit{gráficos de dependencia  parcial}. De esta forma, se observó que la distancia entre el apartamento y la rambla este de Montevideo es la variable más importante en el ajuste, y a su vez esta presenta una relación inversa en cuanto a la predicción del precio de oferta del mismo. 
+El siguiente trabajo consiste en la implementación de técnicas de aprendizaje estadístico con el fin de realizar predicciones sobre el precio de oferta de los apartamentos a la venta en Montevideo, Uruguay. Para ello, se trabajó con una base de datos de elaboración propia a partir de los apartamentos que se ofertan a través de la plataforma \textit{Mercado Libre}. La misma contiene información para el periodo comprendido entre el mes de Mayo al mes de Setiembre del año 2021. Esto último en la  medida que no es posible la obtención de datos históricos. En cuanto a las técnicas de aprendizaje estadístico, se trabajó con algoritmos de \textit{Árboles de Decisión} y métodos agregados de los mismos como ser \textit{Random Forest} y \textit{Boosting}, al igual que con métodos de \textit{regresión robusta} (\textit{Support Vector Regression}). Asimismo, se implementó un ajuste mediante un \textit{Modelo de Regresión Lineal Múltiple} el cual es conocido en la literatura económica como \textit{Modelo de Precios Hedónicos} y usualmente aplicado en problemas de este índole. Este úlimo con el fin de comparar su capacidad predictiva en relación a las técnicas anteriores. Con respecto a la performance predictiva de los algoritmos, se observó que el ajuste por \textit{Boosting} presentó una performance predictiva superior, esto último luego de haber ajustado los respectivos \textit{parámetros de ajuste}. En cuanto al análisis de interpretabilidad de los modelos, se trabajó con métodos \textit{modelo-agnósticos}, haciendo hincapié en las metodologías \textit{importancia de las variables permutadas} y \textit{gráficos de dependencia  parcial}. De esta forma, se observó que la distancia entre el apartamento y la rambla este de Montevideo es la variable más importante en el ajuste, y a su vez esta presenta una relación inversa en cuanto a la predicción del precio de oferta del mismo. 
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -467,6 +467,7 @@ centroide_barrios <- centroide_barrios %>%
   select(NOMBBARR, zona_avditalia)
 
 mapa_barrio <- mapa_barrio %>% left_join(centroide_barrios, by = 'NOMBBARR')
+
 @
 
 
@@ -485,7 +486,7 @@ En lo que respecta al primer objetivo, los datos de oferta de los apartamentos f
 
 En cuanto al segundo objetivo, las técnicas de aprendizaje estadístico implentadas se separan en dos grupos. En primer lugar, un conjunto de métodos de agregación basados en \textit{Árboles de Decisión}, en particular \textit{Random Forest} y \textit{Boosting} (James, 2013) (\cite{james2013introduction}). En segundo lugar, se trabajó con la técnica \textit{Support Vector Regression} la cual pertenece al grupo de los modelos de regresión robusta. (Vapnik, 1999) (\cite{vapnik1999nature})
 
-En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un \textit{Modelo de Regresión Lineal Múltiple} (Carmona, 2005) (\cite{carmona2005modelos}). Éste último en la medida que es una técnica usualmente aplicada en problemas de éste índole y conocido en la literatura económica como \textit{Modelo de Precios Hedónicos}. 
+En lo que respecta a las técnicas clásicas de estimación, se realizó la aplicación de un \textit{Modelo de Regresión Lineal Múltiple} (Carmona, 2005) (\cite{carmona2005modelos}). Este último en la medida que es una técnica usualmente aplicada en problemas de este índole y conocido en la literatura económica como \textit{Modelo de Precios Hedónicos}. 
 
 Una vez implementados los modelos mencionados en el punto anterior, con el fin de determinar el modelo con mejor capacidad predictiva, se llevó a cabo un análisis comparativo en función de diferentes métricas.
 
@@ -495,11 +496,11 @@ Se destaca que las técnicas utilizadas implican un alto costo computacional. De
 
 Los resultados obtenidos fueron a través del lenguaje y entorno de programación para análisis estadístico y gráfico, \textit{R} (\cite{statsR}), enfocándose en la optimización de todos los procesos principalmente mediante la programación en paralelo. 
 
-El trabajo se conforma de 8 capítulos. A continuación se presenta en el Capítulo \ref{cap:datos} el detalle de la obtención y depuración de los datos utilizados. Luego, en el Capítulo  \ref{cap:Antec} se mencionan los principales antecedentes consultados. En lo que respecta al Capítulo \ref{cap:MT}, se detalla la metodología utilizada y el sustento teórico de la misma. Éste último seguido por el Capítulo \ref{cap:reproduc} donde se presentan los aspectos que conciernen a la reproducibilidad del trabajo. Posteriormente, en los capítulos \ref{cap:EDA} y \ref{cap:Resultados} se presenta el análisis exploratorio de los datos y los principales resultados obtenidos respectivamente. Por su parte, en el Capítulo \ref{cap:conclu} se presentan las principales conclusiones abordadas y principales líneas de trabajo para futuras investigaciones. 
+El trabajo se conforma de 8 capítulos. A continuación se presenta en el Capítulo \ref{cap:datos} el detalle de la obtención y depuración de los datos utilizados. Luego, en el Capítulo  \ref{cap:Antec} se mencionan los principales antecedentes consultados. En lo que respecta al Capítulo \ref{cap:MT}, se detalla la metodología utilizada y el sustento teórico de la misma. Este último seguido por el Capítulo \ref{cap:reproduc} donde se presentan los aspectos que conciernen a la reproducibilidad del trabajo. Posteriormente, en los Capítulos \ref{cap:EDA} y \ref{cap:Resultados} se presenta el análisis exploratorio de los datos y los principales resultados obtenidos respectivamente. Por su parte, en el Capítulo \ref{cap:conclu} se presentan las principales conclusiones abordadas y principales líneas de trabajo para futuras investigaciones. 
 
 \chapter{Datos \label{cap:datos}}
 
-Como fue mencionado en el Capítulo \ref{cap:Intro}, el principal objetivo del trabajo es el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuáles realizar predicciones de una variable de interés. En particular se trabajó con el precio de oferta en dólares estadounidenses de los apartamentos a la venta en Montevideo, Uruguay, para el periodo Mayo a Setiembre del año 2021.
+Como fue mencionado en el Capítulo \ref{cap:Intro}, el principal objetivo del trabajo es el estudio e implementación de diferentes técnicas de aprendizaje estadístico mediante las cuales realizar predicciones de una variable de interés. En particular se trabajó con el precio de oferta en dólares estadounidenses de los apartamentos a la venta en Montevideo, Uruguay, para el periodo Mayo a Setiembre del año 2021.
 
 A continuación se presenta en la Sección \ref{sec:obtencion} la descripción del proceso de obtención de los datos. Luego, en la Sección \ref{sec:procesamiento} se detallan los principales criterios de depuración utilizados. Posteriormente, en la Sección \ref{sec:fuentesext} se describen las principales fuentes externas de información utilizadas. Por último en la Sección \ref{sec:varselab} se presentan las variables construídas en base a elaboración propia.
 
@@ -525,9 +526,9 @@ El proceso de depuración de los datos fue realizado diferenciando según la nat
  
 En primer lugar, en lo que respecta a las variables cuantitativas el proceso de depuración se centró en el reconocimiento de valores erróneos, por ejemplo valores que repitan una secuencia de números.
 
-Para ello se construyó una función auxiliar que es capaz de detectar cuándo un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y se lo asigna como valor faltante, con excepción de la variable precio de oferta en dólares donde la observación completa es eliminada.
+Para ello se construyó una función auxiliar que es capaz de detectar cuando un valor tiene 3 o más números iguales repetidos. En ese caso se considera que el dato es erróneo y se lo asigna como valor faltante, con excepción de la variable precio de oferta en dólares donde la observación completa es eliminada.
 
-Asimismo se decidió no considerar en el análisis las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a USD 40.000 ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable precio de oferta en dólares superan el percentil 95\% de la misma. De esta manera, no se consideraron en el análisis aproximadamente un 8 \% de las observaciones.
+Asimismo se decidió no considerar en el análisis las observaciones cuyo precio de oferta es inferior al valor del percentil 75\% entre las observaciones con precio inferior a 40,000 dólares ya que se consideran datos erróneos o de muy baja frecuencia. De manera similar y debido a la elevada presencia de valores atípicos, se eliminan todas las observaciones cuyos valores de la variable precio de oferta en dólares superan el percentil 95\% de la misma. De esta manera, no se consideraron en el análisis aproximadamente un 8 \% de las observaciones.
 
 A su vez, en lo que respecta a las variables área total y área cubierta se decidió asignar como valor faltante a todos los valores superiores a 1000 metros cuadrados, ya que se considera que podrían ser datos erróneos. 
 
@@ -539,19 +540,17 @@ A su vez, se detectó otro tipo de error en las georreferencias siendo este el c
 
 Dada la complejidad que implica la detección de estas georreferencias erróneas, mediante un procedimiento de \textit{trade-off} entre eficiencia  y complejidad, se procedió de la siguiente forma: 1) se separó el mapa de Montevideo en dos regiones utilizando el corte de la calle Avenida Italia en continuación con la calle Avenida 18 de Julio; 2) se computó a qué región resultante de 1) pertenece el apartamento utilizando los valores de latitud y longitud; 3) se procedió de forma análoga a 2) considerando el centroide del barrio al cual pertenece el apartamento, 4) se evalua si 2) y 3) coinciden, en caso que difieran se le imputa al apartamento los valores de latitud y longitud correspondientes al centroide del barrio.  
 
-Se destaca que las metodologías detalladas ateriormente permitieron en gran parte de los casos corregir las georreferencias no factibles o consideradas errónes, con excepción de algunos apartamentos. Estos últimos se tratan de apartamentos con coordenadas geográficas que, si bien se encuentran dentro del cuadrante donde se ubica Montevideo y a su vez coincide la ubicación respecto a la calle Avenida Italia en continuación con la calle Avenida 18 de Julio con respecto al centroide del barrio en el cual está ubicado, los mismos se encuentran fuera del polígono de Montevideo. Sin embargo, se tiene que las excepciones mencionadas representan un valor inferior al 0.1 \% de las observaciones.
-
 En cuarto lugar, se decidió considerar en el análisis las variables con porcentaje de valores faltantes inferior al 15 \%. En la Tabla \ref{tabna} de la Sección del Anexo \ref{varsA} se presenta la proporción de valores faltantes para cada una de ellas.
 
-Por último, en lo que respecta al tipo de cambio, todos los valores de la variable precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio a la fecha de obtención de los datos. Sobre éste punto, se destaca que la obtención del valor del tipo de cambio se realiza de manera automatizada realizando un procedimiento de \textit{Web Scrapping} sobre la página web oficial del \textit{Instituto Nacional de Estadistica} (INE) (\url{https://www.ine.gub.uy/}).
+Por último, en lo que respecta al tipo de cambio, todos los valores de la variable precio de oferta expresados en moneda nacional fueron convertidos a dólares estadounidenses utilizando el tipo de cambio a la fecha de obtención de los datos. Sobre éste punto, se destaca que la obtención del valor del tipo de cambio se realiza de manera automatizada realizando un procedimiento de \textit{Web Scrapping} sobre la página web oficial del \textit{Instituto Nacional de Estadística} (INE) (\url{https://www.ine.gub.uy/}).
 
 \section{Fuentes externas de información\label{sec:fuentesext}}
 
 En la medida que la base de datos construida contiene información sobre la latitud y longitud donde está ubicado cada apartamento, se consideró de interés la elaboración de variables geoespaciales.
 
-La herramienta utilizada para construir mapas fue \textit{Google My Maps}, el cual es un servicio puesto en marcha por \textit{Google} en abril del 2007, que permite a los usuarios crear mapas personalizados para uso propio o para compartir. Los usuarios pueden añadir puntos, líneas y formas sobre \textit{Google Maps}. (\url{https://sites.google.com/mrpiercey.com/resources/geo/my-maps}).
+La herramienta utilizada para construir mapas fue \textit{Google My Maps}, el cual es un servicio de \textit{Google} que permite a los usuarios crear mapas personalizados. De esta manera, es posible añadir puntos, líneas y formas sobre \textit{Google Maps}. (\url{https://sites.google.com/mrpiercey.com/resources/geo/my-maps}).
 
-Una vez que se construyen los mapas desde dicha plataforma, se exportan los archivos generados. Luego, éstos son transformados a archivos ESRI Shapefile utilizando \textit{QGIS} el cual es un  \textit{Sistema de Información Geográfica} (SIG).
+Una vez que se construyen los mapas desde dicha plataforma, se exportan los archivos generados. Luego, estos son transformados a archivos ESRI Shapefile utilizando \textit{QGIS} el cual es un  \textit{Sistema de Información Geográfica} (SIG).
 
 El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP) es un formato vectorial de almacenamiento digital donde se guarda la localización de los elementos geográficos y los atributos asociados a ellos. Es un formato multiarchivo, es decir está generado por varios ficheros informáticos. El número mínimo requerido es de tres y tienen las extensiones siguientes:
       
@@ -563,7 +562,7 @@ El formato ESRI (Environmental Systems Research Institute, Inc.) Shapefile (SHP)
 
 (ESRI, 1998) (\cite{environmental1998esri})
 
-En lo que respecta a la geometría del departamento de Montevideo la misma fue obtenida a partir de los archivos Shapefile disponibles en la página web del \textit{Instituto Nacional de Estadistica} (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
+En lo que respecta a la geometría del departamento de Montevideo la misma fue obtenida a partir de los archivos Shapefile disponibles en la página web del \textit{Instituto Nacional de Estadística} (INE) en la siguiente dirección: \url{https://www.ine.gub.uy/}.
 
 Por otra parte, se utilizó también información de la encuesta contínua de hogares 2020 para la construcción de variables que consideren el nivel de ingreso por barrio.
 
@@ -577,7 +576,7 @@ En lo que respecta a la variable zona Avd. Italia, la misma toma valor norte o s
 
 Por otra parte, la variable distancia al centro comercial más cercano fue contruida calculando la distancia en metros entre el apartamento y el centro comercial más cercano. Para ello, fue necesaria la obtención de las coordenadas geográficas (latitud y longitud) de todos los centros comerciales ubicados en Montevideo (Montevideo Shopping Center, Punta Carretas Shopping, Tres Cruces Shopping, Nuevocentro Shopping y Portones Shopping).
 
-Por último, la variable distancia a la rambla este fue construida utilizando la distancia en metros entre el apartamento y la rambla Este de Montevideo. Esta variable fue construida a través de los resultados observados mediante el ajuste de un \textit{Árbol de Regresión} de la variable precio de oferta en dólares en función de la latitud y la longitud que corresponde a la ubicación de cada apartamento. En el mismo se observó que los apartamentos con predicciones superiores toman valores de latitud entre -34.92 y -34.89, y valores de longitud mayores o iguales a -56.17. En la Sección del  Anexo \ref{arbollatlonA} se encuentra el gráfico del árbol ajustado.
+Por último, la variable distancia a la rambla este fue construida utilizando la distancia en metros entre el apartamento y la rambla este de Montevideo. Esta variable fue construida a través de los resultados observados mediante el ajuste de un \textit{Árbol de Regresión} de la variable precio de oferta en dólares en función de la latitud y la longitud que corresponde a la ubicación de cada apartamento. En el mismo se observó que los apartamentos con predicciones superiores toman valores de latitud entre -34.92 y -34.89, y valores de longitud mayores o iguales a -56.17. En la Sección del  Anexo \ref{arbollatlonA} se encuentra el gráfico del árbol ajustado.
 
 Se destaca que los mapas utilizados para construir las variables zona Avd. Italia, distancia a la rambla este y distancia al centro comercial más cercano fueron obtenidos en base a elaboración propia a partir de \textit{Google My Maps}, según detallado en la Sección \ref{sec:fuentesext}. 
 En la Figura \ref{map1} se presenta el mapa del departamento de Montevideo, Uruguay, con las variables construidas.
@@ -671,15 +670,15 @@ ggplot(mapa_barrio)+
       xlab('Longitud') + ylab('Latitud') +
       scale_fill_gradient2(low = 'red', mid = 'skyblue', high = 'green', name = "Ingreso promedio \n por mil ECH",labels = comma,  midpoint = media_mvd) 
 @
-\captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020. Los barrios en color rojo tienen un ingreso promedio inferior al ingreso promedio de Montevideo mientras que los barrios en color azul tienen un ingreso promedio superior al mismo.}
+\captionof{figure}{Mapa del departamento de Montevideo, Uruguay, por nivel de ingreso promedio por mil obtenido a partir de la Encuesta Contínua de Hogares 2020. El color celeste indica el ingreso promedio de los barrios de Montevideo.}
 \label{map2}
 \end{figure}
 
 \chapter{Antecedentes \label{cap:Antec}}
 
-Como fue mencionado en el Capítulo \ref{cap:Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamento a la venta en Montevideo, Uruguay.
+Como fue mencionado en el Capítulo \ref{cap:Intro}, el presente trabajo  tiene como principal objetivo la implementación y estudio de diferentes técnicas de aprendizaje estadístico multivariadas aplicadas sobre el precio de oferta de los apartamentos a la venta en Montevideo, Uruguay.
 
-En éste sentido, existen diversos artículos y documentos de trabajo que tratan en particular sobre la implementación de modelos predictivos para el precio de los inmuebles en el mercado uruguayo.
+En este sentido, existen diversos artículos y documentos de trabajo que tratan en particular sobre la implementación de modelos predictivos para el precio de los inmuebles en el mercado uruguayo.
 
 En primer lugar, se tiene el trabajo de Ponce (2012) (\cite{ponce2012precio}) donde propone un modelo de precios de fundamentos para las viviendas el cual se basa en el hecho de que una vivienda puede ser considerada como un activo de inversión y como un activo que brinda servicios. De esta forma, el precio puede ser considerado como el resultado del mercado por los servicios de vivienda y como el resultado de equilibrio en un mercado de activos. Concluye, entre otros aspectos, que los precios de las viviendas fluctúan más que lo justificado por sus fundamentos lo cual implica periodos de subvaloración o sobrevaloración de los precios de las viviendas. (Ponce, 2012) (\cite{ponce2012precio})
 
@@ -693,9 +692,9 @@ Por último, en el año 2019 Picardo (\cite{picardo2019prediccion}) presenta mod
 
 Se destaca que éste último se considera como principal antecedente, donde en el presente trabajo se tiene como principal línea de investigación profundizar en las técnicas de aprendizaje estadístico al igual que obtener una mayor medida de interpretabildad de las mismas.
 
-En lo que respecta a las técnicas estadísticas utilizadas, se consultaron diferentes literaturas. En éste sentido, entre las bibliografías destacadas para los algoritmos de aprendizaje estadístico se encuentra el libro publicado por Gareth et al (\cite{james2013introduction}), al igual que el libro publicado por Hastie et al (\cite{hastie2001tibshirani}).
+En lo que respecta a las técnicas estadísticas utilizadas, se consultaron diferentes literaturas. En este sentido, entre las bibliografías destacadas para los algoritmos de aprendizaje estadístico se encuentra el libro publicado por Gareth et al (\cite{james2013introduction}), al igual que el libro publicado por Hastie et al (\cite{hastie2001tibshirani}).
 
-Por otra parte, en lo que respecta al detalle metodológico del modelo de regresión líneal, fue consultado principalmente el trabajo de Francesc Carmona (\cite{carmona2005modelos}). 
+Por otra parte, en lo que respecta al detalle metodológico del \textit{Modelo de Regresión Lineal Múltiple}, fue consultado principalmente el trabajo de Carmona (\cite{carmona2005modelos}). 
 
 Por último, para el análisis de interpretabilidad de los modelos de aprendizaje estadístico fueron consultados los trabajos de Molnar (\cite{molnar2020interpretable}) y Greenwell et al (\cite{greenwell2020variable}).
 
@@ -751,7 +750,7 @@ $$\mathbf{X'}\boldsymbol{\beta} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots +
 
 con $\epsilon$ igual al vector de errores del modelo y a su vez $\epsilon_i$ independientes e identicamente distribuidos $N(0, \sigma^2)$. (Carmona, 2005) (\cite{carmona2005modelos}).
 
-Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas al bien y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de los parámetros de un modelo líneal clásico.
+Siendo $(X_1, \cdots, X_p)$ el vector de las $p$ características asociadas al bien y $(\beta_1, \cdots, \beta_p)$ el vector de los precios hedónicos. Es importante observar que el vector de precios hedónicos asociados a las características coincide con el vector de los parámetros de un modelo lineal clásico.
 
 La estimación de los parámetros $\boldsymbol{\beta} = (\beta_1, \cdots, \beta_p)$ se realiza por el método de los mínimos cuadrados. Para ello, se intenta hallar los valores $\boldsymbol{\hat{\beta}} = (\hat{\beta_1}, \cdots, \hat{\beta_p})$ que minimicen la suma de cuadrados de los residuos $\boldsymbol{\epsilon'\epsilon} = \boldsymbol{(Y - X'\beta)'(Y - X'\beta)}$.
 
@@ -866,7 +865,7 @@ De esta manera, se rechaza la hipótesis nula de homocedasticidad en el caso en 
 
 Se destaca que una de las ventajas más importantes de éste tipo de modelos es la fácil interpretación. No obstante suelen tener una mala performance predictiva en comparación a otros enfoques ya que puden presentar problemas de heterocedasticidad, multicolinealidad, y variables omitidas. (James, 2013) (\cite{james2013introduction})
 
-Por otra parte, el modelo de regresión lineal múltiple puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
+Por otra parte, el \textit{Modelo de Regresión Lineal Múltiple} puede ser generalizado para el caso no lineal, lo cual no ha sido implementado en el presente trabajo.
 
 \subsection{Árboles de Regresión\label{subsec:arbol}}
 
@@ -902,9 +901,9 @@ $\displaystyle \sum_{i:x_{i} \in R_{1}(j,s)} \left(y - \hat{y}_{R_{1}}\right)^{2
 
 Una vez encontrada la mejor partición se separan los datos en las regiones resultantes y se repite el proceso en cada región. Es decir, se busca nuevamente la mejor variable y el mejor punto de corte de forma que se incremente la disminución de la impureza en los nodos hijos.
 
-El proceso continúa hasta que se satisfaga algún criterio de parada. Un criterio de para puede ser por ejemplo que los nodos terminales tengan cierto número de observaciones.
+El proceso continúa hasta que se satisfaga algún criterio de parada. Un criterio de parada puede ser por ejemplo que los nodos terminales tengan cierto número de observaciones.
 
-Luego de definido el criterio de construcción de las regiones y el criterio de parada, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de \textit{costo-complejidad}. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobre ajuste (\textit{overfitting}). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. (Hastie, 2001) (\cite{hastie2001tibshirani}).
+Luego de definido el criterio de construcción de las regiones y el criterio de parada, se procede a realizar un proceso de poda en el árbol obtenido basado en un criterio de \textit{costo-complejidad}. Esto en la medida de que si se deja crecer el árbol de forma indefinida se obtiene un modelo con un alto grado de sobreajuste (\textit{overfitting}). Por su contraparte, un árbol muy "pequeño", posiblemente no logre capturar la estructura del conjunto de datos. (Hastie, 2001) (\cite{hastie2001tibshirani}).
 
 El proceso de poda realizado, consiste en dejar crecer el árbol hasta que los nodos terminales tengan cierto número de observaciones (dicho árbol se denota como $T_{0}$). Luego se elige aquel subárbol el cual posee un menor error de predicción en el conjunto de testeo. En la medida de que un procedimiento de \textit{validación cruzada} aplicado en cada posible subárbol es muy costoso en términos de "tiempo computacional", surge como alternativa el método basado en un criterio de \textit{costo-complejidad}.
 
@@ -916,7 +915,7 @@ $C_{\alpha}(T)=\displaystyle \sum^{|T|}_{m=1} N_{m} Q_{m}(T) + \alpha|T|$
 
 \end{center}
 
-Donde se tiene que $|T|$ es igual número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste la medida de impureza.
+Donde se tiene que $|T|$ es igual al número de nodos terminales del árbol $T$, mientras que $N_{m}$ es el número de observaciones en la región $R_{m}$. Por otro lado, la expresión $Q_{m}(T)$ consiste en la medida de impureza.
 
 En cuanto al parámetro $\alpha$, el mismo consiste en un parámetro de penalización aplicado a la complejidad (tamaño) del árbol. Donde valores altos de este, penalizan a árboles de gran tamaño. De esta forma, controla el compromiso entre la complejidad y la bondad de ajuste del modelo. Dicho parámetro se estima mediante \textit{validación cruzada}.
 
@@ -968,7 +967,7 @@ $\hat{f}(X) = \dfrac{1}{B} \displaystyle \sum_{b=1}^{B} T(X,\Theta_{b})$
 
 \end{center}
 
-Donde $\Theta_{b}$ caracteriza el b-ésimo árbol aleatorio en terminos de la muestra \textit{bootstrap} utilizada, las variables de partición, los puntos de corte en cada nodo y los valores de predicción en cada nodo terminal. 
+Donde $\Theta_{b}$ caracteriza el b-ésimo árbol aleatorio en términos de la muestra \textit{bootstrap} utilizada, las variables de partición, los puntos de corte en cada nodo y los valores de predicción en cada nodo terminal. 
 
 Se optó por trabajar con el método \textit{Random Forest} ya que se destaca sobre el método \textit{Bagging} principalmente cuando se tiene que una variable es muy influyente. Esto se debe a que si en cada partición se consideran todas las variables a la hora de construir los diferentes $B$ árboles, en la medida de que se tiene una variable muy influyente, posiblemente dichos árboles no difieran mucho entre sí. Esta limitante no se presenta en \textit{Random Forest} en el sentido de que selecciona de forma aleatoria un subconjunto de los predictores en cada iteración. (Hastie, 2001) (\cite{hastie2001tibshirani})
 
@@ -1011,7 +1010,7 @@ $$\hat{f}(X) =  \displaystyle \sum_{v = 1}^V \lambda \hat{f}^v(X)$$
 
 Donde $V$ denota el número de árboles utilizados en el algortimo. Se destaca que, a diferencia de \textit{Random Forest}, \textit{Boosting} puede generar un sobreajuste a los datos en caso que $V$ sea grande, a pesar de que éste sobreajuste ocurra de manera lenta. (James, 2013) (\cite{james2013introduction})
 
-Por otro lado, el parámetro $\lambda$ controla la tasa a la que aprende el algoritmo. Donde $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. A su vez, se tiene que generalemente, cuanto menor el valor de $\lambda$, mayor el número de arboles ($V$) necesarios. (Hastie, 2001) (\cite{hastie2001tibshirani})
+Por otro lado, el parámetro $\lambda$ controla la tasa a la que aprende el algoritmo. Donde $\lambda$ suele ser un número positivo pequeño, usualmente 0.01 o 0.001. A su vez, se tiene que generalemente, cuanto menor el valor de $\lambda$, mayor el número de árboles ($V$) necesarios. (Hastie, 2001) (\cite{hastie2001tibshirani})
 
 Por último, la letra $d$ denota el número de particiones en cada árbol, dicho parámetro controla la complejidad de cada estimador. Se observa que en el caso $d=1$ implica que cada árbol tenga solamente una partición y de esta forma se cuenta con un modelo aditivo (cada término involucra una sola variable). 
 
@@ -1025,7 +1024,7 @@ Los modelos denominados \textit{Support Vector Regression} (SVR), surgen como un
 
 Por lo tanto, al ser una generalización de los SVM (para problemas de regresión), poseen características muy similares, principalmente la robustez en cuanto a observaciones atípicas. De esta forma, se tiene que los SVR pertenecen al grupo denominado \textit{robust regression}, donde en estos métodos se busca minimizar el efecto de observaciones atípicas en la ecuación de regresión. (Kunh, 2013) (\cite{kuhn2013applied})
 
-Estos métodos surgen como alternativa a los modelos de regresión lineal, ya que estos ultimos a la hora de estimar los parámetros buscan minimizar la suma de cuadrados residuales (SCR). Lo cual conlleva que una observación que no sigue la tendencia del resto, puede ser muy influyente. (Kunh, 2013) (\cite{kuhn2013applied})
+Estos métodos surgen como alternativa a los modelos de regresión lineal, ya que estos últimos a la hora de estimar los parámetros buscan minimizar la suma de cuadrados residuales (SCR). Lo cual conlleva que una observación que no sigue la tendencia del resto, puede ser muy influyente. (Kunh, 2013) (\cite{kuhn2013applied})
 
 A pesar de que existen varios enfoques para llevar acabo SVR en este trabajo se centró en el denominado $\epsilon$-\textit{insensitive regression} (Kunh, 2013) (\cite{kuhn2013applied}). En este contexto, a la hora de obtener las estimaciones de los parámetros del modelo, se define una nueva función de pérdida denominada $\epsilon$-\textit{insensitive loss function} (Vapnik, 1999) (\cite{vapnik1999nature}), siendo de la forma:
 
@@ -1053,7 +1052,7 @@ $C \displaystyle \sum_{i=1}^{n}L(|y_i-f(x_i,\beta)|_{\epsilon}) + \displaystyle 
 
 \end{center}
 
-Donde el parámetro $C$ es un parámetro de penalización, el cual generalmente se estima mediante \textit{validación cruzada}. En este contexto el parámetro $C$ cumple un rol de indicar la complejidad del modelo. Conforme aumenta el valor de éste el modelo obtiene mayor flexibilidad, en la medida que el efecto de los errores es aumentado. Por otro lado, al disminuir este parámetro el modelo se vuelve más rígido y con menor posibilidad de sobre ajustar a las observaciones.
+Donde el parámetro $C$ es un parámetro de penalización, el cual generalmente se estima mediante \textit{validación cruzada}. En este contexto el parámetro $C$ cumple un rol de indicar la complejidad del modelo. Conforme aumenta el valor de este el modelo obtiene mayor flexibilidad, en la medida que el efecto de los errores es aumentado. Por otro lado, al disminuir este parámetro el modelo se vuelve más rígido y con menor posibilidad de sobre ajustar a las observaciones.
 
 Luego, se tiene que la solución al problema de minimización anteriormente mencionado, involucra el producto escalar entre las observaciones y no a las observaciones en si (Hastie, 2001) (\cite{hastie2001tibshirani}). De esta forma, se puede re expresar a la función de regresión mediante la siguiente expresión:
 
@@ -1063,7 +1062,7 @@ $f(x^{*})=\beta_{0}+\displaystyle \sum_{i=1}^{n} \alpha_{i} \langle x^{*},x_{i}\
 
 \end{center}
 
-De esta forma, se tiene que para evaluar $f(x^{*})$ es necesario el cálculo del producto escalar entre la nueva observación ($x^{*}$) y cada una de las observaciones pertenecientes al conjunto de entrenamiento. A su vez, se cuenta con $n$ parámetros $\alpha_{i}$ con $i=1,\dots,n$, donde cada uno corresponde a una observación de entrenamiento.
+Por lo tanto, se tiene que para evaluar $f(x^{*})$ es necesario el cálculo del producto escalar entre la nueva observación ($x^{*}$) y cada una de las observaciones pertenecientes al conjunto de entrenamiento. A su vez, se cuenta con $n$ parámetros $\alpha_{i}$ con $i=1,\dots,n$, donde cada uno corresponde a una observación de entrenamiento.
 
 Sin embargo, en SVR se tiene la propiedad de que solo un subconjunto de los datos tiene un rol activo en la predicción de una nueva observación. Esto en la medida de que los parámetros $\alpha_{i}$ asociados a las observaciones de entrenamiento las cuales se encuentran a $\pm\ \epsilon$ de la recta de regresión (es decir se encuentran dentro del intervalo de longitud $2 \epsilon$ alrededor de la recta de regresión) son iguales a $0$. (Kunh, 2013) (\cite{kuhn2013applied})
 
@@ -1164,7 +1163,7 @@ Para ello, se trabajó con \textit{métodos globales modelo-agnósticos} de inte
 
 Estos métodos de interpretación para modelos de caja negra consisten en describir el compartamiento promedio del modelo. Donde, los mismos generalmente se expresan mediante un valor esperado, basado en la distribución de los datos. (Molnar, 2020) (\cite{molnar2020interpretable})
 
-A pesar de que en la literatura existen diferentes métodos para llevar a cabo el análsis, se trabajó mediante dos aproximaciones. 
+A pesar de que en la literatura existen diferentes métodos para llevar a cabo el análisis, se trabajó mediante dos aproximaciones. 
 
 Como primera aproximación, se implementó un análisis sobre la importancia de cada predictor, mediante la metodología de \textit{importancia de las variables permutadas}. Luego, se realizó el análisis mediante los gráficos denominados \textit{Partial Dependece Plot} (PDP). 
 
@@ -1199,14 +1198,14 @@ Se destaca que si se cuenta con variables altamente correlacionadas, este métod
 
 Los \textit{gráficos de dependencia parcial} (PDP) permiten observar el efecto marginal que una o dos variables tienen sobre la predicción de la variable de respuesta obtenida a través de un algoritmo de aprendizaje estadístico. (Molnar, 2020) (\cite{molnar2020interpretable}) 
 
-Estos gráficos pueden detectar cuando la relación entre la variable de respuesta y la variable predictora de interés es líneal, monótona, o bien cuando se trata de una forma funcional más compleja. 
+Estos gráficos pueden detectar cuando la relación entre la variable de respuesta y la variable predictora de interés es lineal, monótona, o bien cuando se trata de una forma funcional más compleja. 
 
 La \textit{función de dependencia parcial} para el caso de regresión se define como:
 
 $$\begin{align*}\hat{f}_{X_S,PDP}(X_S)&=E_{X_C}\left[\hat{f}(X_S,X_C)\right]\\&=\int_{X_C}\hat{f}(X_S,X_C)\mathbb{P}(X_C)d{}X_C\end{align*}$$
 
 
-En donde $X_s$ son las variables para las cuales se quiere conocer el efecto sobre la predicción, mientras que $X_C$ corresponde al resto de las variables utilizadas en el algoritmo de aprendizaje estadístico $\hat{f}$.
+En donde $X_S$ son las variables para las cuales se quiere conocer el efecto sobre la predicción, mientras que $X_C$ corresponde al resto de las variables utilizadas en el algoritmo de aprendizaje estadístico $\hat{f}$.
 
 Ahora bien, la estimación para la función anterior se obtiene mediante la métodología \textit{Monte Carlo} promediando sobre la muestra de entrenamiento:
 
@@ -1218,7 +1217,7 @@ Se destaca que PDP es un método que permite determinar de manera global la rela
 
 De manera similar se obtiene una estimación PDP para el caso de variables categóricas en donde, para cada categoría, se realiza la estimación PDP forzando a que todas las observaciones tomen el valor correspondiente a dicha categoría. (Molnar, 2020) (\cite{molnar2020interpretable})
 
-Una de las ventajas principales de PDP es que es un método intuitivo y en el caso de variables incorrelacionadas, tiene una interpretación clara. El gráfico PDP permite observar cómo cambia la predicción promedio cuando la h-ésima variable predictora cambia. No obstante éste resultado no es tan claro en el caso de correlación entre las variables con las que se construye el gráfico, ya que se construyen conbinaciones de las variables que son irreales o con probabilidad muy baja. Esto ocurrre ya que la función PDP en un punto en particular se obtiene forzando a que todos las observaciones tomen dicho valor en particular, lo cual puede no tener sentido en algunos casos. (Molnar, 2020) (\cite{molnar2020interpretable})
+Una de las ventajas principales de PDP es que es un método intuitivo y en el caso de variables incorrelacionadas, tiene una interpretación clara. El gráfico PDP permite observar cómo cambia la predicción promedio cuando la h-ésima variable predictora cambia. No obstante este resultado no es tan claro en el caso de correlación entre las variables con las que se construye el gráfico, ya que se construyen conbinaciones de las variables que son irreales o con probabilidad muy baja. Esto ocurrre ya que la función PDP en un punto en particular se obtiene forzando a que todos las observaciones tomen dicho valor en particular, lo cual puede no tener sentido en algunos casos. (Molnar, 2020) (\cite{molnar2020interpretable})
 
 Por último, se destaca que, para el caso de las variables de naturaleza contínua, debido al alto costo computacional que conlleva la realización de esta metodología, a la hora de obtener los resultados se procedió a trabajar con una grilla de tamaño 20 sobre el recorrido de cada variable utilizando puntos de corte equidistantes.
 
@@ -1226,7 +1225,7 @@ Por último, se destaca que, para el caso de las variables de naturaleza contín
 
 La base de datos construida contiene variables con diferentes grado de datos faltantes. 
 
-Éste problema fue abordado siguiendo dos estrategias de imputación. En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.15, y se procede en esta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que el proceso generador de datos de éstos valores es un proceso aleatorio. Es decir, que los datos faltantes son generados al azar.
+Este problema fue abordado siguiendo dos estrategias de imputación. En primera instancia se entrenan diferentes modelos imputando solamente a las variables numéricas que tienen proporción de valores faltantes inferior a 0.15, y se procede en esta primera instancia a realizar imputación por la media, lo cual es equivalente a asumir que el proceso generador de datos de estos valores es un proceso aleatorio. Es decir, que los datos faltantes son generados al azar.
 
 Posteriormente, se realizó un proceso de imputación de valores faltantes mediante un análisis supervisado. Para ello se trabajó de la siguiente manera: 1) Se ajustó un modelo tomando como variable de salida cada variable con datos faltantes, 2) en cada uno de ellos, se consideró como variables de entrada todas aquellas que originalmente no presentan datos faltantes, pero excluyendo la variable precio y 3) en cada variable, se sustituyó cada dato faltante por su predicción utilizando el modelo ajustado.
 
@@ -1238,7 +1237,7 @@ En la Tabla \ref{tabna} de la Sección del Anexo \ref{varsA} se detalla la propo
 
 \chapter{Reproducibilidad \label{cap:reproduc}}
 
-En éste Capítulo se detalla brevemente las características tenidas en cuenta para lograr algunos aspectos de la reproducibilidad de los resultados obtenidos al igual que modificaciones de los mismos.
+En este Capítulo se detalla brevemente las características tenidas en cuenta para lograr algunos aspectos de la reproducibilidad de los resultados obtenidos al igual que modificaciones de los mismos.
 
 En primer lugar, en lo que respecta a los datos utilizados, se destaca que los mismos se encuentran disponibles en \url{https://drive.google.com/drive/folders/1uTIr9JVc5SZS2bOVG4faexfW0q4m9sVL?usp=sharing}. Asimismo, se trabajó con un repositorio remoto público disponible en \url{https://github.com/alvarovalinio/TFG}, donde se encuentra disponible el código necesario para la obtención de nuevos datos siguiendo los pasos detallados en la Sección \ref{sec:obtencion}. 
 
@@ -1246,7 +1245,7 @@ A su vez, en dicho repositorio se encuentra disponible en diferentes scripts del
 
 Por otra lado, como se detalla en el Capítulo \ref{cap:MT} varias de las técnicas implementadas involucran un proceso de simulación de valores aleatorios. De esta forma se consideró apropiado trabajar con una única semilla.
 
-Luego, según se menciona en el Capítulo \ref{cap:Intro}, con el fin de obtener un mayor poder de cómputo en los algoritmos implementados, se utilizó un enfoque desde la programación en paralelo. Se destaca que que éste enfoque presenta ciertas limitantes en cuanto a la reproducibilidad de los resultados obtenidos. En éste sentido, los resultados presentados en la Sección \ref{sec:hypt} fueron obtenidos utilizando un total de dos núcleos y estableciendo una semilla en cada uno de ellos. Con el fin de llevar a cabo este cometido se trabajó con el paquete de R \textit{doParallel} (\cite{dopar}). 
+Luego, según se menciona en el Capítulo \ref{cap:Intro}, con el fin de obtener un mayor poder de cómputo en los algoritmos implementados, se utilizó un enfoque desde la programación en paralelo. Se destaca que que este enfoque presenta ciertas limitantes en cuanto a la reproducibilidad de los resultados obtenidos. En este sentido, los resultados presentados en la Sección \ref{sec:hypt} fueron obtenidos utilizando un total de dos núcleos y estableciendo una semilla en cada uno de ellos. Con el fin de llevar a cabo este cometido se trabajó con el paquete de \textit{R} \textit{doParallel} (\cite{dopar}). 
 
 Por último, el informe se realizó utilizando el sistema \textit{Sweave} que permite generar reportes dinámicos incorporando código de \textit{R} con documentos de Latex. El mismo se encuentra también disponible en el repositorio remoto público \url{https://github.com/alvarovalinio/TFG}. 
 
@@ -1279,7 +1278,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(sum.table, booktabs = F, align = "c", format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 11) %>% row_spec(0,bold=TRUE)
 @
-\caption{Medidas de resumen de la variable precio de oferta en dólares. En la medida que la media es superior a la mediana se tiene una asimetría hacia la derecha. Por otro lado, se observa un desvío de 76.788 dólares estadounidenses y un coeficiente de variación de 0.47.}
+\caption{Medidas de resumen de la variable precio de oferta en dólares. En la medida que la media es superior a la mediana se tiene una asimetría hacia la derecha. Por otro lado, se observa un desvío de 76,788 dólares estadounidenses y un coeficiente de variación de 0.47.}
 \label{tab1}
 \end{table}
 
@@ -1303,20 +1302,49 @@ aptos %>% ggplot(aes(x=price)) +
       annotate("text", x = mean(aptos$price, na.rm = TRUE) + 72000, y = 5500, label = paste0("Media = USD ",round(mean(aptos$price, na.rm = TRUE))), color = 'red') +
       scale_x_continuous(label = comma)
 @
-\captionof{figure}{Histograma del precio de oferta en dólares de los apartamentos a la venta en Montevideo, Uruguay. El precio promedio es USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}. Como fue comentado en la Tabla \ref{tab1} se observa una asimetría a la derecha en la distribución.}
+\captionof{figure}{Histograma del precio de oferta en dólares de los apartamentos a la venta en Montevideo, Uruguay. El precio promedio es de \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))} dólares. Como fue comentado en la Tabla \ref{tab1} se observa una asimetría a la derecha en la distribución.}
 \label{fig1}
 \end{figure}
 
-Por otra parte, en la Figura \ref{map3} se presenta el mapa de Montevideo con los puntos dónde se encuentran ubicados los apartamentos, luego de haber implementado los criterios de depuración detallados en la Sección \ref{sec:procesamiento}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}), siendo éste de color celeste.
+Por otra parte, en la Figura \ref{map3} se presenta el mapa de Montevideo con los puntos dónde se encuentran ubicados los apartamentos, luego de haber implementado los criterios de depuración detallados en la Sección \ref{sec:procesamiento}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (\Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))} dólares), siendo este último de color celeste.
 
 \begin{figure}
 \centering
 <<fig=TRUE>>=
-aptos_sf <- aptos %>% 
+
+aux_lat_lon <- data.frame(lon = aptos$longitude,lat = aptos$latitude)
+
+aux_lat_lon <- aux_lat_lon %>%
+      sf::st_as_sf(coords = c(1,2)) %>% st_set_crs(4326) %>% st_transform(crs=32736)
+
+
+aux_lat_lon <- st_transform(aux_lat_lon, '+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
+
+
+interseccion <- st_intersects(aux_lat_lon,mapa_barrio$geometry,sparse = T)
+
+for(i in 1:nrow(interseccion)){ 
+      
+      if(is_empty(interseccion[[i]])){
+            
+            interseccion[[i]] <- NA
+            
+      }
+      
+}
+
+interseccion <- interseccion %>% as.data.frame()
+
+aptos_mapa <- aptos
+
+aptos_mapa$filtro <- interseccion$col.id
+
+aptos_mapa <- aptos_mapa %>% filter(!is.na(filtro))
+
+aptos_sf <- aptos_mapa %>% 
       st_as_sf(coords = c("longitude","latitude"), 
                crs='+proj=longlat +zone=21 +south +datum=WGS84 +units=m +no_defs')
 
-  
 ggplot(mapa_barrio) +
       geom_sf() +
       geom_sf(data = aptos_sf, aes(color = price/1000) , alpha = 0.7) +
@@ -1335,15 +1363,20 @@ ggplot(mapa_barrio) +
                             midpoint = mean(aptos$price, na.rm = TRUE)/1000,
                            name = "Precio de oferta en dólares \n por mil",labels = comma)  
 @
-\captionof{figure}{Mapa de puntos donde se encuentran ubicados los apartamentos en la base de datos obtenida de \textit{Mercado Libre}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (USD \Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))}), siendo éste de color celeste.}
+\captionof{figure}{Mapa de puntos donde se encuentran ubicados los apartamentos en la base de datos obtenida de \textit{Mercado Libre}. El color del punto indica si el precio de oferta del apartamento es superior o inferior al precio promedio en los datos (\Sexpr{paste(round(mean(aptos$price, na.rm = TRUE)))} dólares), siendo este de color celeste.}
 \label{map3}
 \end{figure}
 
-Como se observa en la Figura \ref{map3}, el precio de oferta en dólares de los apartamentos incrementa conforme aumenta la proximidad de la ubicación de los mismos a la rambla este de Montevieo. En contraparte, se observa que el precio disminuye para los apartamentos que se encuentran en barrios ubicados hacia el norte de Montevideo.
+\newpage
 
-Por otro lado, se observa una mayor concentración de apartamentos en barrios ubicados hacia el sur de Montevideo. Por último, como fue mencionado en la Sección \ref{sec:procesamiento}, se tiene que algunos apartamentos quedaron ubicados fuera del polígono de Montevideo.
+Como se observa en la Figura \ref{map3}, el precio de oferta en dólares de los apartamentos se incrementa conforme aumenta la proximidad de la ubicación de los mismos a la rambla este de Montevieo. En contraparte, se observa que el precio disminuye para los apartamentos que se encuentran en barrios ubicados hacia el norte de Montevideo. Por otro lado, se observa una mayor concentración de apartamentos en barrios ubicados hacia el sur de Montevideo.
 
 En lo que respecta a las variables de entrada, en primer lugar se realizó un análisis exploratorio en cuanto a las variables de naturaleza cualitativa. A continuación se presenta en la Figura \ref{fig2} la distribución de los niveles en los datos para un conjunto de variables mediante gráficos de barras.
+
+Según se observa en la Figura \ref{fig2} la variable zona Avd. Italia posee niveles balanceados en contraposición a las variables el edificio tiene piscina y cantidad de baños completos. Por su parte, la variable  cantidad de dormitorios presenta mayor proporción de observaciones hacia los niveles centrales (uno y dos dormitorios).
+
+Asimismo, con el fin de observar la covariación entre la variable precio de oferta en dólares y las variables presentadas en la Figura \ref{fig2}, se presentan en la Figura \ref{fig3} los gráficos de caja y gráficos de violín correspondientes.
+
 
 <<>>=
 # niveles <- aptos %>% group_by(bedrooms) %>% summarise(n = n())
@@ -1413,9 +1446,7 @@ grid.arrange(p1, p2, p3, p4, ncol = 2)
 \label{fig2}
 \end{figure}
 
-Según se observa en la Figura \ref{fig2} la variable zona Avd. Italia posee niveles balanceados en contraposición a las variables el edificio tiene piscina y cantidad de baños completos. Por su parte, la variable  cantidad de dormitorios presenta mayor proporción de observaciones hacia los niveles centrales (uno y dos dormitorios).
-
-Con el fin de observar la covariación entre la variable precio de oferta en dólares y las variables presentadas en la Figura \ref{fig2}, se presentan en la Figura \ref{fig3} los gráficos de caja y gráficos de violín correspondientes.
+\newpage
 
 <<>>=
 p5 <- aptos %>% 
@@ -1535,7 +1566,7 @@ aptos %>% ggplot(aes(y=price, group = full_bathrooms, fill = full_bathrooms)) +
 \label{fig4}
 \end{figure}
 
-En particular, la Figura \ref{fig4} muestra que entre los apartamentos con dos o más baños completos, se observa una mediana superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al norte. En lo que respecta a los apartamentos con un sólo baño completo, se observa que los apartamentos al sur poseen una mediana superior respecto a los ubicados al norte, si bien la diferencia es menor en éste último caso.
+En particular, la Figura \ref{fig4} muestra que entre los apartamentos con dos o más baños completos, se observa una mediana superior para los apartamentos ubicados al sur respecto a los apartamentos ubicados al norte. En lo que respecta a los apartamentos con un solo baño completo, se observa que los apartamentos al sur poseen una mediana superior respecto a los ubicados al norte, si bien la diferencia es menor en este último caso.
 
 En primer lugar, se observa en la Figura \ref{fig5} que el precio de oferta en dólares de los apartamentos se ve diferenciado según la cantidad de baños completos. Esto último en la medida que, condicionando por todos los niveles de la variable distancia a la rambla este discretizada, la mediana de los apartamentos con dos o más baños completos es superior a aquellos con un solo baño completo. 
 
@@ -1582,8 +1613,8 @@ corr<-round(cor(aptos_cor, use='pairwise.complete.obs') , 2)
 
 ggcorrplot(corr, method = c("square"),type=c("upper"), 
            ggtheme = ggplot2::theme_gray,lab=TRUE) +
-      ggplot2::scale_x_discrete(labels = c('Precio de oferta \n en dólares','Distancia al \n centro  comercial \n más cercano','Distancia a la \n rambla Este','Área \n total','Área \n cubierta','Área \n no cubierta')) +
-      ggplot2::scale_y_discrete(labels = c('Distancia al \n centro  comercial \n más cercano', 'Distancia a la \n rambla Este',  'Área \n cubierta', 'Área \n total', 'Área \n no cubierta')) +
+      ggplot2::scale_x_discrete(labels = c('Precio de oferta \n en dólares','Distancia al \n centro  comercial \n más cercano','Distancia a la \n rambla este','Área \n total','Área \n cubierta','Área \n no cubierta')) +
+      ggplot2::scale_y_discrete(labels = c('Distancia al \n centro  comercial \n más cercano', 'Distancia a la \n rambla este',  'Área \n cubierta', 'Área \n total', 'Área \n no cubierta')) +
       ggplot2::theme(axis.text = element_text(vjust = 0.5)) +
       theme(axis.text = element_text(face = 'bold', size = 6),
             legend.title = element_text(face = 'bold')) 
@@ -1598,13 +1629,13 @@ Por otro lado, se tiene que tanto distancia al centro comercial más cercano com
 
 En esta Sección se presentan los principales resultados obtenidos luego de realizar la implementación de las técnicas detalladas en el Capítulo \ref{cap:MT}.
 
-En primer lugar, en la Sección \ref{sec:resml} se tienen los resultados obtenidos luego de relizar un ajuste mediante un \textit{Modelo de Regresión Lineal Múltiple}. Luego, en la secciones \ref{sec:resarbol}, \ref{sec:resRF}, \ref{sec:resboosting} y  \ref{sec:ressvr} se exponen los resultados de la implementación de las técnicas de aprendizaje estadístico explicitadas en el Capítulo \ref{cap:MT}.
+En primer lugar, en la Sección \ref{sec:resml} se tienen los resultados obtenidos luego de relizar un ajuste mediante un \textit{Modelo de Regresión Lineal Múltiple}. Luego, en las Secciones \ref{sec:resarbol}, \ref{sec:resRF}, \ref{sec:resboosting} y  \ref{sec:ressvr} se exponen los resultados de la implementación de las técnicas de aprendizaje estadístico explicitadas en el Capítulo \ref{cap:MT}.
 
 Con el fin de tener una primera aproximación de la performance predictiva de los modelos, se trabajó con una metodología de muestra de entrenamiento y muestra de testeo. Para ello, se consideró el 80\% de los datos como muestra de entrenamiento y el restante 20\% como muestra de testeo. 
 
 A continuación, en forma de resumen, se muestra en la Sección \ref{sec:hypt} un análisis comparativo de los diferentes modelos en función de su performance predictiva mediante la metodología de \textit{k-folds} y el proceso de selección de los \textit{parámetros de ajuste} especificada en la Sección \ref{sec:cv}. En particular, se trabajó con \textit{5-folds}.
 
-Por último, se presenta en la Sección \ref{sec:resinterp} el análisis gráfico de interpretabilidad según detallado en la Sección \ref{sec:interp} aplicado al mejor modelo en términos de performance predictiva resultado de la etapa anterior.
+Por último, se presenta en la Sección \ref{sec:resinterp} el análisis gráfico de interpretabilidad según lo detallado en la Sección \ref{sec:interp} aplicado al mejor modelo en términos de performance predictiva resultante de la etapa anterior.
 
 Se destaca que todas las etapas anteriores se aplicaron considerando las dos técnicas de imputación mencionadas en la Sección \ref{sec:secfalt}. 
 
@@ -1659,7 +1690,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(lmt, escape = F, booktabs = F, align = "c", format.args = list(big.mark = ","), col.names = c('Imputación', 'RMSE', 'MAE', "$R^2$", "$R^2_a$","Estadístico F", "P-Valor" )) %>% kable_styling(latex_options = "HOLD_position", font_size = 10) %>% row_spec(0,bold=TRUE)
 @
-\caption{Principales resultados de los modelos lineales ajustados según el método de imputación utilizado, considerando muestra de entrenamiento y muestra de testeo.}
+\caption{Principales resultados de los \textit{Modelos de Regresión Lineal Múltiple} ajustados según el método de imputación utilizado, considerando muestra de entrenamiento y muestra de testeo.}
 \label{tab2}
 \end{table}
 
@@ -1732,7 +1763,7 @@ A continuación se presentan los resultados del ajuste mediante un \textit{Árbo
 considerando ambas metodologías de imputación de valores faltantes. 
 
 En primer lugar se presenta, para cada modelo ajustado, el gráfico luego de realizar el proceso de
-poda mencionado en la Sección \ref{subsec:arbol}. Respecto a éste punto, en la Sección del Anexo \ref{arbolA} se
+poda mencionado en la Sección \ref{subsec:arbol}. Respecto a este punto, en la Sección del Anexo \ref{arbolA} se
 presenta en las Tablas \ref{tab17} y \ref{tab18} los diferentes valores del parámetro de costo-complejidad, su error mediante un proceso de \textit{validación cruzada} asociado, al igual que el
 tamaño del árbol que dicho valor del parámetro implica y otras métricas de interés.
 
@@ -1747,9 +1778,9 @@ Asimismo, se tiene que la primera variable en realizar una partición binaria es
 de baños completos. Las variables distancia a la rambla este, área total, cantidad de dormitorios e
 ingreso medio ECH son utilizadas en las siguientes particiones.
 
-De esta forma, se tiene que el precio de un apartamento con más de un baño completo, que se encuentra a menos de 2,039 metros de distancia a la rambla este y con un área total mayor o igual a 107 metros cuadrados, es predicho por el modelo como 351,524 dólares.
+De esta forma, se tiene que el precio de oferta de un apartamento con más de un baño completo, que se encuentra a menos de 2,039 metros de distancia a la rambla este y con un área total mayor o igual a 107 metros cuadrados, es predicho por el modelo como 351,524 dólares.
 
-Por su contraparte, un apartamento con un solo baño completo, con un área total menor a 55.2 metros cuadrados y que se encuentra a una distancia mayor o igual de 1,462 metros a la rambla este, el modelo realiza una predicción sobre el precio del mismo de 107,403 dólares.
+Por su contraparte, un apartamento con un solo baño completo, con un área total menor a 55.2 metros cuadrados y que se encuentra a una distancia mayor o igual de 1,462 metros a la rambla este, el modelo realiza una predicción sobre el precio de oferta del mismo de 107,403 dólares.
 
 Por otra parte, el gráfico correspondiente al árbol realizado mediante imputación de valores faltantes por \textit{Random Forest} es presentado en la Figura \ref{figarbol} de la Sección del Anexo \ref{arbolA} debido a que no presenta diferencias sustanciales con el gráfico del árbol obtenido realizando imputación por la media.
 
@@ -1798,7 +1829,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(res_arbol, booktabs = F, align = "c", col.names = c('Imputación', 'RMSE', "$R^2$", "MAE"), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
 @
-\caption{Principales medidas de resumen de los árboles de regresión ajustados según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE).}
+\caption{Principales medidas de resumen de los \textit{Árboles de Regresión} ajustados según metodología de imputación utilizada, considerando muestra de entrenamiento y muestra de testeo. Se presentan la raíz cuadrada del error cuadrático medio (RMSE), el coeficiente de determinación ($R^2$), y el error absoluto medio (MAE).}
 \label{tab3}
 \end{table}
 
@@ -1808,7 +1839,7 @@ Como se observa en la Tabla \ref{tab3}, ambos modelos tienen un error promedio d
 
 En esta sección se presentan los resultados del ajuste por \textit{Random Forest} considerando ambas metodologías de imputación. 
 
-Se destaca que el ajuste se realizó utilizando la función \textit{ranger} del paquete \textit{ranger} (\cite{ranger}) y tomando los valores por defecto de los parámetros de ajuste detallados en la Sección \ref{subsec:rf} para ambos métodos de imputación. 
+Se destaca que el ajuste se realizó utilizando la función \textit{ranger} del paquete \textit{ranger} (\cite{ranger}) y tomando los valores por defecto de los \textit{parámetros de ajuste} detallados en la Sección \ref{subsec:rf} para ambos métodos de imputación. 
 
 De esta manera, en primer lugar se presenta en la Tabla \ref{hyprf} los valores utilizados. 
 
@@ -1827,13 +1858,13 @@ options(knitr.table.format = "latex")
 \begin{table}[H]
 \centering
 <<results=tex>>=
-kable(hyp_rf, booktabs = F, align = "c", col.names = c('parámetro de ajuste ', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
+kable(hyp_rf, booktabs = F, align = "c", col.names = c('Parámetro de ajuste', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
 @
 \caption{Valores por defecto de los \textit{parámetros de ajuste} utilizados en los modelos ajustados por \textit{Random Forest}. Se detalla el número de árboles y la cantidad de variables seleccionadas de manera aleatoria en cada partición.}
 \label{hyprf}
 \end{table}
 
-Luego se presenta graficamente en la Figura \ref{rf_import2} un análisis de la importancia permutada de las variables siguiendo la metodología detallada en la Sección \ref{subsec:import}. 
+Luego se presenta graficamente en la Figura \ref{rf_import2} un análisis de la \textit{importancia permutada} de las variables siguiendo la metodología detallada en la Sección \ref{subsec:import}. 
 
 \begin{figure}[H]
 \centering
@@ -1876,7 +1907,7 @@ p2 <- importancia_rf_mr$data %>%
 # Importancia de las variables
 grid.arrange(p1, p2, ncol = 2)
 @
-\captionof{figure}{Gráfico de la importancia permutada de las 10 primeras variables en los modelos ajustados por \textit{Random Forest}. Se observa que las variables área cubierta, área total y distancia a la rambla este son las 3 variables más importantes en ambos modelos.}
+\captionof{figure}{Gráfico de la \textit{importancia permutada} de las 10 primeras variables en los modelos ajustados por \textit{Random Forest}. Se observa que las variables área cubierta, área total y distancia a la rambla este son las 3 variables más importantes en ambos modelos.}
 \label{rf_import2}
 \end{figure}
 
@@ -1952,13 +1983,13 @@ options(knitr.table.format = "latex")
 \begin{table}[H]
 \centering
 <<results=tex>>=
-kable(hyp_boost, booktabs = F, col.names = c('parámetro de ajuste ', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
+kable(hyp_boost, booktabs = F, col.names = c('Parámetro de ajuste', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
 @
 \caption{Valores por defecto utilizados de los \textit{parámetros de ajuste} en los modelos ajustados por \textit{Boosting}. Se detalla el número de árboles, la tasa de aprendizaje y el número de particiones en cada árbol.}
 \label{hypb}
 \end{table}
 
-Luego, se presenta graficamente en la Figura \ref{boost_import} un análisis de la importancia permutada de las variables siguiendo la metodología detallada en la Sección \ref{subsec:boosting}. 
+Luego, se presenta graficamente en la Figura \ref{boost_import} un análisis de la \textit{importancia permutada} de las variables siguiendo la metodología detallada en la Sección \ref{subsec:boosting}. 
 
 \begin{figure}[H]
 \centering
@@ -2000,7 +2031,7 @@ grid.arrange(p3, p4, ncol = 2)
 #importancia_boosting <- vip::vip(boosting_train,plot=F)
 #importancia_boosting_mr <- vip::vip(boosting_train_mr,plot=F)
 @
-\captionof{figure}{Gráfico de la importancia permutada de las 10 primeras variables en los modelos ajustados por \textit{Boosting}. Se observa que las variables área total, cantidad de baños completos e ingreso medio ECH son las 3 variables más importantes en ambos modelos.}
+\captionof{figure}{Gráfico de la \textit{importancia permutada} de las 10 primeras variables en los modelos ajustados por \textit{Boosting}. Se observa que las variables área total, cantidad de baños completos e ingreso medio ECH son las 3 variables más importantes en ambos modelos.}
 \label{boost_import}
 \end{figure}
 
@@ -2069,13 +2100,13 @@ options(knitr.table.format = "latex")
 \begin{table}[H]
 \centering
 <<results=tex>>=
-kable(hyp_svr, booktabs = F, align = "c", col.names = c('parámetro de ajuste ', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
+kable(hyp_svr, booktabs = F, align = "c", col.names = c('Parámetro de ajuste', 'Valor'), escape = F, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 12) %>% row_spec(0,bold=TRUE)
 @
 \caption{Valores por defecto utilizados de los \textit{parámetros de ajuste} en los modelos ajustados por \textit{Support Vector Regression}. Se detalla el parámetro de complejidad, el umbral y el parámetro de escala.}
 \label{hypsvr}
 \end{table}
 
-Por otro lado en la Figura \ref{svrimport} se presenta gráficamente un análisis de la importancia permutada de las variables siguiendo la metodología detallada en la Sección \ref{subsec:import}. 
+Por otro lado en la Figura \ref{svrimport} se presenta gráficamente un análisis de la \textit{importancia permutada} de las variables siguiendo la metodología detallada en la Sección \ref{subsec:import}. 
 
 \begin{figure}[H]
 \centering
@@ -2120,7 +2151,7 @@ p4 <- importancia_SVR_mr$data %>%
 grid.arrange(p3, p4, ncol = 2)
 
 @
-\captionof{figure}{Gráfico de la importancia permutada de las 10 primeras variables en los modelos ajustados por \textit{Support Vector Regression}. Se observa que las variables área cubierta, área total y distancia a la rambla este son las 3 variables más importantes en el ajuste utilizando método de imputación de valores faltantes por la media. En lo que respecta al ajuste con imputación de valores faltantes por \textit{Random Forest}, las variables área cubierta, distancia a la rambla este e ingreso medio ECH son las 3 variables más importantes.}
+\captionof{figure}{Gráfico de la \textit{importancia permutada} de las 10 primeras variables en los modelos ajustados por \textit{Support Vector Regression}. Se observa que las variables área cubierta, área total y distancia a la rambla este son las 3 variables más importantes en el ajuste utilizando método de imputación de valores faltantes por la media. En lo que respecta al ajuste con imputación de valores faltantes por \textit{Random Forest}, las variables área cubierta, distancia a la rambla este e ingreso medio ECH son las 3 variables más importantes.}
 \label{svrimport}
 \end{figure}
 
@@ -2134,8 +2165,8 @@ Por último, se procedió a obtener cierta medida de la performance predictiva e
 predictions_svr <- kernlab::predict(SVR_train, test_std)
 predictions_svr_mr <- kernlab::predict(SVR_train_mr, test_mr_std)
 
-RMSE_svr <- RMSE(kernlab::predict(SVR_train, test_std), test_std$price)
-RMSE_svr_mr <- RMSE(kernlab::predict(SVR_train_mr, test_mr_std), test_mr_std$price)
+RMSE_svr <- RMSE(predictions_svr, test_std$price)
+RMSE_svr_mr <- RMSE(predictions_svr_mr, test_mr_std$price)
 
 r2_svr <- sum((predictions_svr-mean(test_std$price))^2) /
                         sum((test_std$price - mean(test_std$price))^2)
@@ -2170,9 +2201,9 @@ La tabla \ref{tabsvr} muestra que ambos modelos tienen un error promedio de pred
 
 \section{Parámetros de ajuste \label{sec:hypt}}
 
-Una vez realizado los ajustes de los modelos detallados en el Capítulo \ref{cap:MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los \textit{parámetros de ajuste} de cada modelo. 
+Una vez realizados los ajustes de los modelos detallados en el Capítulo \ref{cap:MT} utilizando los valores por defecto, con el fin de mejorar la performance predictiva se procedió a realizar una búsqueda orientada sobre los posibles valores para los \textit{parámetros de ajuste} de cada modelo. 
 
-Para ello, para todos los ajustes se trabajó con la función \textit{train} del paquete \textit{CARET} (\cite{caret}), con excepción del ajuste realizado por \textit{Boosting}. Éste último se realizó mediante una función construída que permite realizar el proceso de selección de los \textit{parámetros de ajuste}, a partir de la función \textit{gbm} del paquete \textit{gbm} y emulando la función \textit{train}. Se realizó esta excepción en la medida que a la fecha del informe el paquete \textit{CARET} presenta ciertos inconvenientes a la hora de realizar un ajuste por el algoritmo \textit{Boosting}.
+Para ello, para todos los ajustes se trabajó con la función \textit{train} del paquete \textit{CARET} (\cite{caret}), con excepción del ajuste realizado por \textit{Boosting}. Este último se realizó mediante una función construída que permite realizar el proceso de selección de los \textit{parámetros de ajuste}, a partir de la función \textit{gbm} del paquete \textit{gbm} y emulando la función \textit{train}. Se realizó esta excepción en la medida que a la fecha del informe el paquete \textit{CARET} presenta ciertos inconvenientes a la hora de realizar un ajuste por el algoritmo \textit{Boosting}.
 
 Por otro lado, se destaca que la función \textit{train} tiene especificada por defecto una grilla de valores para los \textit{parámetros de ajuste} de cada modelo. De esta manera, para cada combinación de \textit{parámetros de ajuste}, se realiza un ajuste y luego se evalúan en función de las métricas detalladas en la Sección \ref{sec:cv}. En la Sección del Anexo \ref{hyptA} se detallan las grillas mencionadas en las Tablas \ref{grilla1}, \ref{grillab}, y \ref{grillac}.
 
@@ -2355,7 +2386,7 @@ importancia_best$data %>%
                                   'Área total',
                                   'Distancia a la rambla este'))
 @
-\captionof{figure}{Gráfico de la importancia permutada de las 10 primeras variables en el modelo con la mejor performance predictiva según el error de predicción (ajuste por \textit{Boosting}). Se observa que las variables distancia a la rambla este, área total y área cubierta son las 3 variables más importantes en ambos modelos.}
+\captionof{figure}{Gráfico de la \textit{importancia permutada} de las 10 primeras variables en el modelo con la mejor performance predictiva según el error de predicción (ajuste por \textit{Boosting}). Se observa que las variables distancia a la rambla este, área total y área cubierta son las 3 variables más importantes en ambos modelos.}
 \label{fig40}
 \end{figure}
 
@@ -2447,7 +2478,7 @@ ggplot() +
       scale_color_manual('Cantidad de baños \n completos', values = c('red','green2','black')) +
       geom_rug(data = aptos_sin_na, aes(x = dist_rambla)) 
 @
-\captionof{figure}{Gráfico de dependencia parcial para las variables distancia a la rambla este y cantidad de baños completos.}
+\captionof{figure}{\textit{Gráfico de dependencia parcial} para las variables distancia a la rambla este y cantidad de baños completos.}
 \label{fig42}
 \end{figure}
 
@@ -2473,7 +2504,7 @@ ggplot() +
       labs(x = 'Área total', y = 'Ingreso medio ECH') 
 
 @
-\captionof{figure}{Gráfico de dependencia parcial para las variables área total e ingreso medio ECH. Para ambas variables se incluye la distribución marginal en sus respectivos ejes.}
+\captionof{figure}{\textit{Gráfico de dependencia parcial} para las variables área total e ingreso medio ECH. Para ambas variables se incluye la distribución marginal en sus respectivos ejes.}
 \label{fig43}
 \end{figure}
 
@@ -2509,7 +2540,7 @@ Por otra parte, en lo que respecta al área del apartamento y el ingreso medio d
 
 Asimismo, para los apartamentos con área total inferior a 150 metros cuadrados, se observó a grandes rasgos que, dado el ingreso del barrio, la predicción del precio de oferta se incrementa a medida que aumenta el área total del apartamento.
 
-Sin embargo, la metodología considerada (\textit{gráficos de dependencia parcial}) posee ciertas limitantes ya que implica el cálculo de los efectos marginales expresado a través de un promedio. Donde dicho resultado puede estar influenciado por observaciones individuales y por lo tanto no lograr captar la heterogeneidad en las predicciones. De esta forma, se propone para futuros trabajos complementar el análisis implementando una metodología de \textit{metódos locales modelo-agnósticos} principalmente mediante la construcción de los gráficos denominados \textit{expectativas individuales condicionales (ICE plots)}. (Molnar, 2021) (\cite{molnar2020interpretable})
+Sin embargo, la metodología considerada (\textit{gráficos de dependencia parcial}) posee ciertas limitantes ya que implica el cálculo de los efectos marginales expresados a través de un promedio. Donde dicho resultado puede estar influenciado por observaciones individuales y por lo tanto no lograr captar la heterogeneidad en las predicciones. De esta forma, se propone para futuros trabajos complementar el análisis implementando una metodología de \textit{metódos locales modelo-agnósticos} principalmente mediante la construcción de los gráficos denominados \textit{expectativas individuales condicionales (ICE plots)}. (Molnar, 2021) (\cite{molnar2020interpretable})
 
 Más aún, como se mencionó en la Sección \ref{sec:interp}, la metodología de \textit{gráficos de dependencia parcial} no logra captar correlaciones entre las variables utilizadas en el análisis. Donde en este caso en particular se observó la presencia de una alta correlación lineal en ciertas variables. 
 
@@ -2575,7 +2606,7 @@ aux_vars <- aux_vars %>%
       relocate(Nombre, Fuente, `Descripción`,Naturaleza,`Método de imputación`) %>% 
       select(-tipo)
 
- aux_vars$`Descripción`[which(aux_vars$Nombre=="price")] <- "Precio de oferta en dolares estadounidenses"
+ aux_vars$`Descripción`[which(aux_vars$Nombre=="price")] <- "Precio de oferta en dólares estadounidenses"
  
 n <- aux_vars %>% group_by(Fuente) %>% summarise(conteo = n())
 
@@ -2653,14 +2684,13 @@ kable(barrios, booktabs = F, align = "l", caption = 'Barrios de Montevideo. En l
 
 La fórmula de Haversine para el cálculo de distancias sobre un cuerpo esférico tiene la siguiente expresión:
 
-$$d = 2 \, r \, \text{sen}^{-1} \bigg(\sqrt{ \text{sen}^{2} \, \frac{\phi_2 - \phi_1}{2} + \text{cos} (\phi_1) \, \text{cos}(\phi_2) \, \text{sen}^{2} \,  \frac{\psi_2 - \psi_1}{2}} \bigg)$$ (Chopde, 2013) (\cite{chopde2013landmark}) 
+$d = 2 \, r \, \text{sen}^{-1} \bigg(\sqrt{ \text{sen}^{2} \, \frac{\phi_2 - \phi_1}{2} + \text{cos} (\phi_1) \, \text{cos}(\phi_2) \, \text{sen}^{2} \,  \frac{\psi_2 - \psi_1}{2}} \bigg)$
 
-siendo d la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1)$ y $(\psi_2, \phi_2)$ respectivamente, y r el radio de la tierra.
+siendo d la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1)$ y $(\psi_2, \phi_2)$ respectivamente, y r el radio de la tierra. (Chopde, 2013) (\cite{chopde2013landmark}) 
 
 \newpage
 
-\section{Árbol de regresión de la variable precio de oferta en funcion de la latitud y longitud donde se ubica el apartamento \label{arbollatlonA}}
-
+\section{Árbol de regresión de la variable precio de oferta en función de la latitud y longitud donde se ubica el apartamento \label{arbollatlonA}}
 \begin{figure}[H]
 \centering
 <<fig = TRUE>>=
@@ -2675,7 +2705,9 @@ rpart.plot(arbol.prune.lat.lon,roundint = FALSE,digits = 4)
 <<>>=
 a <- broom::tidy(lm)
 b <- broom::tidy(lm_mr)
+@
 
+<<>>=
 library(knitr)
 options(knitr.table.format = "latex")
 @
@@ -2685,7 +2717,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(a, booktabs = F, align = "c", col.names = c("Variable", "Coeficientes estimados", "Error estándar", "Estadístico T", "P-Valor"), longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 8) %>% row_spec(0,bold=TRUE)
 @
-\caption{Tabla de resumen de los coeficientes del ajuste mediante el \textit{Modelo de Regresión Lineal Múltiple} con imputación de valores faltantes por la media. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico T de student y su p-valor asociado.}
+\caption{Tabla de resumen de los coeficientes del ajuste mediante el \textit{Modelo de Regresión Lineal Múltiple} con imputación de valores faltantes por la media. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico t de student y su p-valor asociado.}
 \label{taba}
 \end{table}
 
@@ -2699,11 +2731,9 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(b, booktabs = F, align = "c", col.names = c("Variable", "Coeficientes estimados", "Error estándar", "Estadístico T", "P-Valor"), longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 8) %>% row_spec(0,bold=TRUE)
 @
-\caption{Tabla de resumen de los coeficientes del ajuste mediante el \textit{Modelo de Regresión Lineal Múltiple} con imputación de valores faltantes por \textit{Random Forest}. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico T de student y su p-valor asociado.}
+\caption{Tabla de resumen de los coeficientes del ajuste mediante el \textit{Modelo de Regresión Lineal Múltiple} con imputación de valores faltantes por \textit{Random Forest}. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico t de student y su p-valor asociado.}
 \label{tabb}
 \end{table}
-
-\newpage
 
 <<>>=
 bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
@@ -2720,16 +2750,14 @@ bp_t <- tribble(
 library(knitr)
 options(knitr.table.format = "latex")
 @
-
 \begin{table}[H]
 \centering
 <<results=tex>>=
 kable(bp_t, booktabs = F, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 11) %>% row_spec(0,bold=TRUE)
 @
-\caption{Resultados de la prueba de \textit{Breush-Pagan} para el análisis de homocedasticidad de los residuos de los \textit{modelos de regresión lineal múltiple} ajustados según método de imputación de valores faltantes utilizado.}
+\caption{Resultados de la prueba de \textit{Breusch-Pagan} para el análisis de homocedasticidad de los residuos de los \textit{Modelos de Regresión Lineal Múltiple} ajustados según método de imputación de valores faltantes utilizado.}
 \label{tab13}
 \end{table}
-
 <<>>=
 lt <- lillie.test(residuals(lm)) #se rechaza h0 de normalidad
 
@@ -2745,31 +2773,27 @@ lt_t <- tribble(
 library(knitr)
 options(knitr.table.format = "latex")
 @
-
-
 \begin{table}[H]
 \centering
 <<results=tex>>=
 kable(lt_t, booktabs = F, align = "c", col.names = c("Método de imputación", "P-Valor de la prueba", "Decisión" ), format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 11) %>% row_spec(0,bold=TRUE)
 @
-\caption{Resultados de la prueba de \textit{Lilliefors} para el análisis de normalidad de los residuos de los \textit{modelos de regresión lineal múltiple} ajustados según método de imputación de valores faltantes utilizado.}
+\caption{Resultados de la prueba de \textit{Lilliefors} para el análisis de normalidad de los residuos de los \textit{Modelos de Regresión Lineal Múltiple} ajustados según método de imputación de valores faltantes utilizado.}
 \label{tab14}
 \end{table}
 
-\section{Arbol de regressión \label{arbolA}} 
-
+\section{Árbol de regresión \label{arbolA}} 
 <<>>=
 cp_error_mr <- data.frame(arbol_mr$cptable)
 library(knitr)
 options(knitr.table.format = "latex")
 @
-
 \begin{table}[H]
 \centering
 <<results=tex>>=
 kable(cp_error %>% select(-rel.error, -xstd), col.names = c('CP','Nro particiones','Error de CV') ,booktabs = F, align = "c", format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 9) %>% row_spec(0,bold=TRUE)
 @
-\caption{Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de \textit{validación cruzada}. La metodología de imputación de valores faltantes utilizada en éste caso es imputación por la media.}
+\caption{Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de \textit{validación cruzada}. La metodología de imputación de valores faltantes utilizada en este caso es imputación por la media.}
 \label{tab17}
 \end{table}
 
@@ -2778,11 +2802,9 @@ kable(cp_error %>% select(-rel.error, -xstd), col.names = c('CP','Nro particione
 <<results=tex>>=
 kable(cp_error_mr %>% select(-rel.error, -xstd), col.names = c('CP','Nro particiones','Error de CV'),  booktabs = F, align = "c", format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 9) %>% row_spec(0,bold=TRUE)
 @
-\caption{Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de \textit{validación cruzada}. La metodología de imputación de valores  faltantes utilizada en éste caso es imputación por \textit{Random Forest}.}
+\caption{Tabla resumen, indicadores para realizar el proceso de poda. Se tiene que CP es el parámetro de complejidad, donde se selecciona aquel valor el cual implique un menor error en el proceso de \textit{validación cruzada}. La metodología de imputación de valores  faltantes utilizada en este caso es imputación por \textit{Random Forest}.}
 \label{tab18}
 \end{table}
-
-\newpage
 
 \begin{figure}[H]
 \centering
@@ -2804,8 +2826,6 @@ rpart.plot(arbol.prune.mr,roundint = T,digits = -3)
 \captionof{figure}{Árbol de regresión obtenido al ajustar la variable precio de oferta en dólares mediante la base de datos construida en base a información obtenida de \textit{Mercado Libre},  una vez realizado el proceso de poda con un valor de CP igual a \Sexpr{cp_opt_mr}. El método de imputación sobre valores faltantes es en éste caso imputación por \textit{Random Forest}. El árbol se conforma por \Sexpr{npart_mr+1} nodos terminales (hojas). Los porcentajes dentro de cada nodo indican el porcentaje del número de observaciones que se encuentran en el mismo. Además, se explicita la predicción de las observaciones pertenecientes al nodo. A su vez, se destaca que se realizan \Sexpr{npart_mr} particiones.}
 \label{figarbol}
 \end{figure}
-
-\newpage
 
 \section{Parámetros de ajuste \label{hyptA}}
 
@@ -2907,7 +2927,7 @@ options(knitr.table.format = "latex")
 <<results=tex>>=
 kable(a, escape = F, booktabs = F, align = "c", col.names = c("Regla de partición", "Min. obs.", "Can. de arboles", "Cant. de variables"), format.args = list(big.mark = ",")) %>% kable_styling(latex_options = "HOLD_position", font_size = 9) %>% row_spec(0,bold=TRUE) 
 @
-\caption{Grilla de \textit{parámetros de ajuste} por defecto para los modelos ajustados por \textit{Random Forest}. Se destaca que en todos los casos la regla de partición utilizada es la que minimiza la suma de cuadrados de los residuos y la cantidad de árboles utilizada en el ajuste es 500. Asimismo, la cantidad de observaciones mínimas en un nodo terminal se mantiene constate en 5.}
+\caption{Grilla de \textit{parámetros de ajuste} por defecto para los modelos ajustados por \textit{Random Forest}. Se destaca que en todos los casos la regla de partición utilizada es la que minimiza la suma de cuadrados de los residuos y la cantidad de árboles utilizada en el ajuste es 500. Asimismo, la cantidad de observaciones mínimas en un nodo terminal se mantiene constante en 5.}
 \label{grilla1}
 \end{table}
 
@@ -2975,7 +2995,7 @@ b <- ggplot(SVR_caret_mr) +
 grid.arrange(arrangeGrob(a,b, ncol = 2), c, ncol = 1)      
       
 @
-\captionof{figure}{Gráfico de la evolución del error cuadrático medio de predicción (RMSE) en función de los valores de los \textit{parámetros de ajuste} por defecto para el caso de imputación por \textit{Random Forest}. En el panel suerior izquierdo se encuentran los resultados para los ajustes por \textit{Random Forest}, en el panel superior derecho se encuentran los resultados para el ajuste por \textit{Support Vector Regression}, y en el panel inferior izquierdo se encuentran los resultados para el ajuste por \textit{Boosting}.}
+\captionof{figure}{Gráfico de la evolución del error cuadrático medio de predicción (RMSE) en función de los valores de los \textit{parámetros de ajuste} por defecto para el caso de imputación por \textit{Random Forest}. En el panel superior izquierdo se encuentran los resultados para los ajustes por \textit{Random Forest}, en el panel superior derecho se encuentran los resultados para el ajuste por \textit{Support Vector Regression}, y en el panel inferior izquierdo se encuentran los resultados para el ajuste por \textit{Boosting}.}
 \label{hyptrf}
 \end{figure}
 
