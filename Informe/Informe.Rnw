@@ -2614,9 +2614,10 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
+
 <<results=tex>>=
 kable(aux_vars %>% select(Nombre, Fuente, `Descripción`, Naturaleza), booktabs = F, align = "l", 
-        longtable = TRUE, format.args = list(big.mark = ","), caption = 'Variables utilizadas en los modelos implementados. Se detalla el nombre de la variable en la base de datos, la fuente de obtención de cada una de ellas, la descripción con el nombre utilizado en el informe y la naturaleza.') %>% 
+        longtable = TRUE, caption = 'Variables utilizadas en los modelos implementados. Se detalla el nombre de la variable en la base de datos, la fuente de obtención de cada una de ellas, la descripción con el nombre utilizado en el informe y la naturaleza.', format.args = list(big.mark = ",")) %>% 
     kable_styling(latex_options = c("hold_position"), font_size = 9) %>% 
     row_spec(0,bold=TRUE) #%>% 
       #pack_rows("Fuente: API Mercado Libre", 1, as.numeric(n[1,2]))  %>% 
@@ -2624,19 +2625,17 @@ kable(aux_vars %>% select(Nombre, Fuente, `Descripción`, Naturaleza), booktabs 
 @
 \label{tab10}
 
-\begin{table}[H]
-\centering
+
 <<results=tex>>=
 kable(aux_vars %>% select(Nombre, `Descripción`, `Método de imputación`), booktabs = F, align = "l", 
-        longtable = TRUE, format.args = list(big.mark = ",")) %>% 
+        longtable = TRUE, caption = 'Método de imputación utilizado para las variables de entrada de los modelos implementados. En la columna método de imputación se detalla el o los métodos utilizados, o se especifica que no requiere en caso que la variable no presente valores faltantes.', format.args = list(big.mark = ",")) %>% 
     kable_styling(latex_options = c("hold_position"), font_size = 9) %>% 
     row_spec(0,bold=TRUE) #%>% 
       #pack_rows("Fuente: API Mercado Libre", 1, as.numeric(n[1,2]))  %>% 
       #pack_rows("Fuente: Elaboración propia", as.numeric(n[1,2] + 1), nrow(aux_vars)) 
 @
-\caption{Método de imputación utilizado para las variables de entrada de los modelos implementados. En la columna método de imputación se detalla el o los métodos utilizados, o se especifica que no requiere en caso que la variable no presente valores faltantes.}
 \label{tab10b}
-\end{table}
+
 
 <<>>=
 p_na2 <- p_na %>% mutate(aux = rownames(p_na))  %>%  
@@ -2653,15 +2652,14 @@ library(knitr)
 options(knitr.table.format = "latex")
 @
 
-\begin{table}[H]
-\centering
+
 <<results=tex>>=
-kable(p_na2, booktabs = F, col.names = c('Nombre','Descripción','Proporción de \n valores faltantes'), row.names = FALSE, align = "l", longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = c("hold_position"), font_size = 9) %>% 
+kable(p_na2, booktabs = F, col.names = c('Nombre','Descripción','Proporción de \n valores faltantes'), caption = 'Propoción de valores faltantes en las variables utilizadas en los modelos estadísticos implementados. Se detallan las variables con proporción estrictamente positiva.', row.names = FALSE, align = "l", longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = c("hold_position"), font_size = 9) %>% 
     row_spec(0,bold=TRUE) 
 @
-\caption{Propoción de valores faltantes en las variables utilizadas en los modelos estadísticos implementados. Se detallan las variables con proporción estrictamente positiva.}
 \label{tabna}
-\end{table}
+
+\newpage
 
 \section{Barrios de Montevideo \label{barriosA}}
 
@@ -2673,12 +2671,9 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(barrios, booktabs = F, align = "l", caption = 'Barrios de Montevideo. En la columna identificador se especifica el código de cada barrio en la API de Mercado libre. En la columna Nombre ML se especifica el nombre asociado a cada identificador en Mercado libre. En la columna Nombre INE se especifica el nombre INE asociado a cada nombre en Mercado libre.', col.names = c('Identificador', 'Nombre ML', 'Nombre INE'), longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = c("hold_position"), font_size = 8) %>% 
-    row_spec(0,bold=TRUE)
+kable(barrios, booktabs = F, align = "l", caption = 'Barrios de Montevideo. En la columna identificador se especifica el código de cada barrio en la API de Mercado libre. En la columna Nombre ML se especifica el nombre asociado a cada identificador en Mercado libre. En la columna Nombre INE se especifica el nombre INE asociado a cada nombre en Mercado libre.', col.names = c('Identificador', 'Nombre ML', 'Nombre INE'), longtable = TRUE, format.args = list(big.mark = ",")) %>% kable_styling(latex_options = c("hold_position"), font_size = 8) %>% row_spec(0,bold=TRUE)
 @
 \label{tab11}
-
-\newpage
 
 \section{Fórmula de Haversine para el cálculo de distancias \label{harvesineA}}
 
@@ -2687,8 +2682,6 @@ La fórmula de Haversine para el cálculo de distancias sobre un cuerpo esféric
 $d = 2 \, r \, \text{sen}^{-1} \bigg(\sqrt{ \text{sen}^{2} \, \frac{\phi_2 - \phi_1}{2} + \text{cos} (\phi_1) \, \text{cos}(\phi_2) \, \text{sen}^{2} \,  \frac{\psi_2 - \psi_1}{2}} \bigg)$
 
 siendo d la distancia entre dos puntos de longitud y latitud $(\psi_1, \phi_1)$ y $(\psi_2, \phi_2)$ respectivamente, y r el radio de la tierra. (Chopde, 2013) (\cite{chopde2013landmark}) 
-
-\newpage
 
 \section{Árbol de regresión de la variable precio de oferta en función de la latitud y longitud donde se ubica el apartamento \label{arbollatlonA}}
 \begin{figure}[H]
@@ -2721,6 +2714,8 @@ kable(a, booktabs = F, align = "c", col.names = c("Variable", "Coeficientes esti
 \label{taba}
 \end{table}
 
+\newpage
+
 <<>>=
 library(knitr)
 options(knitr.table.format = "latex")
@@ -2734,6 +2729,8 @@ kable(b, booktabs = F, align = "c", col.names = c("Variable", "Coeficientes esti
 \caption{Tabla de resumen de los coeficientes del ajuste mediante el \textit{Modelo de Regresión Lineal Múltiple} con imputación de valores faltantes por \textit{Random Forest}. Se presentan los coeficientes estimados, la estimación del error estándar de cada uno de ellos, el estadístico t de student y su p-valor asociado.}
 \label{tabb}
 \end{table}
+
+\newpage
 
 <<>>=
 bp <- lmtest::bptest(lm) # se rechaza h0 de varianza constante 
@@ -2758,6 +2755,9 @@ kable(bp_t, booktabs = F, align = "c", col.names = c("Método de imputación", "
 \caption{Resultados de la prueba de \textit{Breusch-Pagan} para el análisis de homocedasticidad de los residuos de los \textit{Modelos de Regresión Lineal Múltiple} ajustados según método de imputación de valores faltantes utilizado.}
 \label{tab13}
 \end{table}
+
+\newpage
+
 <<>>=
 lt <- lillie.test(residuals(lm)) #se rechaza h0 de normalidad
 
@@ -3082,7 +3082,7 @@ options(knitr.table.format = "latex")
 @
 
 <<results=tex>>=
-kable(boost, caption = 'Principales medidas de resumen para los modelos ajustados por Boosting según la grilla especificada en el proceso de parámetros de ajuste según la metodología de imputación de valores faltantes utilizada.', booktabs = F, longtable = TRUE, escape= FALSE, align = "c", format.args = list(big.mark = ","),  col.names = c("Imputación", "Obs. min.", "Cant. de árboles", "Tasa de aprendizaje", "Particiones","RMSE","$R^2$", "MAE")) %>% kable_styling(latex_options = "HOLD_position", font_size = 8) %>% row_spec(0,bold=TRUE) 
+kable(boost, booktabs = F, longtable = TRUE, escape= FALSE, align = "c", format.args = list(big.mark = ","),  caption = 'Principales medidas de resumen para los modelos ajustados por Boosting según la grilla especificada en el proceso de parámetros de ajuste según la metodología de imputación de valores faltantes utilizada.', col.names = c("Imputación", "Obs. min.", "Cant. de árboles", "Tasa de aprendizaje", "Particiones","RMSE","$R^2$", "MAE")) %>% kable_styling(latex_options = "HOLD_position", font_size = 8) %>% row_spec(0,bold=TRUE) 
 @
 \label{tab31}
 
